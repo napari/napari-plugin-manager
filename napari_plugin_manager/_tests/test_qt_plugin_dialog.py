@@ -3,7 +3,7 @@ from typing import Generator, Optional, Tuple
 import pytest
 from npe2 import PackageMetadata
 
-from napari._qt.dialogs import qt_plugin_dialog
+from napari_plugin_manager import qt_plugin_dialog
 
 
 def _iter_napari_hub_or_pypi_plugin_info(

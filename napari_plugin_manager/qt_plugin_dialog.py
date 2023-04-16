@@ -27,7 +27,7 @@ from qtpy.QtWidgets import (
 from superqt import QElidingLabel
 
 import napari.resources
-from napari._qt.dialogs.qt_package_installer import (
+from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
     InstallerQueue,
     InstallerTools,
