@@ -22,10 +22,6 @@ from subprocess import call
 from tempfile import gettempdir, mkstemp
 from typing import Deque, Optional, Sequence, Tuple
 
-from npe2 import PluginManager
-from qtpy.QtCore import QObject, QProcess, QProcessEnvironment, Signal
-from qtpy.QtWidgets import QTextEdit
-
 from napari._version import version as _napari_version
 from napari._version import version_tuple as _napari_version_tuple
 from napari.plugins import plugin_manager
@@ -33,6 +29,9 @@ from napari.plugins.pypi import _user_agent
 from napari.utils._appdirs import user_plugin_dir, user_site_packages
 from napari.utils.misc import StringEnum, running_as_bundled_app
 from napari.utils.translations import trans
+from npe2 import PluginManager
+from qtpy.QtCore import QObject, QProcess, QProcessEnvironment, Signal
+from qtpy.QtWidgets import QTextEdit
 
 JobId = int
 log = getLogger(__name__)
@@ -502,8 +501,11 @@ class InstallerQueue(QProcess):
 def _get_python_exe():
     # Note: is_bundled_app() returns False even if using a Briefcase bundle...
     # Workaround: see if sys.executable is set to something something napari on Mac
-    if sys.executable.endswith("napari") and sys.platform == 'darwin':
+    if (
+        sys.executable.endswith("napari")
+        and sys.platform == 'darwin'
         # sys.prefix should be <napari.app>/Contents/Resources/Support/Python/Resources
-        if (python := Path(sys.prefix) / "bin" / "python3").is_file():
-            return str(python)
+        and (python := Path(sys.prefix) / "bin" / "python3").is_file()
+    ):
+        return str(python)
     return sys.executable

@@ -5,6 +5,22 @@ from importlib.metadata import PackageNotFoundError, metadata
 from pathlib import Path
 from typing import Optional, Sequence, Tuple
 
+import napari.resources
+from napari._qt.qt_resources import QColoredSVGIcon
+from napari._qt.qthreading import create_worker
+from napari._qt.widgets.qt_message_popup import WarnPopup
+from napari._qt.widgets.qt_tooltip import QtToolTipLabel
+from napari.plugins import plugin_manager
+from napari.plugins.hub import iter_hub_plugin_info
+from napari.plugins.pypi import iter_napari_plugin_info
+from napari.plugins.utils import normalized_name
+from napari.settings import get_settings
+from napari.utils.misc import (
+    parse_version,
+    running_as_bundled_app,
+    running_as_constructor_app,
+)
+from napari.utils.translations import trans
 from npe2 import PackageMetadata, PluginManager
 from qtpy.QtCore import QEvent, QPoint, QSize, Qt, Slot
 from qtpy.QtGui import QFont, QMovie
@@ -26,27 +42,11 @@ from qtpy.QtWidgets import (
 )
 from superqt import QElidingLabel
 
-import napari.resources
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
     InstallerQueue,
     InstallerTools,
 )
-from napari._qt.qt_resources import QColoredSVGIcon
-from napari._qt.qthreading import create_worker
-from napari._qt.widgets.qt_message_popup import WarnPopup
-from napari._qt.widgets.qt_tooltip import QtToolTipLabel
-from napari.plugins import plugin_manager
-from napari.plugins.hub import iter_hub_plugin_info
-from napari.plugins.pypi import iter_napari_plugin_info
-from napari.plugins.utils import normalized_name
-from napari.settings import get_settings
-from napari.utils.misc import (
-    parse_version,
-    running_as_bundled_app,
-    running_as_constructor_app,
-)
-from napari.utils.translations import trans
 
 
 class PluginListItem(QFrame):
@@ -57,7 +57,7 @@ class PluginListItem(QFrame):
         url: str = '',
         summary: str = '',
         author: str = '',
-        license: str = "UNKNOWN",
+        license: str = "UNKNOWN",  # noqa
         *,
         plugin_name: str = None,
         parent: QWidget = None,
@@ -524,9 +524,8 @@ class QtPluginDialog(QDialog):
         self.available_list.clear()
 
         # fetch installed
-        from npe2 import PluginManager
-
         from napari.plugins import plugin_manager
+        from npe2 import PluginManager
 
         self.already_installed = set()
 
