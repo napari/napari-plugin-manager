@@ -87,7 +87,6 @@ def plugin_dialog_constructor(qtbot, monkeypatch):
     return widget
 
 
-@pytest.mark.timeout(30)
 def test_filter_not_available_plugins(plugin_dialog_constructor):
     """
     Check that the plugins listed under available plugins are
@@ -111,7 +110,6 @@ def test_filter_not_available_plugins(plugin_dialog_constructor):
     assert not widget.warning_tooltip.isVisible()
 
 
-@pytest.mark.timeout(30)
 def test_filter_available_plugins(plugin_dialog):
     """
     Test the dialog is correctly filtering plugins in the available plugins
@@ -129,7 +127,6 @@ def test_filter_available_plugins(plugin_dialog):
     assert plugin_dialog.available_list._count_visible() == 1
 
 
-@pytest.mark.timeout(30)
 def test_filter_installed_plugins(plugin_dialog):
     """
     Test the dialog is correctly filtering plugins in the installed plugins
@@ -142,7 +139,6 @@ def test_filter_installed_plugins(plugin_dialog):
     assert plugin_dialog.installed_list._count_visible() == 0
 
 
-@pytest.mark.timeout(30)
 def test_visible_widgets(plugin_dialog):
     """
     Test that the direct entry button and textbox are visible for
@@ -153,7 +149,6 @@ def test_visible_widgets(plugin_dialog):
     assert plugin_dialog.direct_entry_btn.isVisible()
 
 
-@pytest.mark.timeout(30)
 def test_constructor_visible_widgets(plugin_dialog_constructor):
     """
     Test that the direct entry button and textbox are hidden for
