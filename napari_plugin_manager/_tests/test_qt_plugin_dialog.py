@@ -1,4 +1,5 @@
 from typing import Generator, Optional, Tuple
+from unittest.mock import Mock
 
 import pytest
 from npe2 import PackageMetadata
@@ -49,6 +50,7 @@ def plugin_dialog(qtbot, monkeypatch):
         "running_as_constructor_app",
         lambda: False,
     )
+    monkeypatch.setattr(qt_plugin_dialog, "WarnPopup", Mock)
 
     widget = qt_plugin_dialog.QtPluginDialog()
     widget.show()
@@ -76,6 +78,8 @@ def plugin_dialog_constructor(qtbot, monkeypatch):
         "running_as_constructor_app",
         lambda: True,
     )
+    monkeypatch.setattr(qt_plugin_dialog, "WarnPopup", Mock)
+
     widget = qt_plugin_dialog.QtPluginDialog()
     widget.show()
     qtbot.wait(300)
