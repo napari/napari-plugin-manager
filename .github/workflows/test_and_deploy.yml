@@ -31,17 +31,13 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
         qt-backend: ["PySide2", "PyQt5", "PyQt6", "PySide6"]
         napari: ["latest", "repo"]
         exclude:
-          - platform: macos-latest
-            python-version: "3.8"
           # TODO: Remove when we have a napari release with the plugin manager changes
           - napari: "latest"
           # PySide6 only works on Python 3.10+
-          - qt-backend: "PySide6"
-            python-version: "3.8"
           - qt-backend: "PySide6"
             python-version: "3.9"
           # TODO: PyQt / PySide wheels missing
