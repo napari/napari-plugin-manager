@@ -1,15 +1,25 @@
 import importlib.metadata
+import sys
 from typing import Generator, Optional, Tuple
 from unittest.mock import patch
 
 import napari.plugins
 import npe2
 import pytest
+import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
 
 from napari_plugin_manager import qt_plugin_dialog
 from napari_plugin_manager.qt_package_installer import InstallerActions
+
+
+mark = pytest.mark.skipif(
+    qtpy.API_NAME == 'PySide2'
+    and sys.version_info[:2] == (3, 11)
+    and sys.platform == "Linux",
+    reason="TypeError: 'PySide2.QtCore.Qt.Alignment' object cannot be interpreted as an integer",
+)
 
 
 def _iter_napari_pypi_plugin_info(
@@ -79,10 +89,10 @@ class WarnPopupMock:
 
     def move(self, pos):
         return False
-    
+
     def isVisible(self):
         return self._is_visible
-    
+
     def close(self):
         self._is_visible = False
 
@@ -210,7 +220,7 @@ def plugin_dialog_constructor(qtbot, monkeypatch):
     widget._add_items_timer.stop()
 
 
-def test_filter_not_available_plugins(plugin_dialog_constructor):
+def test_filter_not_available_plugins(qtbot, plugin_dialog_constructor):
     """
     Check that the plugins listed under available plugins are
     enabled and disabled accordingly.
@@ -281,11 +291,13 @@ def test_constructor_visible_widgets(plugin_dialog_constructor):
     assert not plugin_dialog_constructor.direct_entry_btn.isVisible()
 
 
-def test_version_dropdown(plugin_dialog):
+def test_version_dropdown(qtbot, plugin_dialog):
     """
     Test that when the source drop down is changed, it displays the other versions properly.
     """
     widget = plugin_dialog.available_list.item(1).widget
+    qtbot.wait(300)
+
     assert widget.version_choice_dropdown.currentText() == "3"
     # switch from PyPI source to conda one.
     widget.source_choice_dropdown.setCurrentIndex(1)
