@@ -7,7 +7,21 @@ from functools import partial
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Sequence, Tuple
 
+import napari.plugins
+import napari.resources
 import npe2
+from napari._qt.qt_resources import QColoredSVGIcon
+from napari._qt.qthreading import create_worker
+from napari._qt.widgets.qt_message_popup import WarnPopup
+from napari._qt.widgets.qt_tooltip import QtToolTipLabel
+from napari.plugins.npe2api import iter_napari_plugin_info
+from napari.plugins.utils import normalized_name
+from napari.settings import get_settings
+from napari.utils.misc import (
+    parse_version,
+    running_as_constructor_app,
+)
+from napari.utils.translations import trans
 from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Slot
 from qtpy.QtGui import QFont, QMovie
 from qtpy.QtWidgets import (
@@ -30,25 +44,11 @@ from qtpy.QtWidgets import (
 )
 from superqt import QCollapsible, QElidingLabel
 
-import napari.plugins
-import napari.resources
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
     InstallerQueue,
     InstallerTools,
 )
-from napari._qt.qt_resources import QColoredSVGIcon
-from napari._qt.qthreading import create_worker
-from napari._qt.widgets.qt_message_popup import WarnPopup
-from napari._qt.widgets.qt_tooltip import QtToolTipLabel
-from napari.plugins.npe2api import iter_napari_plugin_info
-from napari.plugins.utils import normalized_name
-from napari.settings import get_settings
-from napari.utils.misc import (
-    parse_version,
-    running_as_constructor_app,
-)
-from napari.utils.translations import trans
 
 # TODO: add error icon and handle pip install errors
 
