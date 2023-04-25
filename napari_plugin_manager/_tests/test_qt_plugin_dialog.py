@@ -2,14 +2,14 @@ import importlib.metadata
 from typing import Generator, Optional, Tuple
 from unittest.mock import patch
 
+import napari.plugins
 import npe2
 import pytest
-
-import napari.plugins
-from napari._qt.dialogs import qt_plugin_dialog
-from napari._qt.dialogs.qt_package_installer import InstallerActions
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
+
+from napari_plugin_manager import qt_plugin_dialog
+from napari_plugin_manager.qt_package_installer import InstallerActions
 
 
 def _iter_napari_pypi_plugin_info(
