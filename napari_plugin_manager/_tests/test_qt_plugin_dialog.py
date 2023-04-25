@@ -70,6 +70,23 @@ def plugins(qtbot):
     return PluginsMock()
 
 
+class WarnPopupMock:
+    def __init__(self, text):
+        self._is_visible = False
+
+    def exec_(self):
+        self._is_visible = True
+
+    def move(self, pos):
+        return False
+    
+    def isVisible(self):
+        return self._is_visible
+    
+    def close(self):
+        self._is_visible = False
+
+
 @pytest.fixture
 def plugin_dialog(qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
     """Fixture that provides a plugin dialog for a normal napari install."""
@@ -101,16 +118,6 @@ def plugin_dialog(qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
         def disable(self, plugin):
             self.plugins[plugin] = False
             return
-
-    class WarnPopupMock:
-        def __init__(self, text):
-            return None
-
-        def exec_(self):
-            return None
-
-        def move(self, pos):
-            return False
 
     def mock_metadata(name):
         meta = {
@@ -192,6 +199,8 @@ def plugin_dialog_constructor(qtbot, monkeypatch):
         "running_as_constructor_app",
         lambda: True,
     )
+    monkeypatch.setattr(qt_plugin_dialog, 'WarnPopup', WarnPopupMock)
+
     widget = qt_plugin_dialog.QtPluginDialog()
     widget.show()
     qtbot.wait(300)
@@ -201,7 +210,6 @@ def plugin_dialog_constructor(qtbot, monkeypatch):
     widget._add_items_timer.stop()
 
 
-@pytest.mark.enabledialog
 def test_filter_not_available_plugins(plugin_dialog_constructor):
     """
     Check that the plugins listed under available plugins are
