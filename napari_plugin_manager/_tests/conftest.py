@@ -13,5 +13,6 @@ def _block_message_box(monkeypatch, request):
     monkeypatch.setattr(QMessageBox, "question", raise_on_call)
     monkeypatch.setattr(QMessageBox, "warning", raise_on_call)
     monkeypatch.setattr(QInputDialog, "getText", raise_on_call)
+    # QDialogs can be allowed via a marker; only raise if not decorated
     if "enabledialog" not in request.keywords:
         monkeypatch.setattr(QDialog, "exec_", raise_on_call)

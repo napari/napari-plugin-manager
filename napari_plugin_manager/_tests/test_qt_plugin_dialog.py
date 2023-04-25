@@ -201,6 +201,7 @@ def plugin_dialog_constructor(qtbot, monkeypatch):
     widget._add_items_timer.stop()
 
 
+@pytest.mark.enabledialog
 def test_filter_not_available_plugins(plugin_dialog_constructor):
     """
     Check that the plugins listed under available plugins are

@@ -168,6 +168,10 @@ filterwarnings = [
   "error:::test_.*", # turn warnings in our own tests into errors
 ]
 
+markers = [
+  "enabledialog: Allow to use dialog in test"
+]
+
 [tool.mypy]
 files = "napari_plugin_manager"
 ignore_missing_imports = true
