@@ -37,7 +37,13 @@ jobs:
         exclude:
           - platform: macos-latest
             python-version: "3.8"
+          # TODO: Remove when we have a napari release with the plugin manager changes
           - napari: "latest"
+          # PySide6 only works on Python 3.10+
+          - qt-backend: "PySide6"
+            python-version: "3.8"
+          - qt-backend: "PySide6"
+            python-version: "3.9"
           
 
     steps:
