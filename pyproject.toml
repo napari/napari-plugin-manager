@@ -51,6 +51,15 @@ dynamic = [
   "version"
 ]
 
+[project.optional-dependencies]
+testing = [
+  "pytest",
+  "virtualenv",
+  "pytest-cov",
+  "pytest-qt",
+  "pytest-xvfb ; sys_platform == 'linux'"
+]
+
 [project.urls]
 homepage = "https://github.com/napari/napari-plugin-manager"
 
