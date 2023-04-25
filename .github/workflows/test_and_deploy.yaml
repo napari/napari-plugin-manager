@@ -31,6 +31,8 @@ jobs:
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11"]
+        qt-backend: ["PySide2", "PyQt5", "PyQt6", "PySide6"]
+        napari: ["latest", "repo"]
 
     steps:
       - uses: actions/checkout@v3
@@ -60,8 +62,9 @@ jobs:
         with:
           run: python -m tox -vv
         env:
-          PLATFORM: ${{ matrix.platform }}
-          PYVISTA_OFF_SCREEN: True
+          PYVISTA_OFF_SCREEN: True  # required for opengl on windows
+          NAPARI: ${{ matrix.napari }}
+          BACKEND: ${{ matrix.qt-backend }}
 
       - name: Coverage
         uses: codecov/codecov-action@v1
