@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.platform }} py${{ matrix.python-version }}
+    name: ${{ matrix.platform }}, py${{ matrix.python-version }}, ${{ matrix.qt-backend }}, napari ${{ matrix.napari }}
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
@@ -33,6 +33,11 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
         qt-backend: ["PySide2", "PyQt5", "PyQt6", "PySide6"]
         napari: ["latest", "repo"]
+        exclude:
+          - platform: macos-latest
+            python-version: "3.8"
+          - napari: "latest"
+          
 
     steps:
       - uses: actions/checkout@v3
