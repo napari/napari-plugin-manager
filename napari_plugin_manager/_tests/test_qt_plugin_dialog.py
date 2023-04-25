@@ -15,9 +15,7 @@ from napari_plugin_manager.qt_package_installer import InstallerActions
 
 
 mark = pytest.mark.skipif(
-    qtpy.API_NAME == 'PySide2'
-    and sys.version_info[:2] == (3, 11)
-    and sys.platform == "Linux",
+    qtpy.API_NAME == 'PySide2' and sys.version_info[:2] == (3, 11),
     reason="TypeError: 'PySide2.QtCore.Qt.Alignment' object cannot be interpreted as an integer",
 )
 
