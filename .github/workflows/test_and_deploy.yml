@@ -25,21 +25,17 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.platform }}, py${{ matrix.python-version }}, ${{ matrix.qt-backend }}, napari ${{ matrix.napari }}
+    name: ${{ matrix.platform }}, py${{ matrix.python-version }}, napari ${{ matrix.napari }}
     runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.9", "3.10", "3.11"]
-        qt-backend: ["PySide2", "PyQt5", "PyQt6", "PySide6"]
         napari: ["latest", "repo"]
         exclude:
           # TODO: Remove when we have a napari release with the plugin manager changes
           - napari: "latest"
-          # PySide6 only works on Python 3.10+
-          - qt-backend: "PySide6"
-            python-version: "3.9"
           # TODO: PyQt / PySide wheels missing
           - python-version: "3.11"
             platform: "windows-latest"
@@ -74,8 +70,9 @@ jobs:
         env:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
-          BACKEND: ${{ matrix.qt-backend }}
           FORCE_COLOR: 1
+          # PySide6 only functional with Python 3.10+
+          TOX_SKIP_ENV: ".*py39-PySide6.*"
 
       - name: Coverage
         uses: codecov/codecov-action@v3
