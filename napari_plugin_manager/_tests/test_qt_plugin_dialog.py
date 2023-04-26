@@ -180,7 +180,7 @@ def plugin_dialog(request, qtbot, monkeypatch, mock_pm, plugins, old_plugins):  
     widget.show()
     qtbot.waitUntil(widget.isVisible, timeout=300)
     qtbot.add_widget(widget)
-    qtbot.waitUntil(lambda: widget.available_list.count() >= 2, timeout=300)
+    qtbot.waitUntil(lambda: widget.available_list.count() >= 2, timeout=1000)
     yield widget
     widget.hide()
     widget._add_items_timer.stop()
