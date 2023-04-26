@@ -75,9 +75,10 @@ jobs:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
           BACKEND: ${{ matrix.qt-backend }}
+          FORCE_COLOR: 1
 
       - name: Coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
 
   deploy:
     # this will run when you have tagged a commit, starting with "v*"
