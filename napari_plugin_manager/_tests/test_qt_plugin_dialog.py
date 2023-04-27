@@ -13,15 +13,15 @@ from napari.utils.translations import trans
 from napari_plugin_manager import qt_plugin_dialog
 from napari_plugin_manager.qt_package_installer import InstallerActions
 
-
 if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] == (3, 11):
     pytest.skip(
         "Known PySide2 x Python 3.11 incompatibility: "
-        "TypeError: 'PySide2.QtCore.Qt.Alignment' object cannot be interpreted as an integer", 
+        "TypeError: 'PySide2.QtCore.Qt.Alignment' object cannot be interpreted as an integer",
         allow_module_level=True,
-)
+    )
 
 N_MOCKED_PLUGINS = 2
+
 
 def _iter_napari_pypi_plugin_info(
     conda_forge: bool = True,
@@ -99,7 +99,14 @@ class WarnPopupMock:
 
 
 @pytest.fixture(params=[True, False], ids=["constructor", "no-constructor"])
-def plugin_dialog(request, qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
+def plugin_dialog(
+    request,
+    qtbot,
+    monkeypatch,
+    mock_pm,  # noqa
+    plugins,
+    old_plugins,
+):
     """Fixture that provides a plugin dialog for a normal napari install."""
 
     class PluginManagerMock:
@@ -167,7 +174,9 @@ def plugin_dialog(request, qtbot, monkeypatch, mock_pm, plugins, old_plugins):  
 
     # This is patching `napari.utils.misc.running_as_constructor_app` function
     # to mock a normal napari install.
-    monkeypatch.setattr(qt_plugin_dialog, "running_as_constructor_app", lambda: request.param)
+    monkeypatch.setattr(
+        qt_plugin_dialog, "running_as_constructor_app", lambda: request.param
+    )
 
     monkeypatch.setattr(
         napari.plugins, 'plugin_manager', OldPluginManagerMock()
@@ -180,7 +189,9 @@ def plugin_dialog(request, qtbot, monkeypatch, mock_pm, plugins, old_plugins):  
     widget = qt_plugin_dialog.QtPluginDialog()
     widget.show()
     qtbot.waitUntil(widget.isVisible, timeout=300)
-    qtbot.waitUntil(lambda: widget.available_list.count() == N_MOCKED_PLUGINS, timeout=3000)
+    qtbot.waitUntil(
+        lambda: widget.available_list.count() == N_MOCKED_PLUGINS, timeout=3000
+    )
     qtbot.add_widget(widget)
     yield widget
     widget.hide()
