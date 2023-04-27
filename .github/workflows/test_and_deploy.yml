@@ -75,7 +75,7 @@ jobs:
           TOX_SKIP_ENV: ".*py39-PySide6.*"
 
       - name: pre-commit
-        uses: pre-commit/action@v3
+        uses: pre-commit/action@v3.0.0
 
       - name: Coverage
         uses: codecov/codecov-action@v3
