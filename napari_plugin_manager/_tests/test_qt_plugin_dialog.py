@@ -189,9 +189,11 @@ def plugin_dialog(
     widget = qt_plugin_dialog.QtPluginDialog()
     widget.show()
     qtbot.waitUntil(widget.isVisible, timeout=300)
-    qtbot.waitUntil(
-        lambda: widget.available_list.count() == N_MOCKED_PLUGINS, timeout=3000
-    )
+
+    def available_list_populated():
+        return widget.available_list.count() == N_MOCKED_PLUGINS
+
+    qtbot.waitUntil(available_list_populated, timeout=3000)
     qtbot.add_widget(widget)
     yield widget
     widget.hide()
