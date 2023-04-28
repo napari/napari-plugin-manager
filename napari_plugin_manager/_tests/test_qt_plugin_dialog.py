@@ -201,7 +201,7 @@ def plugin_dialog(
     assert not widget._add_items_timer.isActive()
 
 
-def test_filter_not_available_plugins(qtbot, plugin_dialog):
+def test_filter_not_available_plugins(plugin_dialog):
     """
     Check that the plugins listed under available plugins are
     enabled and disabled accordingly.
