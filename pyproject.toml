@@ -51,6 +51,14 @@ dynamic = [
   "version"
 ]
 
+[project.optional-dependencies]
+testing = [
+  "pytest",
+  "virtualenv",
+  "pytest-cov",
+  "pytest-qt",
+]
+
 [project.urls]
 homepage = "https://github.com/napari/napari-plugin-manager"
 
@@ -157,6 +165,10 @@ addopts = "--maxfail=5 --durations=10 -rXxs"
 filterwarnings = [
   "error:::napari_plugin_manager", # turn warnings from napari into errors
   "error:::test_.*", # turn warnings in our own tests into errors
+]
+
+markers = [
+  "enabledialog: Allow to use dialog in test"
 ]
 
 [tool.mypy]

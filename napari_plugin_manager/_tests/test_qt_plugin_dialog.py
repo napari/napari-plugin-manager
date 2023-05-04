@@ -1,15 +1,26 @@
 import importlib.metadata
+import sys
 from typing import Generator, Optional, Tuple
 from unittest.mock import patch
 
 import napari.plugins
 import npe2
 import pytest
+import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
 
 from napari_plugin_manager import qt_plugin_dialog
 from napari_plugin_manager.qt_package_installer import InstallerActions
+
+if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] == (3, 11):
+    pytest.skip(
+        "Known PySide2 x Python 3.11 incompatibility: "
+        "TypeError: 'PySide2.QtCore.Qt.Alignment' object cannot be interpreted as an integer",
+        allow_module_level=True,
+    )
+
+N_MOCKED_PLUGINS = 2
 
 
 def _iter_napari_pypi_plugin_info(
@@ -35,7 +46,7 @@ def _iter_napari_pypi_plugin_info(
         "author": "test author",
         "license": "UNKNOWN",
     }
-    for i in range(2):
+    for i in range(N_MOCKED_PLUGINS):
         yield npe2.PackageMetadata(name=f"test-name-{i}", **base_data), bool(
             i
         ), {
@@ -70,8 +81,32 @@ def plugins(qtbot):
     return PluginsMock()
 
 
-@pytest.fixture
-def plugin_dialog(qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
+class WarnPopupMock:
+    def __init__(self, text):
+        self._is_visible = False
+
+    def exec_(self):
+        self._is_visible = True
+
+    def move(self, pos):
+        return False
+
+    def isVisible(self):
+        return self._is_visible
+
+    def close(self):
+        self._is_visible = False
+
+
+@pytest.fixture(params=[True, False], ids=["constructor", "no-constructor"])
+def plugin_dialog(
+    request,
+    qtbot,
+    monkeypatch,
+    mock_pm,  # noqa
+    plugins,
+    old_plugins,
+):
     """Fixture that provides a plugin dialog for a normal napari install."""
 
     class PluginManagerMock:
@@ -101,16 +136,6 @@ def plugin_dialog(qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
         def disable(self, plugin):
             self.plugins[plugin] = False
             return
-
-    class WarnPopupMock:
-        def __init__(self, text):
-            return None
-
-        def exec_(self):
-            return None
-
-        def move(self, pos):
-            return False
 
     def mock_metadata(name):
         meta = {
@@ -145,15 +170,12 @@ def plugin_dialog(qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
         "iter_napari_plugin_info",
         _iter_napari_pypi_plugin_info,
     )
-
     monkeypatch.setattr(qt_plugin_dialog, 'WarnPopup', WarnPopupMock)
 
     # This is patching `napari.utils.misc.running_as_constructor_app` function
     # to mock a normal napari install.
     monkeypatch.setattr(
-        qt_plugin_dialog,
-        "running_as_constructor_app",
-        lambda: False,
+        qt_plugin_dialog, "running_as_constructor_app", lambda: request.param
     )
 
     monkeypatch.setattr(
@@ -166,7 +188,12 @@ def plugin_dialog(qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
 
     widget = qt_plugin_dialog.QtPluginDialog()
     widget.show()
-    qtbot.wait(300)
+    qtbot.waitUntil(widget.isVisible, timeout=300)
+
+    def available_list_populated():
+        return widget.available_list.count() == N_MOCKED_PLUGINS
+
+    qtbot.waitUntil(available_list_populated, timeout=3000)
     qtbot.add_widget(widget)
     yield widget
     widget.hide()
@@ -174,34 +201,7 @@ def plugin_dialog(qtbot, monkeypatch, mock_pm, plugins, old_plugins):  # noqa
     assert not widget._add_items_timer.isActive()
 
 
-@pytest.fixture
-def plugin_dialog_constructor(qtbot, monkeypatch):
-    """
-    Fixture that provides a plugin dialog for a constructor based install.
-    """
-    monkeypatch.setattr(
-        qt_plugin_dialog,
-        "iter_napari_plugin_info",
-        _iter_napari_pypi_plugin_info,
-    )
-
-    # This is patching `napari.utils.misc.running_as_constructor_app` function
-    # to mock a constructor based install.
-    monkeypatch.setattr(
-        qt_plugin_dialog,
-        "running_as_constructor_app",
-        lambda: True,
-    )
-    widget = qt_plugin_dialog.QtPluginDialog()
-    widget.show()
-    qtbot.wait(300)
-    qtbot.add_widget(widget)
-    yield widget
-    widget.hide()
-    widget._add_items_timer.stop()
-
-
-def test_filter_not_available_plugins(plugin_dialog_constructor):
+def test_filter_not_available_plugins(plugin_dialog):
     """
     Check that the plugins listed under available plugins are
     enabled and disabled accordingly.
@@ -212,14 +212,14 @@ def test_filter_not_available_plugins(plugin_dialog_constructor):
     The second plugin ("test-name-1") is available on conda-forge and
     should be enabled without the tooltip warning.
     """
-    item = plugin_dialog_constructor.available_list.item(0)
-    widget = plugin_dialog_constructor.available_list.itemWidget(item)
+    item = plugin_dialog.available_list.item(0)
+    widget = plugin_dialog.available_list.itemWidget(item)
     if widget:
         assert not widget.action_button.isEnabled()
         assert widget.warning_tooltip.isVisible()
 
-    item = plugin_dialog_constructor.available_list.item(1)
-    widget = plugin_dialog_constructor.available_list.itemWidget(item)
+    item = plugin_dialog.available_list.item(1)
+    widget = plugin_dialog.available_list.itemWidget(item)
     assert widget.action_button.isEnabled()
     assert not widget.warning_tooltip.isVisible()
 
@@ -253,26 +253,19 @@ def test_filter_installed_plugins(plugin_dialog):
     assert plugin_dialog.installed_list._count_visible() == 0
 
 
-def test_visible_widgets(plugin_dialog):
+def test_visible_widgets(request, plugin_dialog):
     """
-    Test that the direct entry button and textbox are visible for
-    normal napari installs.
+    Test that the direct entry button and textbox are visible
     """
-
+    if "no-constructor" not in request.node.name:
+        # the plugin_dialog fixture has this id
+        # skip for 'constructor' variant
+        pytest.skip()
     assert plugin_dialog.direct_entry_edit.isVisible()
     assert plugin_dialog.direct_entry_btn.isVisible()
 
 
-def test_constructor_visible_widgets(plugin_dialog_constructor):
-    """
-    Test that the direct entry button and textbox are hidden for
-    constructor based napari installs.
-    """
-    assert not plugin_dialog_constructor.direct_entry_edit.isVisible()
-    assert not plugin_dialog_constructor.direct_entry_btn.isVisible()
-
-
-def test_version_dropdown(plugin_dialog):
+def test_version_dropdown(qtbot, plugin_dialog):
     """
     Test that when the source drop down is changed, it displays the other versions properly.
     """
