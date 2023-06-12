@@ -26,8 +26,7 @@ from napari._version import version as _napari_version
 from napari._version import version_tuple as _napari_version_tuple
 from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
-from napari.utils._appdirs import user_plugin_dir, user_site_packages
-from napari.utils.misc import StringEnum, running_as_bundled_app
+from napari.utils.misc import StringEnum
 from napari.utils.translations import trans
 from npe2 import PluginManager
 from qtpy.QtCore import QObject, QProcess, QProcessEnvironment, Signal
@@ -127,14 +126,6 @@ class PipInstallerTool(AbstractInstallerTool):
             args.append('-vvv')
         if self.prefix is not None:
             args.extend(['--prefix', str(self.prefix)])
-        elif running_as_bundled_app(
-            check_conda=False
-        ) and sys.platform.startswith('linux'):
-            args += [
-                '--no-warn-script-location',
-                '--prefix',
-                user_plugin_dir(),
-            ]
         return (*args, *self.pkgs)
 
     def environment(
@@ -142,13 +133,6 @@ class PipInstallerTool(AbstractInstallerTool):
     ) -> QProcessEnvironment:
         if env is None:
             env = QProcessEnvironment.systemEnvironment()
-        combined_paths = os.pathsep.join(
-            [
-                user_site_packages(),
-                env.systemEnvironment().value("PYTHONPATH"),
-            ]
-        )
-        env.insert("PYTHONPATH", combined_paths)
         env.insert("PIP_USER_AGENT_USER_DATA", _user_agent())
         return env
 
