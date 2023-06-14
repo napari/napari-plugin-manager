@@ -1040,7 +1040,9 @@ class QtPluginDialog(QDialog):
         data = self._plugin_data.pop(0)
         project_info, is_available_in_conda, extra_info = data
         if project_info.name in self.already_installed:
-            self.installed_list.tag_outdated(project_info, is_available_in_conda)
+            self.installed_list.tag_outdated(
+                project_info, is_available_in_conda
+            )
         else:
             if project_info.name not in self.available_set:
                 self.available_set.add(project_info.name)
