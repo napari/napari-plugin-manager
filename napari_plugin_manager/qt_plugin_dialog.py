@@ -57,6 +57,7 @@ SCALE = 1.6
 
 CONDA = 'Conda'
 PYPI = 'PyPI'
+ON_BUNDLE = running_as_constructor_app()
 
 
 def is_conda_package(pkg: str):
@@ -1037,9 +1038,9 @@ class QtPluginDialog(QDialog):
             return
 
         data = self._plugin_data.pop(0)
-        project_info, is_available, extra_info = data
+        project_info, is_available_in_conda, extra_info = data
         if project_info.name in self.already_installed:
-            self.installed_list.tag_outdated(project_info, is_available)
+            self.installed_list.tag_outdated(project_info, is_available_in_conda)
         else:
             if project_info.name not in self.available_set:
                 self.available_set.add(project_info.name)
@@ -1050,7 +1051,7 @@ class QtPluginDialog(QDialog):
                         extra_info['conda_versions'],
                     )
                 )
-            if not is_available:
+            if ON_BUNDLE and not is_available_in_conda:
                 self.available_list.tag_unavailable(project_info)
 
         self.filter()
