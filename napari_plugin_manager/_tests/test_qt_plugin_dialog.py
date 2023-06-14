@@ -213,7 +213,7 @@ def test_filter_not_available_plugins(request, plugin_dialog):
     The second plugin ("test-name-1") is available on conda-forge and
     should be enabled without the tooltip warning.
     """
-    if "no-constructor" not in request.node.name:
+    if "no-constructor" in request.node.name:
         # the plugin_dialog fixture has this id
         # skip for 'constructor' variant
         pytest.skip()
