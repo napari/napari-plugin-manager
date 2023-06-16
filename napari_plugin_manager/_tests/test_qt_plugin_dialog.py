@@ -177,6 +177,7 @@ def plugin_dialog(
     monkeypatch.setattr(
         qt_plugin_dialog, "running_as_constructor_app", lambda: request.param
     )
+    monkeypatch.setattr(qt_plugin_dialog, "ON_BUNDLE", request.param)
 
     monkeypatch.setattr(
         napari.plugins, 'plugin_manager', OldPluginManagerMock()
@@ -201,7 +202,7 @@ def plugin_dialog(
     assert not widget._add_items_timer.isActive()
 
 
-def test_filter_not_available_plugins(plugin_dialog):
+def test_filter_not_available_plugins(request, plugin_dialog):
     """
     Check that the plugins listed under available plugins are
     enabled and disabled accordingly.
@@ -212,6 +213,10 @@ def test_filter_not_available_plugins(plugin_dialog):
     The second plugin ("test-name-1") is available on conda-forge and
     should be enabled without the tooltip warning.
     """
+    if "no-constructor" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
     item = plugin_dialog.available_list.item(0)
     widget = plugin_dialog.available_list.itemWidget(item)
     if widget:
@@ -258,14 +263,14 @@ def test_visible_widgets(request, plugin_dialog):
     Test that the direct entry button and textbox are visible
     """
     if "no-constructor" not in request.node.name:
-        # the plugin_dialog fixture has this id
-        # skip for 'constructor' variant
-        pytest.skip()
+        pytest.skip(
+            reason="Tested functionality not available in constructor-based installs"
+        )
     assert plugin_dialog.direct_entry_edit.isVisible()
     assert plugin_dialog.direct_entry_btn.isVisible()
 
 
-def test_version_dropdown(qtbot, plugin_dialog):
+def test_version_dropdown(plugin_dialog):
     """
     Test that when the source drop down is changed, it displays the other versions properly.
     """
