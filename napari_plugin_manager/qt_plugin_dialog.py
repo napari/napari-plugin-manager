@@ -99,9 +99,11 @@ class PluginListItem(QFrame):
         npe_version=1,
         versions_conda: List[str] = None,
         versions_pypi: List[str] = None,
+        display_name: str = '',
     ) -> None:
         super().__init__(parent)
         self.url = url
+        self.display_name = display_name or package_name
         self._versions_conda = versions_conda
         self._versions_pypi = versions_pypi
         self.setup_ui(enabled)
