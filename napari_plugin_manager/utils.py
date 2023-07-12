@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 
-def is_conda_package(pkg: str):
+def is_conda_package(pkg: str) -> bool:
     """Determines if plugin was installed through conda.
 
     Returns
