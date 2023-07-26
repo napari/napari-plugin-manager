@@ -9,7 +9,7 @@
 [![codecov](https://codecov.io/gh/napari/napari-plugin-manager/branch/main/graph/badge.svg)](https://codecov.io/gh/napari/napari-plugin-manager)
 
 [napari] plugin manager to provide a graphical user interface for installing
-[napari] plugins, that is itself a plugin.
+[napari] plugins.
 
 ----------------------------------
 
