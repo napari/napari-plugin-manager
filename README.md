@@ -1,4 +1,4 @@
-# napari-plugin-manager 
+# napari-plugin-manager
 
 > WIP, under active development
 
@@ -8,7 +8,8 @@
 [![tests](https://github.com/napari/napari-plugin-manager/workflows/test_and_deploy/badge.svg)](https://github.com/napari/napari-plugin-manager/actions)
 [![codecov](https://codecov.io/gh/napari/napari-plugin-manager/branch/main/graph/badge.svg)](https://codecov.io/gh/napari/napari-plugin-manager)
 
-A plugin that adds a plugin manager to [napari].
+[napari] plugin manager to provide a graphical user interface for installing
+[napari] plugins.
 
 ----------------------------------
 
