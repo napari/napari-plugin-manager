@@ -73,13 +73,13 @@ class PluginListItem(QFrame):
         author: str = '',
         license: str = "UNKNOWN",  # noqa: A002
         *,
-        plugin_name: str = None,
+        plugin_name: Optional[str] = None,
         parent: QWidget = None,
         enabled: bool = True,
         installed: bool = False,
         npe_version=1,
-        versions_conda: List[str] = None,
-        versions_pypi: List[str] = None,
+        versions_conda: Optional[List[str]] = None,
+        versions_pypi: Optional[List[str]] = None,
     ) -> None:
         super().__init__(parent)
         self.url = url
@@ -138,9 +138,7 @@ class PluginListItem(QFrame):
     def set_busy(
         self,
         text: str,
-        action_name: Literal[
-            "install", "uninstall", "cancel", "upgrade"
-        ] = None,
+        action_name: Optional[Literal['install', 'uninstall', 'cancel', 'upgrade']] = None,
     ):
         """Updates status text and what buttons are visible when any button is pushed.
 
@@ -534,7 +532,7 @@ class QPluginList(QListWidget):
         item: QListWidgetItem,
         pkg_name: str,
         action_name: InstallerActions,
-        version: str = None,
+        version: Optional[str] = None,
         installer_choice: Optional[str] = None,
     ):
         """Determine which action is called (install, uninstall, update, cancel).
