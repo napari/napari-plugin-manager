@@ -138,7 +138,9 @@ class PluginListItem(QFrame):
     def set_busy(
         self,
         text: str,
-        action_name: Optional[Literal['install', 'uninstall', 'cancel', 'upgrade']] = None,
+        action_name: Optional[
+            Literal['install', 'uninstall', 'cancel', 'upgrade']
+        ] = None,
     ):
         """Updates status text and what buttons are visible when any button is pushed.
 
