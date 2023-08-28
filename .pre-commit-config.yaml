@@ -13,15 +13,15 @@ repos:
       - id: black
         pass_filenames: true
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.284
+    rev: v0.0.286
     hooks:
       - id: ruff
   - repo: https://github.com/seddonym/import-linter
-    rev: v1.10.0
+    rev: v1.11.1
     hooks:
     - id: import-linter
       stages: [manual]
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.24.1
+    rev: 0.26.3
     hooks:
       - id: check-github-workflows
