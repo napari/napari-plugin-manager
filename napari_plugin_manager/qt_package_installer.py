@@ -8,6 +8,7 @@ executable path, arguments and environment modifications.
 Available actions for each tool are `install`, `uninstall`
 and `cancel`.
 """
+
 import atexit
 import contextlib
 import os
