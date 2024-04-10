@@ -447,6 +447,7 @@ class QPluginList(QListWidget):
         project_info, versions_pypi, versions_conda = project_info_versions
 
         pkg_name = project_info.name
+        pkg_name = project_info.display_name  # TODO: Add exception handling
         # don't add duplicates
         if (
             self.findItems(pkg_name, Qt.MatchFlag.MatchFixedString)
