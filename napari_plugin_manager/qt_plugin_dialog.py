@@ -437,17 +437,17 @@ class QPluginList(QListWidget):
     def addItem(
         self,
         project_info_versions: Tuple[
-            npe2.PackageMetadata, List[str], List[str]
+            npe2.PackageMetadata, str, List[str], List[str]
         ],
         installed=False,
         plugin_name=None,
         enabled=True,
         npe_version=None,
     ):
-        project_info, versions_pypi, versions_conda = project_info_versions
-
+        project_info, display_name, versions_pypi, versions_conda = (
+            project_info_versions
+        )
         pkg_name = project_info.name
-        pkg_name = project_info.display_name  # TODO: Add exception handling
         # don't add duplicates
         if (
             self.findItems(pkg_name, Qt.MatchFlag.MatchFixedString)
@@ -456,12 +456,12 @@ class QPluginList(QListWidget):
             return
 
         # including summary here for sake of filtering below.
-        searchable_text = f"{pkg_name} {project_info.summary}"
+        searchable_text = f"{pkg_name} {display_name} {project_info.summary}"
         item = QListWidgetItem(searchable_text, self)
         item.version = project_info.version
         super().addItem(item)
         widg = PluginListItem(
-            package_name=pkg_name,
+            package_name=display_name or pkg_name,
             version=project_info.version,
             url=project_info.home_page,
             summary=project_info.summary,
@@ -782,6 +782,7 @@ class QtPluginDialog(QDialog):
                         author=meta.get('author', ''),
                         license=meta.get('license', ''),
                     ),
+                    norm_name,
                     [],
                     [],
                 ),
@@ -1021,6 +1022,7 @@ class QtPluginDialog(QDialog):
 
         data = self._plugin_data.pop(0)
         project_info, is_available_in_conda, extra_info = data
+        display_name = extra_info.get('display_name', project_info.name)
         if project_info.name in self.already_installed:
             self.installed_list.tag_outdated(
                 project_info, is_available_in_conda
@@ -1031,6 +1033,7 @@ class QtPluginDialog(QDialog):
                 self.available_list.addItem(
                     (
                         project_info,
+                        display_name,
                         extra_info['pypi_versions'],
                         extra_info['conda_versions'],
                     )
