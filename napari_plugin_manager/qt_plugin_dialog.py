@@ -73,6 +73,7 @@ class PluginListItem(QFrame):
     def __init__(
         self,
         package_name: str,
+        display_name: str,
         version: str = '',
         url: str = '',
         summary: str = '',
@@ -92,7 +93,12 @@ class PluginListItem(QFrame):
         self._versions_conda = versions_conda
         self._versions_pypi = versions_pypi
         self.setup_ui(enabled)
-        self.plugin_name.setText(package_name)
+        if package_name == display_name:
+            name = package_name
+        else:
+            name = f"{display_name} ({package_name})"
+
+        self.plugin_name.setText(name)
 
         if len(versions_pypi) > 0:
             self._populate_version_dropdown(PYPI)
@@ -462,7 +468,8 @@ class QPluginList(QListWidget):
         item.version = project_info.metadata.version
         super().addItem(item)
         widg = PluginListItem(
-            package_name=project_info.display_name or pkg_name,
+            package_name=pkg_name,
+            display_name=project_info.display_name,
             version=project_info.metadata.version,
             url=project_info.metadata.home_page,
             summary=project_info.metadata.summary,
