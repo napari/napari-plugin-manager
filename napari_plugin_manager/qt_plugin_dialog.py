@@ -3,7 +3,7 @@ import os
 from enum import Enum, auto
 from functools import partial
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Sequence, Tuple
+from typing import Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
 
 import napari.plugins
 import napari.resources
@@ -53,11 +53,17 @@ from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
 SCALE = 1.6
-
 CONDA = 'Conda'
 PYPI = 'PyPI'
 ON_BUNDLE = running_as_constructor_app()
 IS_NAPARI_CONDA_INSTALLED = is_conda_package('napari')
+
+
+class ProjectInfoVersions(NamedTuple):
+    metadata: npe2.PackageMetadata
+    display_name: str
+    pypi_versions: List[str]
+    conda_versions: List[str]
 
 
 class PluginListItem(QFrame):
@@ -436,18 +442,13 @@ class QPluginList(QListWidget):
     @Slot(tuple)
     def addItem(
         self,
-        project_info_versions: Tuple[
-            npe2.PackageMetadata, str, List[str], List[str]
-        ],
+        project_info: ProjectInfoVersions,
         installed=False,
         plugin_name=None,
         enabled=True,
         npe_version=None,
     ):
-        project_info, display_name, versions_pypi, versions_conda = (
-            project_info_versions
-        )
-        pkg_name = project_info.name
+        pkg_name = project_info.metadata.name
         # don't add duplicates
         if (
             self.findItems(pkg_name, Qt.MatchFlag.MatchFixedString)
@@ -456,24 +457,24 @@ class QPluginList(QListWidget):
             return
 
         # including summary here for sake of filtering below.
-        searchable_text = f"{pkg_name} {display_name} {project_info.summary}"
+        searchable_text = f"{pkg_name} {project_info.display_name} {project_info.metadata.summary}"
         item = QListWidgetItem(searchable_text, self)
-        item.version = project_info.version
+        item.version = project_info.metadata.version
         super().addItem(item)
         widg = PluginListItem(
-            package_name=display_name or pkg_name,
-            version=project_info.version,
-            url=project_info.home_page,
-            summary=project_info.summary,
-            author=project_info.author,
-            license=project_info.license,
+            package_name=project_info.display_name or pkg_name,
+            version=project_info.metadata.version,
+            url=project_info.metadata.home_page,
+            summary=project_info.metadata.summary,
+            author=project_info.metadata.author,
+            license=project_info.metadata.license,
             parent=self,
             plugin_name=plugin_name,
             enabled=enabled,
             installed=installed,
             npe_version=npe_version,
-            versions_conda=versions_conda,
-            versions_pypi=versions_pypi,
+            versions_conda=project_info.conda_versions,
+            versions_pypi=project_info.pypi_versions,
         )
         item.widget = widg
         item.npe_version = npe_version
@@ -481,12 +482,12 @@ class QPluginList(QListWidget):
         item.setSizeHint(widg.sizeHint())
         self.setItemWidget(item, widg)
 
-        if project_info.home_page:
+        if project_info.metadata.home_page:
             import webbrowser
 
             # FIXME: Partial may lead to leak memory when connecting to Qt signals.
             widg.plugin_name.clicked.connect(
-                partial(webbrowser.open, project_info.home_page)
+                partial(webbrowser.open, project_info.metadata.home_page)
             )
 
         # FIXME: Partial may lead to leak memory when connecting to Qt signals.
@@ -621,9 +622,7 @@ class QPluginList(QListWidget):
                 widget.setProperty("current_job_id", None)
 
     @Slot(npe2.PackageMetadata, bool)
-    def tag_outdated(
-        self, project_info: npe2.PackageMetadata, is_available: bool
-    ):
+    def tag_outdated(self, metadata: npe2.PackageMetadata, is_available: bool):
         """Determines if an installed plugin is up to date with the latest version.
         If it is not, the latest version will be displayed on the update button.
         """
@@ -631,10 +630,10 @@ class QPluginList(QListWidget):
             return
 
         for item in self.findItems(
-            project_info.name, Qt.MatchFlag.MatchStartsWith
+            metadata.name, Qt.MatchFlag.MatchStartsWith
         ):
             current = item.version
-            latest = project_info.version
+            latest = metadata.version
             if parse_version(current) >= parse_version(latest):
                 continue
             if hasattr(item, 'outdated'):
@@ -649,7 +648,7 @@ class QPluginList(QListWidget):
                 trans._("update (v{latest})", latest=latest)
             )
 
-    def tag_unavailable(self, project_info: npe2.PackageMetadata):
+    def tag_unavailable(self, metadata: npe2.PackageMetadata):
         """
         Tag list items as unavailable for install with conda-forge.
 
@@ -657,7 +656,7 @@ class QPluginList(QListWidget):
         icon with a hover tooltip.
         """
         for item in self.findItems(
-            project_info.name, Qt.MatchFlag.MatchStartsWith
+            metadata.name, Qt.MatchFlag.MatchStartsWith
         ):
             widget = self.itemWidget(item)
             widget.show_warning(
@@ -772,7 +771,7 @@ class QtPluginDialog(QDialog):
                 meta = {}
 
             self.installed_list.addItem(
-                (
+                ProjectInfoVersions(
                     npe2.PackageMetadata(
                         metadata_version="1.0",
                         name=norm_name,
@@ -1021,25 +1020,23 @@ class QtPluginDialog(QDialog):
             return
 
         data = self._plugin_data.pop(0)
-        project_info, is_available_in_conda, extra_info = data
-        display_name = extra_info.get('display_name', project_info.name)
-        if project_info.name in self.already_installed:
-            self.installed_list.tag_outdated(
-                project_info, is_available_in_conda
-            )
+        metadata, is_available_in_conda, extra_info = data
+        display_name = extra_info.get('display_name', metadata.name)
+        if metadata.name in self.already_installed:
+            self.installed_list.tag_outdated(metadata, is_available_in_conda)
         else:
-            if project_info.name not in self.available_set:
-                self.available_set.add(project_info.name)
+            if metadata.name not in self.available_set:
+                self.available_set.add(metadata.name)
                 self.available_list.addItem(
-                    (
-                        project_info,
+                    ProjectInfoVersions(
+                        metadata,
                         display_name,
                         extra_info['pypi_versions'],
                         extra_info['conda_versions'],
                     )
                 )
             if ON_BUNDLE and not is_available_in_conda:
-                self.available_list.tag_unavailable(project_info)
+                self.available_list.tag_unavailable(metadata)
 
         self.filter()
 
