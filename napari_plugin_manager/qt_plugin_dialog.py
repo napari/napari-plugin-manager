@@ -47,6 +47,7 @@ from napari_plugin_manager.qt_package_installer import (
     InstallerQueue,
     InstallerTools,
 )
+from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
 
 # TODO: add error icon and handle pip install errors
@@ -96,7 +97,7 @@ class PluginListItem(QFrame):
         if package_name == display_name:
             name = package_name
         else:
-            name = f"{display_name} ({package_name})"
+            name = f"{display_name} <small>({package_name})</small>"
 
         self.plugin_name.setText(name)
 
@@ -200,7 +201,7 @@ class PluginListItem(QFrame):
         self.enabled_checkbox.setMinimumSize(QSize(20, 0))
         self.enabled_checkbox.setText("")
         self.row1.addWidget(self.enabled_checkbox)
-        self.plugin_name = QPushButton(self)
+        self.plugin_name = ClickableLabel(self)  # To style content
         # Do not want to highlight on hover unless there is a website.
         if self.url and self.url != 'UNKNOWN':
             self.plugin_name.setObjectName('plugin_name_web')
