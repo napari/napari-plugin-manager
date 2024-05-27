@@ -12,7 +12,6 @@ from napari._qt.qt_resources import QColoredSVGIcon
 from napari._qt.qthreading import create_worker
 from napari._qt.widgets.qt_message_popup import WarnPopup
 from napari._qt.widgets.qt_tooltip import QtToolTipLabel
-from napari.plugins.npe2api import iter_napari_plugin_info
 from napari.plugins.utils import normalized_name
 from napari.settings import get_settings
 from napari.utils.misc import (
@@ -42,6 +41,7 @@ from qtpy.QtWidgets import (
 )
 from superqt import QCollapsible, QElidingLabel
 
+from napari_plugin_manager.npe2api import iter_napari_plugin_info
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
     InstallerQueue,
