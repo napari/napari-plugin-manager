@@ -1,4 +1,5 @@
 import importlib.metadata
+import platform
 import sys
 from typing import Generator, Optional, Tuple
 from unittest.mock import patch
@@ -10,15 +11,17 @@ import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
 
-from napari_plugin_manager import qt_plugin_dialog
-from napari_plugin_manager.qt_package_installer import InstallerActions
-
-if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] == (3, 11):
+if (qtpy.API_NAME == 'PySide2' and platform.system() != "Linux") or (
+    sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
+):
     pytest.skip(
-        "Known PySide2 x Python 3.11 incompatibility: "
-        "TypeError: 'PySide2.QtCore.Qt.Alignment' object cannot be interpreted as an integer",
+        "Known PySide2 x Python incompatibility: "
+        "... object cannot be interpreted as an integer",
         allow_module_level=True,
     )
+
+from napari_plugin_manager import qt_plugin_dialog
+from napari_plugin_manager.qt_package_installer import InstallerActions
 
 N_MOCKED_PLUGINS = 2
 
