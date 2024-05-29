@@ -962,7 +962,11 @@ class QtPluginDialog(QDialog):
         count = self.available_list.count()
         if len(self.all_plugin_data) != 0 and all_count >= 0:
             self.avail_label.setText(
-                trans._("Available Plugins ({count}/{all_count})", count=count, all_count=all_count)
+                trans._(
+                    "Available Plugins ({count}/{all_count})",
+                    count=count,
+                    all_count=all_count,
+                )
             )
 
     def _end_refresh(self):
@@ -1038,7 +1042,7 @@ class QtPluginDialog(QDialog):
                     )
                 if ON_BUNDLE and not is_available_in_conda:
                     self.available_list.tag_unavailable(project_info)
-            
+
             if len(self._plugin_data) == 0:
                 break
 
