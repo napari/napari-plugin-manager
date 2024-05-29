@@ -1105,7 +1105,7 @@ class QtPluginDialog(QDialog):
         self.all_plugin_data.append(data)
         self.available_list.set_data(self.all_plugin_data)
         self.filter_texts = [
-            f"{i[0].name} {i[-1]['display_name']} {i[0].summary}".lower()
+            f"{i[0].name} {i[-1].get('display_name', '')} {i[0].summary}".lower()
             for i in self.all_plugin_data
         ]
 
