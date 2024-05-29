@@ -1032,17 +1032,9 @@ class QtPluginDialog(QDialog):
                 self._add_items_timer.stop()
             return
 
-        if items is None:
-            length = 2
-        else:
-            length = len(items)
-
+        length = 2 if items is None else len(items)
         for _ in range(length):
-            if items is None:
-                data = self._plugin_data.pop(0)
-            else:
-                data = items.pop(0)
-
+            data = self._plugin_data.pop(0) if items is None else items.pop(0)
             project_info, is_available_in_conda, extra_info = data
             if project_info.name in self.already_installed:
                 self.installed_list.tag_outdated(
@@ -1082,7 +1074,7 @@ class QtPluginDialog(QDialog):
             for i in self.all_plugin_data
         ]
 
-    def search(self, text):
+    def _search(self, text):
         idxs = []
         for idx, item in enumerate(self.filter_texts):
             if text.lower() in item and idx not in self._filter_idxs_cache:
@@ -1102,7 +1094,7 @@ class QtPluginDialog(QDialog):
 
         # TODO: This is a workaround for the fact that the available list
         if not skip and self.available_list.is_running() and len(text) >= 1:
-            items = [self.all_plugin_data[idx] for idx in self.search(text)]
+            items = [self.all_plugin_data[idx] for idx in self._search(text)]
             if items:
                 self._add_items(items)
 
