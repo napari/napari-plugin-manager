@@ -19,7 +19,7 @@ from napari.utils.misc import (
     running_as_constructor_app,
 )
 from napari.utils.translations import trans
-from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Signal, Slot
+from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Slot
 from qtpy.QtGui import QFont, QMovie
 from qtpy.QtWidgets import (
     QCheckBox,
@@ -428,8 +428,6 @@ class PluginListItem(QFrame):
 
 class QPluginList(QListWidget):
 
-    filtered = Signal(int)
-
     def __init__(self, parent: QWidget, installer: InstallerQueue) -> None:
         super().__init__(parent)
         self.installer = installer
@@ -701,8 +699,6 @@ class QPluginList(QListWidget):
             for i in range(self.count()):
                 item = self.item(i)
                 item.setHidden(id(item) not in shown)
-
-            self.filtered.emit(shown)
         else:
             for i in range(self.count()):
                 item = self.item(i)
