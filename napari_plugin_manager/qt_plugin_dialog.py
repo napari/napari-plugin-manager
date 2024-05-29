@@ -996,9 +996,10 @@ class QtPluginDialog(QDialog):
         """Counts all available but not installed plugins. Updates value."""
         all_count = len(self.all_plugin_data) - self.installed_list.count()
         count = self.available_list.count()
-        self.avail_label.setText(
-            trans._("Available Plugins ({count}/{all_count})", count=count, all_count=all_count)
-        )
+        if len(self.all_plugin_data) != 0 and all_count >= 0:
+            self.avail_label.setText(
+                trans._("Available Plugins ({count}/{all_count})", count=count, all_count=all_count)
+            )
 
     def _end_refresh(self):
         refresh_state = self.refresh_state
