@@ -699,7 +699,10 @@ class QtPluginDialog(QDialog):
         super().__init__(parent)
 
         self._parent = parent
-        if getattr(parent, '_plugin_dialog', None) is None:
+        if (
+            getattr(parent, '_plugin_dialog', None) is None
+            and self._parent is not None
+        ):
             self._parent._plugin_dialog = self
 
         self.refresh_state = RefreshState.DONE
@@ -751,14 +754,17 @@ class QtPluginDialog(QDialog):
             self.close()
 
     def closeEvent(self, event):
-        plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
-        if plugin_dialog != self:
-            self._add_items_timer.stop()
-            if self.close_btn.isEnabled():
-                super().closeEvent(event)
-            event.ignore()
+        if self._parent is not None:
+            plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
+            if plugin_dialog != self:
+                self._add_items_timer.stop()
+                if self.close_btn.isEnabled():
+                    super().closeEvent(event)
+                event.ignore()
+            else:
+                plugin_dialog.hide()
         else:
-            plugin_dialog.hide()
+            super().closeEvent(event)
 
     def refresh(self):
         if self.refresh_state != RefreshState.DONE:
