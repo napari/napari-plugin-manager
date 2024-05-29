@@ -432,6 +432,7 @@ class QPluginList(QListWidget):
         self.installer = installer
         self.setSortingEnabled(True)
         self._remove_list = []
+        self._data = []
 
     def _count_visible(self) -> int:
         """Return the number of visible items.
@@ -630,6 +631,12 @@ class QPluginList(QListWidget):
             finally:
                 widget.setProperty("current_job_id", None)
 
+    def set_data(self, data):
+        self._data = data
+
+    def is_running(self):
+        return self.count() != len(self._data)
+
     @Slot(npe2.PackageMetadata, bool)
     def tag_outdated(self, metadata: npe2.PackageMetadata, is_available: bool):
         """Determines if an installed plugin is up to date with the latest version.
@@ -720,6 +727,8 @@ class QtPluginDialog(QDialog):
 
         self._plugin_data = []  # Store plugin data while populating lists
         self.all_plugin_data = []  # Store all plugin data
+        self._filter_texts = []
+        self._filter_idxs_cache = set()
         self._add_items_timer = QTimer(self)
         # Add items in batches to avoid blocking the UI
         self._add_items_timer.setInterval(60)  # ms
@@ -1049,9 +1058,9 @@ class QtPluginDialog(QDialog):
                 versions=versions,
             )
 
-    def _add_items(self):
+    def _add_items(self, items=None):
         """Add items to the lists one by one using a timer to prevent freezing the UI."""
-        if len(self._plugin_data) == 0:
+        if len(self._plugin_data) == 0 and items is None:
             if (
                 self.installed_list.count() + self.available_list.count()
                 == len(self.all_plugin_data)
@@ -1065,6 +1074,12 @@ class QtPluginDialog(QDialog):
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
                 self.installed_list.tag_outdated(metadata, is_available_in_conda)
+
+            project_info, is_available_in_conda, extra_info = data
+            if project_info.name in self.already_installed:
+                self.installed_list.tag_outdated(
+                    project_info, is_available_in_conda
+                )
             else:
                 if metadata.name not in self.available_set:
                     self.available_set.add(metadata.name)
@@ -1082,7 +1097,7 @@ class QtPluginDialog(QDialog):
             if len(self._plugin_data) == 0:
                 break
 
-        self.filter()
+        self.filter(None, skip=bool(items))
 
     def _handle_yield(self, data: Tuple[npe2.PackageMetadata, bool, Dict]):
         """Output from a worker process.
@@ -1094,8 +1109,22 @@ class QtPluginDialog(QDialog):
         """
         self._plugin_data.append(data)
         self.all_plugin_data.append(data)
+        self.available_list.set_data(self.all_plugin_data)
+        self.filter_texts = [
+            f"{i[0].name} {i[-1]['display_name']} {i[0].summary}".lower()
+            for i in self.all_plugin_data
+        ]
 
-    def filter(self, text: Optional[str] = None) -> None:
+    def search(self, text):
+        idxs = []
+        for idx, item in enumerate(self.filter_texts):
+            if text.lower() in item and idx not in self._filter_idxs_cache:
+                idxs.append(idx)
+                self._filter_idxs_cache.add(idx)
+
+        return idxs
+
+    def filter(self, text: Optional[str] = None, skip=False) -> None:
         """Filter by text or set current text as filter."""
         if text is None:
             text = self.packages_filter.text()
@@ -1103,6 +1132,13 @@ class QtPluginDialog(QDialog):
             self.packages_filter.setText(text)
 
         self.installed_list.filter(text)
+
+        # TODO: This is a workaround for the fact that the available list
+        if not skip and self.available_list.is_running() and len(text) >= 1:
+            items = [self.all_plugin_data[idx] for idx in self.search(text)]
+            if items:
+                self._add_items(items)
+
         self.available_list.filter(text)
 
 
