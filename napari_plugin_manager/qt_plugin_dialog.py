@@ -692,7 +692,7 @@ class QPluginList(QListWidget):
         else:
             for i in range(self.count()):
                 item = self.item(i)
-                item.setHidden(False)
+                item.setHidden(True)
 
 
 class RefreshState(Enum):
@@ -716,7 +716,7 @@ class QtPluginDialog(QDialog):
         # Add items in batches to avoid blocking the UI
         self._add_items_timer.setInterval(60)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
-        self._add_items_timer.timeout.connect(self._update_count_in_label)
+        # self._add_items_timer.timeout.connect(self._update_count_in_label)
 
         self.installer = InstallerQueue()
         self.setWindowTitle(trans._('Plugin Manager'))
@@ -726,6 +726,7 @@ class QtPluginDialog(QDialog):
         self.installer.started.connect(self._on_installer_start)
         self.installer.finished.connect(self._on_installer_done)
         self.refresh()
+        self.filter()
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -841,7 +842,7 @@ class QtPluginDialog(QDialog):
         self.worker.finished.connect(self.working_indicator.hide)
         self.worker.finished.connect(self._end_refresh)
         self.worker.start()
-        self._add_items_timer.start()
+        # self._add_items_timer.start()
 
         if discovered:
             message = trans._(
@@ -873,7 +874,7 @@ class QtPluginDialog(QDialog):
         lay.setContentsMargins(0, 2, 0, 2)
         self.installed_label = QLabel(trans._("Installed Plugins"))
         self.packages_filter = QLineEdit()
-        self.packages_filter.setPlaceholderText(trans._("filter..."))
+        self.packages_filter.setPlaceholderText(trans._("Search plugins in the napari Hub..."))
         self.packages_filter.setMaximumWidth(350)
         self.packages_filter.setClearButtonEnabled(True)
         mid_layout = QVBoxLayout()
@@ -882,13 +883,13 @@ class QtPluginDialog(QDialog):
         lay.addLayout(mid_layout)
 
         self.installed_list = QPluginList(installed, self.installer)
-        self.packages_filter.textChanged.connect(self.installed_list.filter)
+        self.packages_filter.textChanged.connect(self.filter)
         lay.addWidget(self.installed_list)
 
         uninstalled = QWidget(self.v_splitter)
         lay = QVBoxLayout(uninstalled)
         lay.setContentsMargins(0, 2, 0, 2)
-        self.avail_label = QLabel(trans._("Available Plugins"))
+        self.avail_label = QLabel(trans._("Plugins in napari Hub..."))
         mid_layout = QHBoxLayout()
         mid_layout.addWidget(self.avail_label)
         mid_layout.addStretch()
@@ -965,18 +966,28 @@ class QtPluginDialog(QDialog):
 
         self.packages_filter.setFocus()
 
-    def _update_count_in_label(self):
+    def _update_count_in_label(self, items=[]):
         """Counts all available but not installed plugins. Updates value."""
-        all_count = len(self.all_plugin_data) - self.installed_list.count()
-        count = self.available_list.count()
-        if len(self.all_plugin_data) != 0 and all_count >= 0:
-            self.avail_label.setText(
-                trans._(
-                    "Available Plugins ({count}/{all_count})",
-                    count=count,
-                    all_count=all_count,
-                )
-            )
+        count = len(items)
+        if not self.available_list.isVisible():
+            text = 'Search plugins in the napari Hub...'
+        else:
+            if count == 0:
+                text = 'No plugins found in the napari Hub...'
+            else:
+                text = f'{count} plugins found in napari Hub'
+
+        self.avail_label.setText(text)
+        # all_count = len(self.all_plugin_data) - self.installed_list.count()
+        # count = self.available_list.count()
+        # if len(self.all_plugin_data) != 0 and all_count >= 0:
+        #     self.avail_label.setText(
+        #         trans._(
+        #             "Available Plugins ({count}/{all_count})",
+        #             count=count,
+        #             all_count=all_count,
+        #         )
+        #     )
 
     def _end_refresh(self):
         refresh_state = self.refresh_state
@@ -1056,7 +1067,7 @@ class QtPluginDialog(QDialog):
             if len(self._plugin_data) == 0:
                 break
 
-        self.filter(None, skip=bool(items))
+        # self.filter(None, skip=bool(items))
 
     def _handle_yield(self, data: Tuple[npe2.PackageMetadata, bool, Dict]):
         """Output from a worker process.
@@ -1077,7 +1088,8 @@ class QtPluginDialog(QDialog):
     def _search(self, text):
         idxs = []
         for idx, item in enumerate(self.filter_texts):
-            if text.lower() in item and idx not in self._filter_idxs_cache:
+            # if text.lower() in item and idx not in self._filter_idxs_cache:
+            if text.lower() in item:
                 idxs.append(idx)
                 self._filter_idxs_cache.add(idx)
 
@@ -1085,21 +1097,28 @@ class QtPluginDialog(QDialog):
 
     def filter(self, text: Optional[str] = None, skip=False) -> None:
         """Filter by text or set current text as filter."""
-        if text is None:
+        if text is None or text == '':
             text = self.packages_filter.text()
+            self.available_list.hide()
         else:
             self.packages_filter.setText(text)
+            self.available_list.show()
 
-        self.installed_list.filter(text)
+        # self.installed_list.filter(text)
 
         # TODO: This is a workaround for the fact that the available list
-        if not skip and self.available_list.is_running() and len(text) >= 1:
+        # if not skip and self.available_list.i
+        # s_running() and len(text) >= 1:
+        
+        items = []
+        if not skip and len(text) >= 1:
             items = [self.all_plugin_data[idx] for idx in self._search(text)]
             if items:
-                self._add_items(items)
+                self._plugin_data = items
+                self._add_items_timer.start()
 
         self.available_list.filter(text)
-
+        self._update_count_in_label(items)
 
 if __name__ == "__main__":
     from qtpy.QtWidgets import QApplication
