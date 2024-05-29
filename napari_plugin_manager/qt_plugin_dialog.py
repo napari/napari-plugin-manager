@@ -722,7 +722,7 @@ class QtPluginDialog(QDialog):
         self.all_plugin_data = []  # Store all plugin data
         self._add_items_timer = QTimer(self)
         # Add items in batches to avoid blocking the UI
-        self._add_items_timer.setInterval(100)
+        self._add_items_timer.setInterval(60)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
         self._add_items_timer.timeout.connect(self._update_count_in_label)
 
@@ -994,10 +994,10 @@ class QtPluginDialog(QDialog):
 
     def _update_count_in_label(self):
         """Counts all available but not installed plugins. Updates value."""
-
+        all_count = len(self.all_plugin_data) - self.installed_list.count()
         count = self.available_list.count()
         self.avail_label.setText(
-            trans._("Available Plugins ({count})", count=count)
+            trans._("Available Plugins ({count}/{all_count})", count=count, all_count=all_count)
         )
 
     def _end_refresh(self):
@@ -1054,24 +1054,28 @@ class QtPluginDialog(QDialog):
                 self._add_items_timer.stop()
             return
 
-        data = self._plugin_data.pop(0)
-        metadata, is_available_in_conda, extra_info = data
-        display_name = extra_info.get('display_name', metadata.name)
-        if metadata.name in self.already_installed:
-            self.installed_list.tag_outdated(metadata, is_available_in_conda)
-        else:
-            if metadata.name not in self.available_set:
-                self.available_set.add(metadata.name)
-                self.available_list.addItem(
-                    ProjectInfoVersions(
-                        metadata,
-                        display_name,
-                        extra_info['pypi_versions'],
-                        extra_info['conda_versions'],
+        for _ in range(2):
+            data = self._plugin_data.pop(0)
+            metadata, is_available_in_conda, extra_info = data
+            display_name = extra_info.get('display_name', metadata.name)
+            if metadata.name in self.already_installed:
+                self.installed_list.tag_outdated(metadata, is_available_in_conda)
+            else:
+                if metadata.name not in self.available_set:
+                    self.available_set.add(metadata.name)
+                    self.available_list.addItem(
+                        ProjectInfoVersions(
+                            metadata,
+                            display_name,
+                            extra_info['pypi_versions'],
+                            extra_info['conda_versions'],
+                        )
                     )
-                )
-            if ON_BUNDLE and not is_available_in_conda:
-                self.available_list.tag_unavailable(metadata)
+                if ON_BUNDLE and not is_available_in_conda:
+                    self.available_list.tag_unavailable(metadata)
+            
+            if len(self._plugin_data) == 0:
+                break
 
         self.filter()
 
