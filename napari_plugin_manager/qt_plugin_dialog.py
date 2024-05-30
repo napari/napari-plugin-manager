@@ -731,12 +731,12 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
-        self._filter_timer.setInterval(200)  # ms
+        self._filter_timer.setInterval(120)  # ms
         self._filter_timer.timeout.connect(self.filter)
         self._filter_timer.setSingleShot(True)
         self._add_items_timer = QTimer(self)
-        # Add items in batches to avoid blocking the UI
-        self._add_items_timer.setInterval(60)  # ms
+        # Add items in batches with a pause to avoid blocking the UI
+        self._add_items_timer.setInterval(61)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
 
         self.installer = InstallerQueue()
@@ -1091,7 +1091,10 @@ class QtPluginDialog(QDialog):
             )
 
     def _add_items(self, items=None):
-        """Add items to the lists one by one using a timer to prevent freezing the UI."""
+        """
+        Add items to the lists by `batch_size` using a timer to add a pause
+        and prevent freezing the UI.
+        """
         if len(self._plugin_data) == 0:
             if (
                 self.installed_list.count() + self.available_list.count()
@@ -1100,12 +1103,15 @@ class QtPluginDialog(QDialog):
                 self._add_items_timer.stop()
             return
 
-        for _ in range(2):
+        batch_size = 2
+        for _ in range(batch_size):
             data = self._plugin_data.pop(0)
             metadata, is_available_in_conda, extra_info = data
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
-                self.installed_list.tag_outdated(metadata, is_available_in_conda)
+                self.installed_list.tag_outdated(
+                    metadata, is_available_in_conda
+                )
             else:
                 if metadata.name not in self.available_set:
                     self.available_set.add(metadata.name)
@@ -1119,7 +1125,7 @@ class QtPluginDialog(QDialog):
                     )
                 if ON_BUNDLE and not is_available_in_conda:
                     self.available_list.tag_unavailable(metadata)
-            
+
             if len(self._plugin_data) == 0:
                 break
 
