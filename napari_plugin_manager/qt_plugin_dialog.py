@@ -731,7 +731,7 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
-	# timer to avoid triggering a filter for every keystroke
+        # timer to avoid triggering a filter for every keystroke
         self._filter_timer.setInterval(120)  # ms
         self._filter_timer.timeout.connect(self.filter)
         self._filter_timer.setSingleShot(True)
