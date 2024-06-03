@@ -731,6 +731,7 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
+	# timer to avoid triggering a filter for every keystroke
         self._filter_timer.setInterval(120)  # ms
         self._filter_timer.timeout.connect(self.filter)
         self._filter_timer.setSingleShot(True)
@@ -914,7 +915,6 @@ class QtPluginDialog(QDialog):
         self.packages_filter.setPlaceholderText(trans._("filter..."))
         self.packages_filter.setMaximumWidth(350)
         self.packages_filter.setClearButtonEnabled(True)
-        # Throttle keystrokes so only one filter is done every 200ms
         self.packages_filter.textChanged.connect(self._filter_timer.start)
         mid_layout = QVBoxLayout()
         mid_layout.addWidget(self.packages_filter)
