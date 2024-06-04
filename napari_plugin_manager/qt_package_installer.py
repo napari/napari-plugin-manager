@@ -242,6 +242,9 @@ class InstallerQueue(QProcess):
     # emitted when all jobs are finished
     # not to be confused with finished, which is emitted when each job is finished
     allFinished = Signal()
+    processFinished = Signal(
+        int, int, object, object
+    )  # exit_code, exit_status, action, pkgs
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
@@ -454,6 +457,7 @@ class InstallerQueue(QProcess):
         if not self._queue:
             self.allFinished.emit()
             return
+
         tool = self._queue[0]
         self.setProgram(str(tool.executable()))
         self.setProcessEnvironment(tool.environment())
@@ -516,8 +520,10 @@ class InstallerQueue(QProcess):
         exit_status: Optional[QProcess.ExitStatus] = None,
         error: Optional[QProcess.ProcessError] = None,
     ):
+        item = None
         with contextlib.suppress(IndexError):
-            self._queue.popleft()
+            item = self._queue.popleft()
+
         if error:
             msg = trans._(
                 "Task finished with errors! Error: {error}.", error=error
@@ -528,6 +534,12 @@ class InstallerQueue(QProcess):
                 exit_code=exit_code,
                 exit_status=exit_status,
             )
+
+        if item is not None:
+            self.processFinished.emit(
+                exit_code, exit_status, item.action, item.pkgs
+            )
+
         self._log(msg)
         self._process_queue()
 

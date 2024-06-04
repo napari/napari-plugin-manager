@@ -1,5 +1,6 @@
 import importlib.metadata
 import os
+import webbrowser
 from enum import Enum, auto
 from functools import partial
 from pathlib import Path
@@ -515,9 +516,6 @@ class QPluginList(QListWidget):
         self.setItemWidget(item, widg)
 
         if project_info.metadata.home_page:
-            import webbrowser
-
-            # FIXME: Partial may lead to leak memory when connecting to Qt signals.
             widg.plugin_name.clicked.connect(
                 partial(webbrowser.open, project_info.metadata.home_page)
             )
@@ -554,6 +552,27 @@ class QPluginList(QListWidget):
             lambda: self._resize_pluginlistitem(item)
         )
 
+    def removeItem(self, name):
+        count = self.count()
+        for i in range(count):
+            item = self.item(i)
+            if item.widget.name == name:
+                print(i, item, name)
+                self.takeItem(i)
+                break
+
+    def refreshItem(self, name):
+        count = self.count()
+        for i in range(count):
+            item = self.item(i)
+            if item.widget.name == name:
+                item.widget.set_busy('', 'cancel')
+                if item.text().startswith('0-'):
+                    item.setText(
+                        item.text()[2:]
+                    )  # Remove the '0-' from the text
+                break
+
     def _resize_pluginlistitem(self, item):
         """Resize the plugin list item, especially after toggling QCollapsible."""
         height = item.widget.height()
@@ -578,6 +597,7 @@ class QPluginList(QListWidget):
         item.setText(f"0-{item.text()}")
         self._remove_list.append((pkg_name, item))
         self._warn_dialog = None
+
         # TODO: NPE version unknown before installing
         if item.npe_version != 1 and action_name == InstallerActions.UNINSTALL:
             # show warning pop up dialog
@@ -732,6 +752,12 @@ class QPluginList(QListWidget):
                 item = self.item(i)
                 item.setHidden(False)
 
+    # def remove_items(self):
+    #     while self._remove_list:
+    #         _, item = self._remove_list.pop()
+    #         self.takeItem(self.row(item))
+    #         item.widget.deleteLater()
+
 
 class RefreshState(Enum):
     REFRESHING = auto()
@@ -763,6 +789,7 @@ class QtPluginDialog(QDialog):
         self._filter_timer.setInterval(120)  # ms
         self._filter_timer.timeout.connect(self.filter)
         self._filter_timer.setSingleShot(True)
+        self.all_plugin_data_map = {}
         self._add_items_timer = QTimer(self)
         # Add items in batches with a pause to avoid blocking the UI
         self._add_items_timer.setInterval(61)  # ms
@@ -774,7 +801,8 @@ class QtPluginDialog(QDialog):
         self.setWindowTitle('Plugin Manager')
         self.installer.set_output_widget(self.stdout_text)
         self.installer.started.connect(self._on_installer_start)
-        self.installer.finished.connect(self._on_installer_done)
+        # self.installer.finished.connect(self._on_installer_done)
+        self.installer.processFinished.connect(self._on_process_finished)
 
         if (
             getattr(parent, '_plugin_dialog', None) is not None
@@ -790,16 +818,56 @@ class QtPluginDialog(QDialog):
         self.process_error_indicator.hide()
         self.close_btn.setDisabled(True)
 
-    def _on_installer_done(self, exit_code):
-        """Updates buttons and status when plugin is done installing."""
-        self.working_indicator.hide()
-        if exit_code:
-            self.process_error_indicator.show()
-        else:
-            self.process_success_indicator.show()
-        self.cancel_all_btn.setVisible(False)
-        self.close_btn.setDisabled(False)
-        self.refresh()
+    # def _on_installer_done(self, exit_code):
+    #     """Updates buttons and status when plugin is done installing."""
+    #     self.working_indicator.hide()
+    #     if exit_code:
+    #         self.process_error_indicator.show()
+    #         self.available_list._remove_list = []
+    #     else:
+    #         self.process_success_indicator.show()
+    #         # Remove the items if successfull
+    #         # self.available_list.remove_items()
+
+    #     self.cancel_all_btn.setVisible(False)
+    #     self.close_btn.setDisabled(False)
+    #     self.refresh()
+
+    def _on_process_finished(self, exit_code, exit_status, action, pkgs):
+        print(exit_code, exit_status, action, pkgs)
+        # 0 0 install ['alveoleye==0.1.2']
+        pkg_names = [pkg.split('==')[0] for pkg in pkgs]
+        # pkg_data = [
+        #     self.all_plugin_data_map[pkg_name] for pkg_name in pkg_names
+        # ]
+
+        if action == 'install':
+            # Remove from available_list and add to installed_list
+            if exit_code == 0:
+                # Remove from installed_list and add to available_list
+                # for pkg_name in pkg_names:
+                #     self._plugin_data.insert(0, self.all_plugin_data_map[pkg_name])
+                for pkg_name in pkg_names:
+                    self.available_set.remove(pkg_name)
+                    self.available_list.removeItem(pkg_name)
+                    self.add_installed(pkg_name)
+            else:
+                for pkg_name in pkg_names:
+                    self.available_list.refreshItem(pkg_name)
+        elif action == 'uninstall':
+            if exit_code == 0:
+                # Remove from installed_list and add to available_list
+                for pkg_name in pkg_names:
+                    self.already_installed.remove(pkg_name)
+                    self.installed_list.removeItem(pkg_name)
+                    self.add_available(pkg_name)
+            else:
+                for pkg_name in pkg_names:
+                    self.installed_list.refreshItem(pkg_name)
+        # elif action == 'update':
+        #     if exit_code == 0:
+        #         # Remove from installed_list and add to available_list
+        #         pass
 
     def exec_(self):
         plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
@@ -826,55 +894,14 @@ class QtPluginDialog(QDialog):
         self.packages_filter.clear()
         super().hideEvent(event)
 
-    def refresh(self):
-        if self.refresh_state != RefreshState.DONE:
-            self.refresh_state = RefreshState.OUTDATED
-            return
-        self.refresh_state = RefreshState.REFRESHING
-        self.installed_list.clear()
-        self.available_list.clear()
+    def add_available(self, pkg_name):
+        self._add_items_timer.stop()
+        self._plugin_data.insert(0, self.all_plugin_data_map[pkg_name])
+        self._add_items_timer.start()
 
-        self.already_installed = set()
-        self.available_set = set()
-
-        def _add_to_installed(distname, enabled, npe_version=1):
-            norm_name = normalized_name(distname or '')
-            if distname:
-                try:
-                    meta = importlib.metadata.metadata(distname)
-
-                except importlib.metadata.PackageNotFoundError:
-                    self.refresh_state = RefreshState.OUTDATED
-                    return  # a race condition has occurred and the package is uninstalled by another thread
-                if len(meta) == 0:
-                    # will not add builtins.
-                    return
-                self.already_installed.add(norm_name)
-            else:
-                meta = {}
-
-            self.installed_list.addItem(
-                ProjectInfoVersions(
-                    npe2.PackageMetadata(
-                        metadata_version="1.0",
-                        name=norm_name,
-                        version=meta.get('version', ''),
-                        summary=meta.get('summary', ''),
-                        home_page=meta.get('Home-page', ''),
-                        author=meta.get('author', ''),
-                        license=meta.get('license', ''),
-                    ),
-                    norm_name,
-                    [],
-                    [],
-                ),
-                installed=True,
-                enabled=enabled,
-                npe_version=npe_version,
-            )
-
+    def add_installed(self, pkg_name):
         pm2 = npe2.PluginManager.instance()
-        discovered = pm2.discover()
+        # discovered = pm2.discover()
         for manifest in pm2.iter_manifests():
             distname = normalized_name(manifest.name or '')
             if distname in self.already_installed or distname == 'napari':
@@ -882,7 +909,8 @@ class QtPluginDialog(QDialog):
             enabled = not pm2.is_disabled(manifest.name)
             # if it's an Npe1 adaptor, call it v1
             npev = 'shim' if manifest.npe1_shim else 2
-            _add_to_installed(distname, enabled, npe_version=npev)
+            if distname == pkg_name:
+                self._add_to_installed(distname, enabled, npe_version=npev)
 
         napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
         for (
@@ -895,7 +923,89 @@ class QtPluginDialog(QDialog):
                 continue
             if normalized_name(distname or '') in self.already_installed:
                 continue
-            _add_to_installed(
+            if normalized_name(distname or '') == pkg_name:
+                self._add_to_installed(
+                    distname,
+                    not napari.plugins.plugin_manager.is_blocked(plugin_name),
+                )
+
+        self.installed_label.setText(
+            trans._(
+                "Installed Plugins ({amount})",
+                amount=len(self.already_installed),
+            )
+        )
+
+    def _add_to_installed(self, distname, enabled, npe_version=1):
+        norm_name = normalized_name(distname or '')
+        if distname:
+            try:
+                meta = importlib.metadata.metadata(distname)
+
+            except importlib.metadata.PackageNotFoundError:
+                self.refresh_state = RefreshState.OUTDATED
+                return  # a race condition has occurred and the package is uninstalled by another thread
+            if len(meta) == 0:
+                # will not add builtins.
+                return
+            self.already_installed.add(norm_name)
+        else:
+            meta = {}
+
+        self.installed_list.addItem(
+            ProjectInfoVersions(
+                npe2.PackageMetadata(
+                    metadata_version="1.0",
+                    name=norm_name,
+                    version=meta.get('version', ''),
+                    summary=meta.get('summary', ''),
+                    home_page=meta.get('Home-page', ''),
+                    author=meta.get('author', ''),
+                    license=meta.get('license', ''),
+                ),
+                norm_name,
+                [],
+                [],
+            ),
+            installed=True,
+            enabled=enabled,
+            npe_version=npe_version,
+        )
+
+    def refresh(self):
+        if self.refresh_state != RefreshState.DONE:
+            self.refresh_state = RefreshState.OUTDATED
+            return
+        self.refresh_state = RefreshState.REFRESHING
+        self.installed_list.clear()
+        self.available_list.clear()
+
+        self.already_installed = set()
+        self.available_set = set()
+
+        pm2 = npe2.PluginManager.instance()
+        discovered = pm2.discover()
+        for manifest in pm2.iter_manifests():
+            distname = normalized_name(manifest.name or '')
+            if distname in self.already_installed or distname == 'napari':
+                continue
+            enabled = not pm2.is_disabled(manifest.name)
+            # if it's an Npe1 adaptor, call it v1
+            npev = 'shim' if manifest.npe1_shim else 2
+            self._add_to_installed(distname, enabled, npe_version=npev)
+
+        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
+        for (
+            plugin_name,
+            _,
+            distname,
+        ) in napari.plugins.plugin_manager.iter_available():
+            # not showing these in the plugin dialog
+            if plugin_name in ('napari_plugin_engine',):
+                continue
+            if normalized_name(distname or '') in self.already_installed:
+                continue
+            self._add_to_installed(
                 distname,
                 not napari.plugins.plugin_manager.is_blocked(plugin_name),
             )
@@ -1143,11 +1253,12 @@ class QtPluginDialog(QDialog):
         for _ in range(batch_size):
             data = self._plugin_data.pop(0)
             metadata, is_available_in_conda, extra_info = data
+            print(metadata.name)
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
+                print('tag ourdated')
                 self.installed_list.tag_outdated(
-                    metadata, is_available_in_conda
-                )
+                    metadata, is_available_in_conda)
             else:
                 if metadata.name not in self.available_set:
                     self.available_set.add(metadata.name)
@@ -1183,6 +1294,8 @@ class QtPluginDialog(QDialog):
             f"{i[0].name} {i[-1].get('display_name', '')} {i[0].summary}".lower()
             for i in self.all_plugin_data
         ]
+        metadata, _, _ = data
+        self.all_plugin_data_map[metadata.name] = data
 
     def _search_in_available(self, text):
         idxs = []
