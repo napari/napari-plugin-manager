@@ -851,6 +851,7 @@ class QtPluginDialog(QDialog):
                     self.available_set.remove(pkg_name)
                     self.available_list.removeItem(pkg_name)
                     self.add_installed(pkg_name)
+                    # TODO: needs to tag outdated
             else:
                 for pkg_name in pkg_names:
                     self.available_list.refreshItem(pkg_name)
@@ -864,10 +865,19 @@ class QtPluginDialog(QDialog):
             else:
                 for pkg_name in pkg_names:
                     self.installed_list.refreshItem(pkg_name)
-        # elif action == 'update':
-        #     if exit_code == 0:
-        #         # Remove from installed_list and add to available_list
-        #         pass
+        elif action == 'upgrade':
+            for pkg_name in pkg_names:
+                self.installed_list.refreshItem(pkg_name)
+                # TODO: needs to tag outdated
+
+        self.working_indicator.hide()
+        if exit_code:
+            self.process_error_indicator.show()
+        else:
+            self.process_success_indicator.show()
+
+        self.cancel_all_btn.setVisible(False)
+        self.close_btn.setDisabled(False)
 
     def exec_(self):
         plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
