@@ -687,15 +687,17 @@ class QPluginList(QListWidget):
             widget.action_button.setEnabled(False)
             widget.warning_tooltip.setVisible(True)
 
-    def filter(self, text: str):
+    def filter(self, text: str, starts_with_chars: int = 1):
         """Filter items to those containing `text`."""
         if text:
             # PySide has some issues, so we compare using id
             # See: https://bugreports.qt.io/browse/PYSIDE-74
-            shown = [
-                id(it)
-                for it in self.findItems(text, Qt.MatchFlag.MatchContains)
-            ]
+            flag = (
+                Qt.MatchFlag.MatchStartsWith
+                if len(text) <= starts_with_chars
+                else Qt.MatchFlag.MatchContains
+            )
+            shown = [id(it) for it in self.findItems(text, flag)]
             for i in range(self.count()):
                 item = self.item(i)
                 item.setHidden(id(item) not in shown)
