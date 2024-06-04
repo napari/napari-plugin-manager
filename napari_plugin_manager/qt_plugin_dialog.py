@@ -569,7 +569,7 @@ class QPluginList(QListWidget):
                 item.widget.set_busy('', 'cancel')
                 if item.text().startswith('0-'):
                     item.setText(
-                        item.text()[2:]
+                        item.text().replace('0-', '')
                     )  # Remove the '0-' from the text
                 break
 
@@ -626,6 +626,7 @@ class QPluginList(QListWidget):
                 pkgs=[pkg_name],
                 # origins="TODO",
             )
+            widget.setProperty("current_job_id", job_id)
             if self._warn_dialog:
                 self._warn_dialog.exec_()
             self.scrollToTop()
@@ -642,6 +643,7 @@ class QPluginList(QListWidget):
                 pkgs=[pkg_name],
                 # origins="TODO",
             )
+            widget.setProperty("current_job_id", job_id)
             if self._warn_dialog:
                 self._warn_dialog.exec_()
             self.scrollToTop()
@@ -868,6 +870,11 @@ class QtPluginDialog(QDialog):
         elif action == 'upgrade':
             for pkg_name in pkg_names:
                 self.installed_list.refreshItem(pkg_name)
+                # TODO: needs to tag outdated
+        elif action == 'cancel':
+            for pkg_name in pkg_names:
+                self.installed_list.refreshItem(pkg_name)
+                self.available_list.refreshItem(pkg_name)
                 # TODO: needs to tag outdated
 
         self.working_indicator.hide()
@@ -1267,8 +1274,7 @@ class QtPluginDialog(QDialog):
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
                 print('tag ourdated')
-                self.installed_list.tag_outdated(
-                    metadata, is_available_in_conda)
+                self.installed_list.tag_outdated(metadata, is_available_in_conda)
             else:
                 if metadata.name not in self.available_set:
                     self.available_set.add(metadata.name)
