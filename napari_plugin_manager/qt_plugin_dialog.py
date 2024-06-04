@@ -698,6 +698,12 @@ class QPluginList(QListWidget):
                 else Qt.MatchFlag.MatchContains
             )
             shown = [id(it) for it in self.findItems(text, flag)]
+            if len(text) <= starts_with_chars:
+                text2 = f'napari-{text}'
+                shown = set(
+                    [id(it) for it in self.findItems(text2, flag)] + shown
+                )
+
             for i in range(self.count()):
                 item = self.item(i)
                 item.setHidden(id(item) not in shown)
