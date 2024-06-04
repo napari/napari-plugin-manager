@@ -433,9 +433,6 @@ class QPluginList(QListWidget):
         self.setSortingEnabled(True)
         self._remove_list = []
 
-        stylesheet = get_current_stylesheet([STYLES_PATH])
-        self.setStyleSheet(stylesheet)
-
     def _count_visible(self) -> int:
         """Return the number of visible items.
 

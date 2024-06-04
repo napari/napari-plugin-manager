@@ -1,5 +1,16 @@
 /* ------------ Plugin Dialog ------------ */
+/* 
 
+To be able to use this custom qss, we must use the `get_current_stylesheet` helper that napari provides.
+By using that function we can replace the variables that are used in this stylesheet, e.g. `foreground`.
+
+To use `get_current_stylesheet` you can import from:
+
+```python
+from napari._qt.qt_resources import get_current_stylesheet
+```
+
+*/
 QCollapsible#install_info_button {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
