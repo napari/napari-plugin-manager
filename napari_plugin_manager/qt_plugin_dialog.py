@@ -819,6 +819,7 @@ class QtPluginDialog(QDialog):
         self.process_success_indicator.hide()
         self.process_error_indicator.hide()
         self.close_btn.setDisabled(True)
+        self.refresh_button.setDisabled(True)
 
     # def _on_installer_done(self, exit_code):
     #     """Updates buttons and status when plugin is done installing."""
@@ -885,6 +886,7 @@ class QtPluginDialog(QDialog):
 
         self.cancel_all_btn.setVisible(False)
         self.close_btn.setDisabled(False)
+        self.refresh_button.setDisabled(False)
 
     def exec_(self):
         plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
@@ -915,6 +917,7 @@ class QtPluginDialog(QDialog):
         self._add_items_timer.stop()
         self._plugin_data.insert(0, self.all_plugin_data_map[pkg_name])
         self._add_items_timer.start()
+        self.update_count()
 
     def add_installed(self, pkg_name):
         pm2 = npe2.PluginManager.instance()
@@ -945,7 +948,9 @@ class QtPluginDialog(QDialog):
                     distname,
                     not napari.plugins.plugin_manager.is_blocked(plugin_name),
                 )
+        self.update_count()
 
+    def update_count(self):
         self.installed_label.setText(
             trans._(
                 "Installed Plugins ({amount})",
@@ -990,10 +995,12 @@ class QtPluginDialog(QDialog):
         )
 
     def refresh(self):
-        if self.refresh_state != RefreshState.DONE:
-            self.refresh_state = RefreshState.OUTDATED
-            return
-        self.refresh_state = RefreshState.REFRESHING
+        # if self.refresh_state != RefreshState.DONE:
+        #     self.refresh_state = RefreshState.OUTDATED
+        #     return
+
+        # self.refresh_state = RefreshState.REFRESHING
+
         self.installed_list.clear()
         self.available_list.clear()
 
@@ -1027,12 +1034,7 @@ class QtPluginDialog(QDialog):
                 not napari.plugins.plugin_manager.is_blocked(plugin_name),
             )
 
-        self.installed_label.setText(
-            trans._(
-                "Installed Plugins ({amount})",
-                amount=len(self.already_installed),
-            )
-        )
+        self.update_count()
 
         # fetch available plugins
         get_settings()
@@ -1079,8 +1081,15 @@ class QtPluginDialog(QDialog):
         self.packages_filter.setMaximumWidth(350)
         self.packages_filter.setClearButtonEnabled(True)
         self.packages_filter.textChanged.connect(self._filter_timer.start)
+        self.refresh_button = QPushButton(trans._('Refresh'), self)
+        self.refresh_button.clicked.connect(self.refresh)
         mid_layout = QVBoxLayout()
-        mid_layout.addWidget(self.packages_filter)
+        horizontal_mid_layout = QHBoxLayout()
+        horizontal_mid_layout.addWidget(self.packages_filter)
+        horizontal_mid_layout.addStretch()
+        horizontal_mid_layout.addWidget(self.refresh_button)
+        mid_layout.addLayout(horizontal_mid_layout)
+        # mid_layout.addWidget(self.packages_filter)
         mid_layout.addWidget(self.installed_label)
         lay.addLayout(mid_layout)
 
@@ -1137,7 +1146,7 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn = QPushButton(trans._("cancel all actions"), self)
         self.cancel_all_btn.setObjectName("remove_button")
         self.cancel_all_btn.setVisible(False)
-        self.cancel_all_btn.clicked.connect(self.installer.cancel)
+        # self.cancel_all_btn.clicked.connect(lambda x: self.installer.cancel())
 
         self.close_btn = QPushButton(trans._("Close"), self)
         self.close_btn.clicked.connect(self.accept)
@@ -1262,6 +1271,7 @@ class QtPluginDialog(QDialog):
             if (
                 self.installed_list.count() + self.available_list.count()
                 == len(self.all_plugin_data)
+                and self.available_list.count() != 0
             ):
                 self._add_items_timer.stop()
             return
