@@ -8,7 +8,7 @@ from typing import Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
 import napari.plugins
 import napari.resources
 import npe2
-from napari._qt.qt_resources import QColoredSVGIcon
+from napari._qt.qt_resources import QColoredSVGIcon, get_current_stylesheet
 from napari._qt.qthreading import create_worker
 from napari._qt.widgets.qt_message_popup import WarnPopup
 from napari._qt.widgets.qt_tooltip import QtToolTipLabel
@@ -58,6 +58,7 @@ CONDA = 'Conda'
 PYPI = 'PyPI'
 ON_BUNDLE = running_as_constructor_app()
 IS_NAPARI_CONDA_INSTALLED = is_conda_package('napari')
+STYLES_PATH = Path(__file__).parent / 'styles.qss'
 
 
 class ProjectInfoVersions(NamedTuple):
@@ -964,6 +965,9 @@ class QtPluginDialog(QDialog):
         self.h_splitter.setStretchFactor(0, 2)
 
         self.packages_filter.setFocus()
+
+        stylesheet = get_current_stylesheet([STYLES_PATH])
+        self.setStyleSheet(stylesheet)
 
     def _update_count_in_label(self):
         """Counts all available but not installed plugins. Updates value."""

@@ -1,0 +1,345 @@
+/* ------------ Plugin Dialog ------------ */
+/* 
+
+To be able to use this custom qss, we must use the `get_current_stylesheet` helper that napari provides.
+By using that function we can replace the variables that are used in this stylesheet, e.g. `foreground`.
+
+To use `get_current_stylesheet` you can import from:
+
+```python
+from napari._qt.qt_resources import get_current_stylesheet
+```
+
+*/
+QCollapsible#install_info_button {
+  background-color: {{ darken(foreground, 20) }};
+  color: {{ darken(text, 15) }};
+}
+QWidget#info_widget {
+  background-color: {{ darken(foreground, 20) }};
+  margin: 0px;
+  padding: 0px;
+  font: 11px;
+}
+
+QLabel#author_text {
+  color: {{ darken(text, 35) }};
+}
+
+QLabel#install_choice {
+  background-color: {{ current }};
+  color: {{ darken(text, 35) }};
+}
+
+QLabel#plugin_name_web {
+  background-color: {{ darken(foreground, 20) }};
+}
+
+QLabel#plugin_name_web:hover {
+  background-color: {{ foreground }}
+}
+
+QLabel#plugin_name {
+  background-color: {{ darken(foreground, 20) }};
+}
+QLabel#plugin_name:hover {
+  background-color: {{ darken(foreground, 20) }};
+}
+
+QWidget#install_choice_widget {
+  background-color: {{ darken(foreground, 20) }};
+  color: {{ darken(text, 35) }};
+  margin: 0px;
+  padding: 0px;
+  font: 11px;
+}
+
+QPluginList {
+  background: {{ console }};
+  background: black;
+}
+
+PluginListItem {
+  background: {{ darken(foreground, 20) }};
+  padding: 0;
+  margin: 2px 4px;
+  border-radius: 3px;
+}
+
+PluginListItem#unavailable {
+  background: {{ lighten(foreground, 20) }};
+  padding: 0;
+  margin: 2px 4px;
+  border-radius: 3px;
+}
+
+PluginListItem QCheckBox::indicator:disabled {
+  background-color: {{ opacity(foreground, 127) }};
+  image: url("theme_{{ id }}:/check_50.svg");
+}
+
+QPushButton#install_button {
+  background-color: {{ current }}
+}
+
+QPushButton#install_button:hover {
+  background-color: {{ lighten(current, 10) }}
+}
+
+QPushButton#install_button:pressed {
+  background-color: {{ darken(current, 10) }}
+}
+
+QPushButton#install_button:disabled {
+  background-color: {{ lighten(current, 20) }}
+}
+
+QPushButton#remove_button {
+  background-color: {{ error }}
+}
+
+QPushButton#remove_button:hover {
+  background-color: {{ lighten(error, 10) }}
+}
+
+QPushButton#remove_button:pressed {
+  background-color: {{ darken(error, 10) }}
+}
+
+QPushButton#busy_button:pressed {
+  background-color: {{ darken(secondary, 10) }}
+}
+
+QPushButton#busy_button {
+  background-color: {{ secondary }}
+}
+
+QPushButton#busy_button:hover {
+  background-color: {{ lighten(secondary, 10) }}
+}
+
+QPushButton#busy_button:pressed {
+  background-color: {{ darken(secondary, 10) }}
+}
+
+QPushButton#close_button:disabled {
+  background-color: {{ lighten(secondary, 10) }}
+}
+
+
+#small_text {
+  color: {{ opacity(text, 150) }};
+  font-size: {{ decrease(font_size, 2) }};
+}
+
+#small_italic_text {
+  color: {{ opacity(text, 150) }};
+  font-size: {{ font_size }};
+  font-style: italic;
+}
+
+#plugin_manager_process_status{
+  background: {{ background }};
+  color: {{ opacity(text, 200) }};
+}
+
+#info_icon {
+  image: url("theme_{{ id }}:/info.svg");
+  min-width: 18px;
+  min-height: 18px;
+  margin: 2px;
+}
+
+#warning_icon {
+  image: url("theme_{{ id }}:/warning.svg");
+  max-width: 14px;
+  max-height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  margin: 0px;
+  margin-left: 1px;
+  padding: 2px;
+  background: darken(foreground, 20);
+}
+
+#warning_icon:hover{
+  background: {{ foreground }};
+}
+
+#warning_icon:pressed{
+  background: {{ primary }};
+}
+
+#error_label {
+  image: url("theme_{{ id }}:/warning.svg");
+  max-width: 18px;
+  max-height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0px;
+  margin-left: 1px;
+  padding: 2px;
+}
+
+#success_label {
+  image: url("theme_{{ id }}:/check.svg");
+  max-width: 18px;
+  max-height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0px;
+  margin-left: 1px;
+  padding: 2px;
+}
+
+#help_label {
+  image: url("theme_{{ id }}:/help.svg");
+  max-width: 18px;
+  max-height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0px;
+  margin-left: 1px;
+  padding: 2px;
+}
+
+
+QtPluginDialog QSplitter{
+  padding-right: 2;
+}
+
+
+QtPluginSorter {
+  padding: 20px;
+}
+
+
+QtFontSizePreview {
+  border: 1px solid {{ foreground }};
+  border-radius: 5px;
+}
+
+QListWidget#Preferences {
+ background: {{ background }};
+}
+
+
+QtWelcomeWidget, QtWelcomeWidget[drag=false] {
+  background: {{ canvas }};
+}
+
+QtWelcomeWidget[drag=true] {
+  background: {{ highlight }};
+}
+
+QtWelcomeLabel {
+ color: {{ foreground }};
+ font-size: {{ increase(font_size, 8) }};
+}
+
+QtShortcutLabel {
+ color: {{ foreground }};
+ font-size: {{ increase(font_size, 4) }};
+}
+
+
+/* ------------- Narrow scrollbar for qtlayer list --------- */
+
+QtListView {
+  background: {{ background }};
+}
+
+QtListView QScrollBar:vertical {
+  max-width: 8px;
+}
+
+QtListView QScrollBar::add-line:vertical,
+QtListView QScrollBar::sub-line:vertical  {
+  height: 10px;
+  width: 8px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+QtListView QScrollBar:up-arrow,
+QtListView QScrollBar:down-arrow {
+  min-height: 6px;
+  min-width: 6px;
+  max-height: 6px;
+  max-width: 6px;
+}
+
+QtListView::item {
+  padding: 4px;
+  margin: 2px 2px 2px 2px;
+  background-color: {{ foreground }};
+  border: 1px solid {{ foreground }};
+}
+
+QtListView::item:hover {
+  background-color: {{ lighten(foreground, 3) }};
+}
+
+/* in the QSS context "active" means the window is active */
+/* (as opposed to focused on another application) */
+QtListView::item:selected:active{
+  background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 {{ current }}, stop: 1 {{ darken(current, 15) }});
+}
+
+
+QtListView::item:selected:!active {
+  background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 {{ darken(current, 10) }}, stop: 1 {{ darken(current, 25) }});
+}
+
+
+QtListView QLineEdit {
+  background-color: {{ darken(current, 20) }};
+  selection-background-color: {{ lighten(current, 20) }};
+  font-size: {{ font_size }};
+}
+
+QtLayerList::item {
+  margin: 2px 2px 2px 28px;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+  border: 0;
+}
+
+/* the first one is the "partially checked" state */
+QtLayerList::indicator {
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  left: 0px;
+  image: url("theme_{{ id }}:/visibility_off.svg");
+}
+
+QtLayerList::indicator:unchecked {
+  image: url("theme_{{ id }}:/visibility_off_50.svg");
+
+}
+
+QtLayerList::indicator:checked {
+  image: url("theme_{{ id }}:/visibility.svg");
+}
+
+
+#error_icon_btn {
+  qproperty-icon: url("theme_{{ id }}:/error.svg");
+}
+
+#warning_icon_btn {
+  qproperty-icon: url("theme_{{ id }}:/warning.svg");
+}
+
+#warning_icon_element {
+  image: url("theme_{{ id }}:/warning.svg");
+  min-height: 36px;
+  min-width: 36px;
+}
+
+#error_icon_element {
+  image: url("theme_{{ id }}:/error.svg");
+  min-height: 36px;
+  min-width: 36px;
+}
