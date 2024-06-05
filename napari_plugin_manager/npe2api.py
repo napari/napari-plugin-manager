@@ -66,6 +66,7 @@ class SummaryDict(_ShortSummaryDict):
     conda_versions: NotRequired[list[str]]
 
 
+@lru_cache
 def plugin_summaries() -> list[SummaryDict]:
     """Return PackageMetadata object for all known napari plugins."""
     url = 'https://npe2api.vercel.app/api/extended_summary'

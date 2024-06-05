@@ -706,6 +706,14 @@ class RefreshState(Enum):
 class QtPluginDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
+
+        self._parent = parent
+        if (
+            getattr(parent, '_plugin_dialog', None) is None
+            and self._parent is not None
+        ):
+            self._parent._plugin_dialog = self
+
         self.refresh_state = RefreshState.DONE
         self.already_installed = set()
         self.available_set = set()
@@ -746,11 +754,26 @@ class QtPluginDialog(QDialog):
         self.close_btn.setDisabled(False)
         self.refresh()
 
+    def exec_(self):
+        plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
+        plugin_dialog.setModal(True)
+        plugin_dialog.show()
+
+        if plugin_dialog != self:
+            self.close()
+
     def closeEvent(self, event):
-        self._add_items_timer.stop()
-        if self.close_btn.isEnabled():
+        if self._parent is not None:
+            plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
+            if plugin_dialog != self:
+                self._add_items_timer.stop()
+                if self.close_btn.isEnabled():
+                    super().closeEvent(event)
+                event.ignore()
+            else:
+                plugin_dialog.hide()
+        else:
             super().closeEvent(event)
-        event.ignore()
 
     def refresh(self):
         if self.refresh_state != RefreshState.DONE:
