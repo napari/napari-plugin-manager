@@ -1298,7 +1298,9 @@ class QtPluginDialog(QDialog):
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
                 print('tag ourdated')
-                self.installed_list.tag_outdated(metadata, is_available_in_conda)
+                self.installed_list.tag_outdated(
+                    metadata, is_available_in_conda
+                )
             else:
                 if metadata.name not in self.available_set:
                     self.available_set.add(metadata.name)
