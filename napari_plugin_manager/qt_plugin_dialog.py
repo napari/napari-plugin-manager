@@ -898,37 +898,6 @@ class QtPluginDialog(QDialog):
         self._add_items_timer.start()
         self._update_plugin_count()
 
-    def _add_installed(self, pkg_name):
-        pm2 = npe2.PluginManager.instance()
-        # discovered = pm2.discover()
-        for manifest in pm2.iter_manifests():
-            distname = normalized_name(manifest.name or '')
-            if distname in self.already_installed or distname == 'napari':
-                continue
-            enabled = not pm2.is_disabled(manifest.name)
-            # if it's an Npe1 adaptor, call it v1
-            npev = 'shim' if manifest.npe1_shim else 2
-            if distname == pkg_name:
-                self._add_to_installed(distname, enabled, npe_version=npev)
-
-        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
-        for (
-            plugin_name,
-            _,
-            distname,
-        ) in napari.plugins.plugin_manager.iter_available():
-            # not showing these in the plugin dialog
-            if plugin_name in ('napari_plugin_engine',):
-                continue
-            if normalized_name(distname or '') in self.already_installed:
-                continue
-            if normalized_name(distname or '') == pkg_name:
-                self._add_to_installed(
-                    distname,
-                    not napari.plugins.plugin_manager.is_blocked(plugin_name),
-                )
-        self._update_plugin_count()
-
     def _add_to_installed(self, distname, enabled, npe_version=1):
         norm_name = normalized_name(distname or '')
         if distname:
@@ -964,6 +933,66 @@ class QtPluginDialog(QDialog):
             enabled=enabled,
             npe_version=npe_version,
         )
+
+    def _add_installed(self, pkg_name=None):
+        pm2 = npe2.PluginManager.instance()
+        for manifest in pm2.iter_manifests():
+            distname = normalized_name(manifest.name or '')
+            if distname in self.already_installed or distname == 'napari':
+                continue
+            enabled = not pm2.is_disabled(manifest.name)
+            # if it's an Npe1 adaptor, call it v1
+            npev = 'shim' if manifest.npe1_shim else 2
+            if distname == pkg_name or pkg_name is None:
+                self._add_to_installed(distname, enabled, npe_version=npev)
+
+        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
+        for (
+            plugin_name,
+            _,
+            distname,
+        ) in napari.plugins.plugin_manager.iter_available():
+            # not showing these in the plugin dialog
+            if plugin_name in ('napari_plugin_engine',):
+                continue
+            if normalized_name(distname or '') in self.already_installed:
+                continue
+            if normalized_name(distname or '') == pkg_name or pkg_name is None:
+                self._add_to_installed(
+                    distname,
+                    not napari.plugins.plugin_manager.is_blocked(plugin_name),
+                )
+        self._update_plugin_count()
+
+    def _fetch_available_plugins(self, clear_cache: bool = False):
+        pm2 = npe2.PluginManager.instance()
+        discovered = pm2.discover()
+
+        # fetch available plugins
+        get_settings()
+
+        if clear_cache:
+            cache_clear()
+
+        self.worker = create_worker(iter_napari_plugin_info)
+        self.worker.yielded.connect(self._handle_yield)
+        self.worker.started.connect(self.working_indicator.show)
+        self.worker.finished.connect(self.working_indicator.hide)
+        self.worker.start()
+        self.worker.finished.connect(self._add_items_timer.start)
+
+        if discovered:
+            message = trans._(
+                'When installing/uninstalling npe2 plugins, '
+                'you must restart napari for UI changes to take effect.'
+            )
+            self._warn_dialog = WarnPopup(text=message)
+            global_point = self.process_error_indicator.mapToGlobal(
+                self.process_error_indicator.rect().topLeft()
+            )
+            global_point = QPoint(global_point.x(), global_point.y() - 75)
+            self._warn_dialog.move(global_point)
+            self._warn_dialog.exec_()
 
     def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
@@ -1216,7 +1245,7 @@ class QtPluginDialog(QDialog):
 
     def _search_in_available(self, text):
         idxs = []
-        for idx, item in enumerate(self.filter_texts):
+        for idx, item in enumerate(self._filter_texts):
             if text.lower() in item and idx not in self._filter_idxs_cache:
                 idxs.append(idx)
                 self._filter_idxs_cache.add(idx)
@@ -1287,68 +1316,18 @@ class QtPluginDialog(QDialog):
         self._update_plugin_count()
 
     def refresh(self, clear_cache: bool = False):
+        self._filter_texts = []
         self._plugin_data = []
         self._all_plugin_data = []
         self._all_plugin_data_map = {}
+
         self.installed_list.clear()
         self.available_list.clear()
-
         self.already_installed = set()
         self.available_set = set()
 
-        pm2 = npe2.PluginManager.instance()
-        discovered = pm2.discover()
-        for manifest in pm2.iter_manifests():
-            distname = normalized_name(manifest.name or '')
-            if distname in self.already_installed or distname == 'napari':
-                continue
-            enabled = not pm2.is_disabled(manifest.name)
-            # if it's an Npe1 adaptor, call it v1
-            npev = 'shim' if manifest.npe1_shim else 2
-            self._add_to_installed(distname, enabled, npe_version=npev)
-
-        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
-        for (
-            plugin_name,
-            _,
-            distname,
-        ) in napari.plugins.plugin_manager.iter_available():
-            # not showing these in the plugin dialog
-            if plugin_name in ('napari_plugin_engine',):
-                continue
-            if normalized_name(distname or '') in self.already_installed:
-                continue
-            self._add_to_installed(
-                distname,
-                not napari.plugins.plugin_manager.is_blocked(plugin_name),
-            )
-
-        self._update_plugin_count()
-
-        # fetch available plugins
-        get_settings()
-
-        if clear_cache:
-            cache_clear()
-
-        self.worker = create_worker(iter_napari_plugin_info)
-        self.worker.yielded.connect(self._handle_yield)
-        self.worker.finished.connect(self.working_indicator.hide)
-        self.worker.start()
-        self.worker.finished.connect(self._add_items_timer.start)
-
-        if discovered:
-            message = trans._(
-                'When installing/uninstalling npe2 plugins, '
-                'you must restart napari for UI changes to take effect.'
-            )
-            self._warn_dialog = WarnPopup(text=message)
-            global_point = self.process_error_indicator.mapToGlobal(
-                self.process_error_indicator.rect().topLeft()
-            )
-            global_point = QPoint(global_point.x(), global_point.y() - 75)
-            self._warn_dialog.move(global_point)
-            self._warn_dialog.exec_()
+        self._add_installed()
+        self._fetch_available_plugins(clear_cache=clear_cache)
 
     def toggle_status(self, show):
         if show:
