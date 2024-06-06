@@ -42,7 +42,10 @@ from qtpy.QtWidgets import (
 )
 from superqt import QCollapsible, QElidingLabel
 
-from napari_plugin_manager.npe2api import iter_napari_plugin_info
+from napari_plugin_manager.npe2api import (
+    iter_napari_plugin_info,
+    iter_napari_plugin_info_clear_cache,
+)
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
     InstallerQueue,
@@ -994,7 +997,7 @@ class QtPluginDialog(QDialog):
             npe_version=npe_version,
         )
 
-    def refresh(self):
+    def refresh(self, clear_cache: bool = False):
         # if self.refresh_state != RefreshState.DONE:
         #     self.refresh_state = RefreshState.OUTDATED
         #     return
@@ -1039,8 +1042,11 @@ class QtPluginDialog(QDialog):
         # fetch available plugins
         get_settings()
 
-        self.worker = create_worker(iter_napari_plugin_info)
-
+        self.worker = create_worker(
+            iter_napari_plugin_info_clear_cache
+            if clear_cache
+            else iter_napari_plugin_info
+        )
         self.worker.yielded.connect(self._handle_yield)
         self.worker.finished.connect(self.working_indicator.hide)
         self.worker.finished.connect(self._end_refresh)
@@ -1082,7 +1088,15 @@ class QtPluginDialog(QDialog):
         self.packages_filter.setClearButtonEnabled(True)
         self.packages_filter.textChanged.connect(self._filter_timer.start)
         self.refresh_button = QPushButton(trans._('Refresh'), self)
-        self.refresh_button.clicked.connect(self.refresh)
+        self.refresh_button.setToolTip(
+            trans._(
+                'This will clear the available and installed plugins lists and requery the `npe2api` service.'
+            )
+        )
+        self.refresh_button.clicked.connect(
+            lambda: self.refresh(clear_cache=True)
+        )
+
         mid_layout = QVBoxLayout()
         horizontal_mid_layout = QHBoxLayout()
         horizontal_mid_layout.addWidget(self.packages_filter)
