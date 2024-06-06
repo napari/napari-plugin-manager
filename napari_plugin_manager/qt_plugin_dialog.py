@@ -697,13 +697,18 @@ class QPluginList(QListWidget):
                 if len(text) <= starts_with_chars
                 else Qt.MatchFlag.MatchContains
             )
-            shown = [id(it) for it in self.findItems(text, flag)]
             if len(text) <= starts_with_chars:
-                text2 = f'napari-{text}'
-                shown = set(
-                    [id(it) for it in self.findItems(text2, flag)] + shown
-                )
+                flag = Qt.MatchFlag.MatchStartsWith
+                queries = (text, f'napari-{text}')
+            else:
+                flag = Qt.MatchFlag.MatchContains
+                queries = (text,)
 
+            shown = {
+                id(it)
+                for query in queries
+                for it in self.findItems(query, flag)
+            }
             for i in range(self.count()):
                 item = self.item(i)
                 item.setHidden(id(item) not in shown)
@@ -756,7 +761,11 @@ class QtPluginDialog(QDialog):
         self.installer.started.connect(self._on_installer_start)
         self.installer.finished.connect(self._on_installer_done)
 
-        self.refresh()
+        if (
+            getattr(parent, '_plugin_dialog', None) is not None
+            or parent is None
+        ):
+            self.refresh()
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -779,11 +788,11 @@ class QtPluginDialog(QDialog):
 
     def exec_(self):
         plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
-        plugin_dialog.setModal(True)
-        plugin_dialog.show()
-
         if plugin_dialog != self:
             self.close()
+
+        plugin_dialog.setModal(True)
+        plugin_dialog.show()
 
     def closeEvent(self, event):
         if self._parent is not None:
@@ -797,6 +806,10 @@ class QtPluginDialog(QDialog):
                 plugin_dialog.hide()
         else:
             super().closeEvent(event)
+
+    def hideEvent(self, event):
+        self.packages_filter.clear()
+        super().hideEvent(event)
 
     def refresh(self):
         if self.refresh_state != RefreshState.DONE:
