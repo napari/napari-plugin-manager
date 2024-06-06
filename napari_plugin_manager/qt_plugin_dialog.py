@@ -802,8 +802,7 @@ class QtPluginDialog(QDialog):
 
         self.installer = InstallerQueue()
         self.setWindowTitle(trans._('Plugin Manager'))
-        self.setup_ui()
-        self.setWindowTitle('Plugin Manager')
+        self._setup_ui()
         self.installer.set_output_widget(self.stdout_text)
         self.installer.started.connect(self._on_installer_start)
         # self.installer.finished.connect(self._on_installer_done)
@@ -815,6 +814,8 @@ class QtPluginDialog(QDialog):
         ):
             self.refresh()
 
+    # Private methods
+    # ------------------------------------------------------------------------
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
         self.cancel_all_btn.setVisible(True)
@@ -856,7 +857,7 @@ class QtPluginDialog(QDialog):
                 for pkg_name in pkg_names:
                     self.available_set.remove(pkg_name)
                     self.available_list.removeItem(pkg_name)
-                    self.add_installed(pkg_name)
+                    self._add_installed(pkg_name)
                     # TODO: needs to tag outdated
             else:
                 for pkg_name in pkg_names:
@@ -867,7 +868,7 @@ class QtPluginDialog(QDialog):
                 for pkg_name in pkg_names:
                     self.already_installed.remove(pkg_name)
                     self.installed_list.removeItem(pkg_name)
-                    self.add_available(pkg_name)
+                    self._add_available(pkg_name)
             else:
                 for pkg_name in pkg_names:
                     self.installed_list.refreshItem(pkg_name)
@@ -891,38 +892,13 @@ class QtPluginDialog(QDialog):
         self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
 
-    def exec_(self):
-        plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
-        if plugin_dialog != self:
-            self.close()
-
-        plugin_dialog.setModal(True)
-        plugin_dialog.show()
-
-    def closeEvent(self, event):
-        if self._parent is not None:
-            plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
-            if plugin_dialog != self:
-                self._add_items_timer.stop()
-                if self.close_btn.isEnabled():
-                    super().closeEvent(event)
-                event.ignore()
-            else:
-                plugin_dialog.hide()
-        else:
-            super().closeEvent(event)
-
-    def hideEvent(self, event):
-        self.packages_filter.clear()
-        super().hideEvent(event)
-
-    def add_available(self, pkg_name):
+    def _add_available(self, pkg_name):
         self._add_items_timer.stop()
         self._plugin_data.insert(0, self.all_plugin_data_map[pkg_name])
         self._add_items_timer.start()
-        self.update_count()
+        self._update_count()
 
-    def add_installed(self, pkg_name):
+    def _add_installed(self, pkg_name):
         pm2 = npe2.PluginManager.instance()
         # discovered = pm2.discover()
         for manifest in pm2.iter_manifests():
@@ -951,9 +927,9 @@ class QtPluginDialog(QDialog):
                     distname,
                     not napari.plugins.plugin_manager.is_blocked(plugin_name),
                 )
-        self.update_count()
+        self._update_count()
 
-    def update_count(self):
+    def _update_count(self):
         self.installed_label.setText(
             trans._(
                 "Installed Plugins ({amount})",
@@ -997,78 +973,8 @@ class QtPluginDialog(QDialog):
             npe_version=npe_version,
         )
 
-    def refresh(self, clear_cache: bool = False):
-        # if self.refresh_state != RefreshState.DONE:
-        #     self.refresh_state = RefreshState.OUTDATED
-        #     return
-
-        # self.refresh_state = RefreshState.REFRESHING
-
-        self.installed_list.clear()
-        self.available_list.clear()
-
-        self.already_installed = set()
-        self.available_set = set()
-
-        pm2 = npe2.PluginManager.instance()
-        discovered = pm2.discover()
-        for manifest in pm2.iter_manifests():
-            distname = normalized_name(manifest.name or '')
-            if distname in self.already_installed or distname == 'napari':
-                continue
-            enabled = not pm2.is_disabled(manifest.name)
-            # if it's an Npe1 adaptor, call it v1
-            npev = 'shim' if manifest.npe1_shim else 2
-            self._add_to_installed(distname, enabled, npe_version=npev)
-
-        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
-        for (
-            plugin_name,
-            _,
-            distname,
-        ) in napari.plugins.plugin_manager.iter_available():
-            # not showing these in the plugin dialog
-            if plugin_name in ('napari_plugin_engine',):
-                continue
-            if normalized_name(distname or '') in self.already_installed:
-                continue
-            self._add_to_installed(
-                distname,
-                not napari.plugins.plugin_manager.is_blocked(plugin_name),
-            )
-
-        self.update_count()
-
-        # fetch available plugins
-        get_settings()
-
-        self.worker = create_worker(
-            iter_napari_plugin_info_clear_cache
-            if clear_cache
-            else iter_napari_plugin_info
-        )
-        self.worker.yielded.connect(self._handle_yield)
-        self.worker.finished.connect(self.working_indicator.hide)
-        self.worker.finished.connect(self._end_refresh)
-        self.worker.start()
-        self.worker.finished.connect(self._add_items_timer.start)
-
-        if discovered:
-            message = trans._(
-                'When installing/uninstalling npe2 plugins, '
-                'you must restart napari for UI changes to take effect.'
-            )
-            self._warn_dialog = WarnPopup(text=message)
-            global_point = self.process_error_indicator.mapToGlobal(
-                self.process_error_indicator.rect().topLeft()
-            )
-            global_point = QPoint(global_point.x(), global_point.y() - 75)
-            self._warn_dialog.move(global_point)
-            self._warn_dialog.exec_()
-
-    def setup_ui(self):
+    def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
-
         self.resize(950, 640)
         vlay_1 = QVBoxLayout(self)
         self.h_splitter = QSplitter(self)
@@ -1182,7 +1088,7 @@ class QtPluginDialog(QDialog):
 
         self.show_status_btn.setCheckable(True)
         self.show_status_btn.setChecked(False)
-        self.show_status_btn.toggled.connect(self._toggle_status)
+        self.show_status_btn.toggled.connect(self.toggle_status)
 
         self.v_splitter.setStretchFactor(1, 2)
         self.h_splitter.setStretchFactor(0, 2)
@@ -1237,27 +1143,6 @@ class QtPluginDialog(QDialog):
         self.refresh_state = RefreshState.DONE
         if refresh_state == RefreshState.OUTDATED:
             self.refresh()
-
-    def eventFilter(self, watched, event):
-        if event.type() == QEvent.DragEnter:
-            # we need to accept this event explicitly to be able
-            # to receive QDropEvents!
-            event.accept()
-        if event.type() == QEvent.Drop:
-            md = event.mimeData()
-            if md.hasUrls():
-                files = [url.toLocalFile() for url in md.urls()]
-                self.direct_entry_edit.setText(files[0])
-                return True
-        return super().eventFilter(watched, event)
-
-    def _toggle_status(self, show):
-        if show:
-            self.show_status_btn.setText(trans._("Hide Status"))
-            self.stdout_text.show()
-        else:
-            self.show_status_btn.setText(trans._("Show Status"))
-            self.stdout_text.hide()
 
     def _install_packages(
         self,
@@ -1348,6 +1233,48 @@ class QtPluginDialog(QDialog):
 
         return idxs
 
+    # Qt overrides
+    # ------------------------------------------------------------------------
+    def closeEvent(self, event):
+        if self._parent is not None:
+            plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
+            if plugin_dialog != self:
+                self._add_items_timer.stop()
+                if self.close_btn.isEnabled():
+                    super().closeEvent(event)
+                event.ignore()
+            else:
+                plugin_dialog.hide()
+        else:
+            super().closeEvent(event)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.DragEnter:
+            # we need to accept this event explicitly to be able
+            # to receive QDropEvents!
+            event.accept()
+        if event.type() == QEvent.Drop:
+            md = event.mimeData()
+            if md.hasUrls():
+                files = [url.toLocalFile() for url in md.urls()]
+                self.direct_entry_edit.setText(files[0])
+                return True
+        return super().eventFilter(watched, event)
+
+    def exec_(self):
+        plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
+        if plugin_dialog != self:
+            self.close()
+
+        plugin_dialog.setModal(True)
+        plugin_dialog.show()
+
+    def hideEvent(self, event):
+        self.packages_filter.clear()
+        super().hideEvent(event)
+
+    # Public methods
+    # ------------------------------------------------------------------------
     def filter(self, text: Optional[str] = None, skip=False) -> None:
         """Filter by text or set current text as filter."""
         if text is None:
@@ -1370,6 +1297,83 @@ class QtPluginDialog(QDialog):
         self.installed_list.filter(text)
         self.available_list.filter(text)
         self._update_count_in_label()
+
+    def refresh(self, clear_cache: bool = False):
+        # if self.refresh_state != RefreshState.DONE:
+        #     self.refresh_state = RefreshState.OUTDATED
+        #     return
+
+        # self.refresh_state = RefreshState.REFRESHING
+
+        self.installed_list.clear()
+        self.available_list.clear()
+
+        self.already_installed = set()
+        self.available_set = set()
+
+        pm2 = npe2.PluginManager.instance()
+        discovered = pm2.discover()
+        for manifest in pm2.iter_manifests():
+            distname = normalized_name(manifest.name or '')
+            if distname in self.already_installed or distname == 'napari':
+                continue
+            enabled = not pm2.is_disabled(manifest.name)
+            # if it's an Npe1 adaptor, call it v1
+            npev = 'shim' if manifest.npe1_shim else 2
+            self._add_to_installed(distname, enabled, npe_version=npev)
+
+        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
+        for (
+            plugin_name,
+            _,
+            distname,
+        ) in napari.plugins.plugin_manager.iter_available():
+            # not showing these in the plugin dialog
+            if plugin_name in ('napari_plugin_engine',):
+                continue
+            if normalized_name(distname or '') in self.already_installed:
+                continue
+            self._add_to_installed(
+                distname,
+                not napari.plugins.plugin_manager.is_blocked(plugin_name),
+            )
+
+        self._update_count()
+
+        # fetch available plugins
+        get_settings()
+
+        self.worker = create_worker(
+            iter_napari_plugin_info_clear_cache
+            if clear_cache
+            else iter_napari_plugin_info
+        )
+        self.worker.yielded.connect(self._handle_yield)
+        self.worker.finished.connect(self.working_indicator.hide)
+        self.worker.finished.connect(self._end_refresh)
+        self.worker.start()
+        self.worker.finished.connect(self._add_items_timer.start)
+
+        if discovered:
+            message = trans._(
+                'When installing/uninstalling npe2 plugins, '
+                'you must restart napari for UI changes to take effect.'
+            )
+            self._warn_dialog = WarnPopup(text=message)
+            global_point = self.process_error_indicator.mapToGlobal(
+                self.process_error_indicator.rect().topLeft()
+            )
+            global_point = QPoint(global_point.x(), global_point.y() - 75)
+            self._warn_dialog.move(global_point)
+            self._warn_dialog.exec_()
+
+    def toggle_status(self, show):
+        if show:
+            self.show_status_btn.setText(trans._("Hide Status"))
+            self.stdout_text.show()
+        else:
+            self.show_status_btn.setText(trans._("Show Status"))
+            self.stdout_text.hide()
 
 
 if __name__ == "__main__":
