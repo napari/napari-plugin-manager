@@ -82,14 +82,6 @@ def conda_map() -> dict[PyPIname, Optional[str]]:
         return json.load(resp)
 
 
-def iter_napari_plugin_info_clear_cache() -> (
-    Iterator[tuple[PackageMetadata, bool, dict]]
-):
-    plugin_summaries.cache_clear()
-    conda_map.cache_clear()
-    yield iter_napari_plugin_info()
-
-
 def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
     """Iterator of tuples of ProjectInfo, Conda availability for all napari plugins."""
     try:
@@ -130,3 +122,8 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         meta = PackageMetadata(**info_)  # type:ignore[call-arg]
 
         yield meta, (info_['name'] in conda_set), extra_info
+
+
+def cache_clear():
+    plugin_summaries.cache_clear()
+    conda_map.cache_clear()
