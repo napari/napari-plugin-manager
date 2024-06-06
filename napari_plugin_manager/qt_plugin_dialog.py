@@ -43,8 +43,8 @@ from qtpy.QtWidgets import (
 from superqt import QCollapsible, QElidingLabel
 
 from napari_plugin_manager.npe2api import (
+    cache_clear,
     iter_napari_plugin_info,
-    iter_napari_plugin_info_clear_cache,
 )
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
@@ -456,9 +456,10 @@ class QPluginList(QListWidget):
     def __init__(self, parent: QWidget, installer: InstallerQueue) -> None:
         super().__init__(parent)
         self.installer = installer
-        self.setSortingEnabled(True)
         self._remove_list = []
         self._data = []
+
+        self.setSortingEnabled(True)
 
     def count_visible(self) -> int:
         """Return the number of visible items.
@@ -560,7 +561,7 @@ class QPluginList(QListWidget):
         for i in range(count):
             item = self.item(i)
             if item.widget.name == name:
-                print(i, item, name)
+                # print(i, item, name)
                 self.takeItem(i)
                 break
 
@@ -776,8 +777,8 @@ class QtPluginDialog(QDialog):
 
         self._parent = parent
         if (
-            getattr(parent, '_plugin_dialog', None) is None
-            and self._parent is not None
+            parent is not None
+            and getattr(parent, '_plugin_dialog', None) is None
         ):
             self._parent._plugin_dialog = self
 
@@ -786,7 +787,7 @@ class QtPluginDialog(QDialog):
         self.available_set = set()
 
         self._plugin_data = []  # Store plugin data while populating lists
-        self.all_plugin_data = []  # Store all plugin data
+        self._all_plugin_data = []  # Store all plugin data
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
@@ -794,7 +795,7 @@ class QtPluginDialog(QDialog):
         self._filter_timer.setInterval(120)  # ms
         self._filter_timer.timeout.connect(self.filter)
         self._filter_timer.setSingleShot(True)
-        self.all_plugin_data_map = {}
+        self._all_plugin_data_map = {}
         self._add_items_timer = QTimer(self)
         # Add items in batches with a pause to avoid blocking the UI
         self._add_items_timer.setInterval(61)  # ms
@@ -809,9 +810,8 @@ class QtPluginDialog(QDialog):
         self.installer.processFinished.connect(self._on_process_finished)
 
         if (
-            getattr(parent, '_plugin_dialog', None) is not None
-            or parent is None
-        ):
+            parent is not None and parent._plugin_dialog is self
+        ) or parent is None:
             self.refresh()
 
     # Private methods
@@ -894,9 +894,9 @@ class QtPluginDialog(QDialog):
 
     def _add_available(self, pkg_name):
         self._add_items_timer.stop()
-        self._plugin_data.insert(0, self.all_plugin_data_map[pkg_name])
+        self._plugin_data.insert(0, self._all_plugin_data_map[pkg_name])
         self._add_items_timer.start()
-        self._update_count()
+        self._update_plugin_count()
 
     def _add_installed(self, pkg_name):
         pm2 = npe2.PluginManager.instance()
@@ -927,15 +927,7 @@ class QtPluginDialog(QDialog):
                     distname,
                     not napari.plugins.plugin_manager.is_blocked(plugin_name),
                 )
-        self._update_count()
-
-    def _update_count(self):
-        self.installed_label.setText(
-            trans._(
-                "Installed Plugins ({amount})",
-                amount=len(self.already_installed),
-            )
-        )
+        self._update_plugin_count()
 
     def _add_to_installed(self, distname, enabled, npe_version=1):
         norm_name = normalized_name(distname or '')
@@ -975,7 +967,7 @@ class QtPluginDialog(QDialog):
 
     def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
-        self.resize(950, 640)
+        self.resize(800, 600)
         vlay_1 = QVBoxLayout(self)
         self.h_splitter = QSplitter(self)
         vlay_1.addWidget(self.h_splitter)
@@ -1098,8 +1090,10 @@ class QtPluginDialog(QDialog):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
 
-    def _update_count_in_label(self):
-        """Counts all available but not installed plugins. Updates value."""
+    def _update_plugin_count(self):
+        """Update count labels for both installed and available plugin lists.
+        Displays also amount of visible plugins out of total when filtering.
+        """
         installed_count = self.installed_list.count()
         installed_count_visible = self.installed_list.count_visible()
         if installed_count == installed_count_visible:
@@ -1119,8 +1113,9 @@ class QtPluginDialog(QDialog):
             )
 
         available_count = (
-            len(self.all_plugin_data) - self.installed_list.count()
+            len(self._all_plugin_data) - self.installed_list.count()
         )
+        available_count = available_count if available_count >= 0 else 0
         available_count_visible = self.available_list.count_visible()
         if available_count == available_count_visible:
             self.avail_label.setText(
@@ -1138,17 +1133,12 @@ class QtPluginDialog(QDialog):
                 )
             )
 
-    def _end_refresh(self):
-        refresh_state = self.refresh_state
-        self.refresh_state = RefreshState.DONE
-        if refresh_state == RefreshState.OUTDATED:
-            self.refresh()
-
     def _install_packages(
         self,
         packages: Sequence[str] = (),
         versions: Optional[Sequence[str]] = None,
     ):
+        # FIXME: Direct entry test check!
         if not packages:
             _packages = self.direct_entry_edit.text()
             packages = (
@@ -1169,7 +1159,7 @@ class QtPluginDialog(QDialog):
         if len(self._plugin_data) == 0:
             if (
                 self.installed_list.count() + self.available_list.count()
-                == len(self.all_plugin_data)
+                == len(self._all_plugin_data)
                 and self.available_list.count() != 0
             ):
                 self._add_items_timer.stop()
@@ -1179,10 +1169,10 @@ class QtPluginDialog(QDialog):
         for _ in range(batch_size):
             data = self._plugin_data.pop(0)
             metadata, is_available_in_conda, extra_info = data
-            print(metadata.name)
+            # print(metadata.name)
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
-                print('tag ourdated')
+                # print('tag ourdated')
                 self.installed_list.tag_outdated(
                     metadata, is_available_in_conda
                 )
@@ -1214,15 +1204,15 @@ class QtPluginDialog(QDialog):
         The data is stored but the actual items are added via a timer in the `_add_items`
         method to prevent the UI from freezing by adding all items at once.
         """
+        self._all_plugin_data.append(data)
         self._plugin_data.append(data)
-        self.all_plugin_data.append(data)
-        self.available_list.set_data(self.all_plugin_data)
-        self.filter_texts = [
+        self._filter_texts = [
             f"{i[0].name} {i[-1].get('display_name', '')} {i[0].summary}".lower()
-            for i in self.all_plugin_data
+            for i in self._all_plugin_data
         ]
         metadata, _, _ = data
-        self.all_plugin_data_map[metadata.name] = data
+        self._all_plugin_data_map[metadata.name] = data
+        self.available_list.set_data(self._all_plugin_data)
 
     def _search_in_available(self, text):
         idxs = []
@@ -1238,11 +1228,9 @@ class QtPluginDialog(QDialog):
     def closeEvent(self, event):
         if self._parent is not None:
             plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
-            if plugin_dialog != self:
-                self._add_items_timer.stop()
-                if self.close_btn.isEnabled():
-                    super().closeEvent(event)
-                event.ignore()
+            if self != plugin_dialog:
+                self.destroy(True, True)
+                super().closeEvent(event)
             else:
                 plugin_dialog.hide()
         else:
@@ -1284,7 +1272,7 @@ class QtPluginDialog(QDialog):
 
         if not skip and self.available_list.is_running() and len(text) >= 1:
             items = [
-                self.all_plugin_data[idx]
+                self._all_plugin_data[idx]
                 for idx in self._search_in_available(text)
             ]
             if items:
@@ -1296,15 +1284,12 @@ class QtPluginDialog(QDialog):
 
         self.installed_list.filter(text)
         self.available_list.filter(text)
-        self._update_count_in_label()
+        self._update_plugin_count()
 
     def refresh(self, clear_cache: bool = False):
-        # if self.refresh_state != RefreshState.DONE:
-        #     self.refresh_state = RefreshState.OUTDATED
-        #     return
-
-        # self.refresh_state = RefreshState.REFRESHING
-
+        self._plugin_data = []
+        self._all_plugin_data = []
+        self._all_plugin_data_map = {}
         self.installed_list.clear()
         self.available_list.clear()
 
@@ -1338,19 +1323,17 @@ class QtPluginDialog(QDialog):
                 not napari.plugins.plugin_manager.is_blocked(plugin_name),
             )
 
-        self._update_count()
+        self._update_plugin_count()
 
         # fetch available plugins
         get_settings()
 
-        self.worker = create_worker(
-            iter_napari_plugin_info_clear_cache
-            if clear_cache
-            else iter_napari_plugin_info
-        )
+        if clear_cache:
+            cache_clear()
+
+        self.worker = create_worker(iter_napari_plugin_info)
         self.worker.yielded.connect(self._handle_yield)
         self.worker.finished.connect(self.working_indicator.hide)
-        self.worker.finished.connect(self._end_refresh)
         self.worker.start()
         self.worker.finished.connect(self._add_items_timer.start)
 
