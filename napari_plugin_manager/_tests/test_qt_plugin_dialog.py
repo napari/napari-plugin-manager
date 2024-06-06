@@ -239,14 +239,14 @@ def test_filter_available_plugins(plugin_dialog):
     """
     plugin_dialog.filter("")
     assert plugin_dialog.available_list.count() == 2
-    assert plugin_dialog.available_list._count_visible() == 2
+    assert plugin_dialog.available_list.count_visible() == 2
 
     plugin_dialog.filter("no-match@123")
-    assert plugin_dialog.available_list._count_visible() == 0
+    assert plugin_dialog.available_list.count_visible() == 0
 
     plugin_dialog.filter("")
     plugin_dialog.filter("test-name-0")
-    assert plugin_dialog.available_list._count_visible() == 1
+    assert plugin_dialog.available_list.count_visible() == 1
 
 
 def test_filter_installed_plugins(plugin_dialog):
@@ -255,10 +255,10 @@ def test_filter_installed_plugins(plugin_dialog):
     list (the top one).
     """
     plugin_dialog.filter("")
-    assert plugin_dialog.installed_list._count_visible() >= 0
+    assert plugin_dialog.installed_list.count_visible() >= 0
 
     plugin_dialog.filter("no-match@123")
-    assert plugin_dialog.installed_list._count_visible() == 0
+    assert plugin_dialog.installed_list.count_visible() == 0
 
 
 def test_visible_widgets(request, plugin_dialog):
@@ -285,7 +285,7 @@ def test_version_dropdown(plugin_dialog):
 
 
 def test_plugin_list_count_items(plugin_dialog):
-    assert plugin_dialog.installed_list._count_visible() == 2
+    assert plugin_dialog.installed_list.count_visible() == 2
 
 
 def test_plugin_list_handle_action(plugin_dialog, qtbot):

@@ -427,13 +427,15 @@ class PluginListItem(QFrame):
 
 
 class QPluginList(QListWidget):
+
     def __init__(self, parent: QWidget, installer: InstallerQueue) -> None:
         super().__init__(parent)
         self.installer = installer
         self.setSortingEnabled(True)
         self._remove_list = []
+        self._data = []
 
-    def _count_visible(self) -> int:
+    def count_visible(self) -> int:
         """Return the number of visible items.
 
         Visible items are the result of the normal `count` method minus
@@ -630,6 +632,12 @@ class QPluginList(QListWidget):
             finally:
                 widget.setProperty("current_job_id", None)
 
+    def set_data(self, data):
+        self._data = data
+
+    def is_running(self):
+        return self.count() != len(self._data)
+
     @Slot(npe2.PackageMetadata, bool)
     def tag_outdated(self, metadata: npe2.PackageMetadata, is_available: bool):
         """Determines if an installed plugin is up to date with the latest version.
@@ -679,15 +687,28 @@ class QPluginList(QListWidget):
             widget.action_button.setEnabled(False)
             widget.warning_tooltip.setVisible(True)
 
-    def filter(self, text: str):
+    def filter(self, text: str, starts_with_chars: int = 1):
         """Filter items to those containing `text`."""
         if text:
             # PySide has some issues, so we compare using id
             # See: https://bugreports.qt.io/browse/PYSIDE-74
-            shown = [
+            flag = (
+                Qt.MatchFlag.MatchStartsWith
+                if len(text) <= starts_with_chars
+                else Qt.MatchFlag.MatchContains
+            )
+            if len(text) <= starts_with_chars:
+                flag = Qt.MatchFlag.MatchStartsWith
+                queries = (text, f'napari-{text}')
+            else:
+                flag = Qt.MatchFlag.MatchContains
+                queries = (text,)
+
+            shown = {
                 id(it)
-                for it in self.findItems(text, Qt.MatchFlag.MatchContains)
-            ]
+                for query in queries
+                for it in self.findItems(query, flag)
+            }
             for i in range(self.count()):
                 item = self.item(i)
                 item.setHidden(id(item) not in shown)
@@ -720,11 +741,17 @@ class QtPluginDialog(QDialog):
 
         self._plugin_data = []  # Store plugin data while populating lists
         self.all_plugin_data = []  # Store all plugin data
+        self._filter_texts = []
+        self._filter_idxs_cache = set()
+        self._filter_timer = QTimer(self)
+        # timer to avoid triggering a filter for every keystroke
+        self._filter_timer.setInterval(120)  # ms
+        self._filter_timer.timeout.connect(self.filter)
+        self._filter_timer.setSingleShot(True)
         self._add_items_timer = QTimer(self)
-        # Add items in batches to avoid blocking the UI
-        self._add_items_timer.setInterval(100)
+        # Add items in batches with a pause to avoid blocking the UI
+        self._add_items_timer.setInterval(61)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
-        self._add_items_timer.timeout.connect(self._update_count_in_label)
 
         self.installer = InstallerQueue()
         self.setWindowTitle(trans._('Plugin Manager'))
@@ -733,7 +760,12 @@ class QtPluginDialog(QDialog):
         self.installer.set_output_widget(self.stdout_text)
         self.installer.started.connect(self._on_installer_start)
         self.installer.finished.connect(self._on_installer_done)
-        self.refresh()
+
+        if (
+            getattr(parent, '_plugin_dialog', None) is not None
+            or parent is None
+        ):
+            self.refresh()
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -756,11 +788,11 @@ class QtPluginDialog(QDialog):
 
     def exec_(self):
         plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
-        plugin_dialog.setModal(True)
-        plugin_dialog.show()
-
         if plugin_dialog != self:
             self.close()
+
+        plugin_dialog.setModal(True)
+        plugin_dialog.show()
 
     def closeEvent(self, event):
         if self._parent is not None:
@@ -774,6 +806,10 @@ class QtPluginDialog(QDialog):
                 plugin_dialog.hide()
         else:
             super().closeEvent(event)
+
+    def hideEvent(self, event):
+        self.packages_filter.clear()
+        super().hideEvent(event)
 
     def refresh(self):
         if self.refresh_state != RefreshState.DONE:
@@ -865,7 +901,7 @@ class QtPluginDialog(QDialog):
         self.worker.finished.connect(self.working_indicator.hide)
         self.worker.finished.connect(self._end_refresh)
         self.worker.start()
-        self._add_items_timer.start()
+        self.worker.finished.connect(self._add_items_timer.start)
 
         if discovered:
             message = trans._(
@@ -900,13 +936,13 @@ class QtPluginDialog(QDialog):
         self.packages_filter.setPlaceholderText(trans._("filter..."))
         self.packages_filter.setMaximumWidth(350)
         self.packages_filter.setClearButtonEnabled(True)
+        self.packages_filter.textChanged.connect(self._filter_timer.start)
         mid_layout = QVBoxLayout()
         mid_layout.addWidget(self.packages_filter)
         mid_layout.addWidget(self.installed_label)
         lay.addLayout(mid_layout)
 
         self.installed_list = QPluginList(installed, self.installer)
-        self.packages_filter.textChanged.connect(self.installed_list.filter)
         lay.addWidget(self.installed_list)
 
         uninstalled = QWidget(self.v_splitter)
@@ -918,7 +954,6 @@ class QtPluginDialog(QDialog):
         mid_layout.addStretch()
         lay.addLayout(mid_layout)
         self.available_list = QPluginList(uninstalled, self.installer)
-        self.packages_filter.textChanged.connect(self.available_list.filter)
         lay.addWidget(self.available_list)
 
         self.stdout_text = QTextEdit(self.v_splitter)
@@ -994,11 +1029,43 @@ class QtPluginDialog(QDialog):
 
     def _update_count_in_label(self):
         """Counts all available but not installed plugins. Updates value."""
+        installed_count = self.installed_list.count()
+        installed_count_visible = self.installed_list.count_visible()
+        if installed_count == installed_count_visible:
+            self.installed_label.setText(
+                trans._(
+                    "Installed Plugins ({amount})",
+                    amount=installed_count,
+                )
+            )
+        else:
+            self.installed_label.setText(
+                trans._(
+                    "Installed Plugins ({count}/{amount})",
+                    count=installed_count_visible,
+                    amount=installed_count,
+                )
+            )
 
-        count = self.available_list.count()
-        self.avail_label.setText(
-            trans._("Available Plugins ({count})", count=count)
+        available_count = (
+            len(self.all_plugin_data) - self.installed_list.count()
         )
+        available_count_visible = self.available_list.count_visible()
+        if available_count == available_count_visible:
+            self.avail_label.setText(
+                trans._(
+                    "Available Plugins ({amount})",
+                    amount=available_count,
+                )
+            )
+        else:
+            self.avail_label.setText(
+                trans._(
+                    "Available Plugins ({count}/{amount})",
+                    count=available_count_visible,
+                    amount=available_count,
+                )
+            )
 
     def _end_refresh(self):
         refresh_state = self.refresh_state
@@ -1044,8 +1111,11 @@ class QtPluginDialog(QDialog):
                 versions=versions,
             )
 
-    def _add_items(self):
-        """Add items to the lists one by one using a timer to prevent freezing the UI."""
+    def _add_items(self, items=None):
+        """
+        Add items to the lists by `batch_size` using a timer to add a pause
+        and prevent freezing the UI.
+        """
         if len(self._plugin_data) == 0:
             if (
                 self.installed_list.count() + self.available_list.count()
@@ -1054,26 +1124,34 @@ class QtPluginDialog(QDialog):
                 self._add_items_timer.stop()
             return
 
-        data = self._plugin_data.pop(0)
-        metadata, is_available_in_conda, extra_info = data
-        display_name = extra_info.get('display_name', metadata.name)
-        if metadata.name in self.already_installed:
-            self.installed_list.tag_outdated(metadata, is_available_in_conda)
-        else:
-            if metadata.name not in self.available_set:
-                self.available_set.add(metadata.name)
-                self.available_list.addItem(
-                    ProjectInfoVersions(
-                        metadata,
-                        display_name,
-                        extra_info['pypi_versions'],
-                        extra_info['conda_versions'],
-                    )
+        batch_size = 2
+        for _ in range(batch_size):
+            data = self._plugin_data.pop(0)
+            metadata, is_available_in_conda, extra_info = data
+            display_name = extra_info.get('display_name', metadata.name)
+            if metadata.name in self.already_installed:
+                self.installed_list.tag_outdated(
+                    metadata, is_available_in_conda
                 )
-            if ON_BUNDLE and not is_available_in_conda:
-                self.available_list.tag_unavailable(metadata)
+            else:
+                if metadata.name not in self.available_set:
+                    self.available_set.add(metadata.name)
+                    self.available_list.addItem(
+                        ProjectInfoVersions(
+                            metadata,
+                            display_name,
+                            extra_info['pypi_versions'],
+                            extra_info['conda_versions'],
+                        )
+                    )
+                if ON_BUNDLE and not is_available_in_conda:
+                    self.available_list.tag_unavailable(metadata)
 
-        self.filter()
+            if len(self._plugin_data) == 0:
+                break
+
+        if not self._filter_timer.isActive():
+            self.filter(None, skip=True)
 
     def _handle_yield(self, data: Tuple[npe2.PackageMetadata, bool, Dict]):
         """Output from a worker process.
@@ -1085,16 +1163,43 @@ class QtPluginDialog(QDialog):
         """
         self._plugin_data.append(data)
         self.all_plugin_data.append(data)
+        self.available_list.set_data(self.all_plugin_data)
+        self.filter_texts = [
+            f"{i[0].name} {i[-1].get('display_name', '')} {i[0].summary}".lower()
+            for i in self.all_plugin_data
+        ]
 
-    def filter(self, text: Optional[str] = None) -> None:
+    def _search_in_available(self, text):
+        idxs = []
+        for idx, item in enumerate(self.filter_texts):
+            if text.lower() in item and idx not in self._filter_idxs_cache:
+                idxs.append(idx)
+                self._filter_idxs_cache.add(idx)
+
+        return idxs
+
+    def filter(self, text: Optional[str] = None, skip=False) -> None:
         """Filter by text or set current text as filter."""
         if text is None:
             text = self.packages_filter.text()
         else:
             self.packages_filter.setText(text)
 
+        if not skip and self.available_list.is_running() and len(text) >= 1:
+            items = [
+                self.all_plugin_data[idx]
+                for idx in self._search_in_available(text)
+            ]
+            if items:
+                for item in items:
+                    if item in self._plugin_data:
+                        self._plugin_data.remove(item)
+
+                self._plugin_data = items + self._plugin_data
+
         self.installed_list.filter(text)
         self.available_list.filter(text)
+        self._update_count_in_label()
 
 
 if __name__ == "__main__":
