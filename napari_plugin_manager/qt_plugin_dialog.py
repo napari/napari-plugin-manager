@@ -782,8 +782,9 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
+        self.worker = None
         # timer to avoid triggering a filter for every keystroke
-        self._filter_timer.setInterval(120)  # ms
+        self._filter_timer.setInterval(140)  # ms
         self._filter_timer.timeout.connect(self.filter)
         self._filter_timer.setSingleShot(True)
         self._all_plugin_data_map = {}
@@ -1322,6 +1323,9 @@ class QtPluginDialog(QDialog):
         self._update_plugin_count()
 
     def refresh(self, clear_cache: bool = False):
+        if self._add_items_timer.isActive():
+            self._add_items_timer.stop()
+
         self._filter_texts = []
         self._plugin_data = []
         self._all_plugin_data = []
