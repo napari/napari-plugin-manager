@@ -999,7 +999,7 @@ class QtPluginDialog(QDialog):
 
     def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
-        self.resize(800, 600)
+        self.resize(900, 600)
         vlay_1 = QVBoxLayout(self)
         self.h_splitter = QSplitter(self)
         vlay_1.addWidget(self.h_splitter)
@@ -1177,11 +1177,9 @@ class QtPluginDialog(QDialog):
                 [_packages] if os.path.exists(_packages) else _packages.split()
             )
             self.direct_entry_edit.clear()
+
         if packages:
-            self.installer.install(
-                packages,
-                versions=versions,
-            )
+            self.installer.install(InstallerTools.PIP, packages)
 
     def _tag_outdated_plugins(self):
         """Tag installed plugins that might be outdated."""
