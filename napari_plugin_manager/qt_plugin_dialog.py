@@ -569,7 +569,9 @@ class QPluginList(QListWidget):
         for i in range(count):
             item = self.item(i)
             if item.widget.name == name:
-                item.widget.set_busy('', 'cancel')
+                item.widget.set_busy(
+                    trans._("cancelling..."), InstallerActions.CANCEL
+                )
                 if item.text().startswith('0-'):
                     item.setText(
                         item.text().replace('0-', '')
@@ -840,7 +842,9 @@ class QtPluginDialog(QDialog):
         if action == 'install':
             if exit_code == 0:
                 for pkg_name in pkg_names:
-                    self.available_set.remove(pkg_name)
+                    if pkg_name in self.available_set:
+                        self.available_set.remove(pkg_name)
+
                     self.available_list.removeItem(pkg_name)
                     self._add_installed(pkg_name)
                     self._tag_outdated_plugins()
@@ -850,7 +854,9 @@ class QtPluginDialog(QDialog):
         elif action == 'uninstall':
             if exit_code == 0:
                 for pkg_name in pkg_names:
-                    self.already_installed.remove(pkg_name)
+                    if pkg_name in self.already_installed:
+                        self.already_installed.remove(pkg_name)
+
                     self.installed_list.removeItem(pkg_name)
                     self._add_to_available(pkg_name)
             else:
@@ -968,8 +974,8 @@ class QtPluginDialog(QDialog):
         self.worker.yielded.connect(self._handle_yield)
         self.worker.started.connect(self.working_indicator.show)
         self.worker.finished.connect(self.working_indicator.hide)
-        self.worker.start()
         self.worker.finished.connect(self._add_items_timer.start)
+        self.worker.start()
 
         if discovered:
             message = trans._(
@@ -1348,3 +1354,9 @@ if __name__ == "__main__":
     w = QtPluginDialog()
     w.show()
     app.exec_()
+
+    """
+    pytest napari_plugin_manager/_tests/test_qt_plugin_dialog.py::test_filter_not_available_plugins
+    pytest napari_plugin_manager/_tests/test_qt_plugin_dialog.py::test_filter_available_plugins
+    pytest napari_plugin_manager/_tests/test_qt_plugin_dialog.py::test_filter_installed_plugins
+    """

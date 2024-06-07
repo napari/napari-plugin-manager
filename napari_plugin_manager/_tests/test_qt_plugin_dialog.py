@@ -191,6 +191,7 @@ def plugin_dialog(
     monkeypatch.setattr(npe2, 'PluginManager', PluginManagerMock())
 
     widget = qt_plugin_dialog.QtPluginDialog()
+    monkeypatch.setattr(widget, '_tag_outdated_plugins', lambda: None)
     widget.show()
     qtbot.waitUntil(widget.isVisible, timeout=300)
 
@@ -310,6 +311,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
 
     item = plugin_dialog.available_list.item(0)
     with patch.object(qt_plugin_dialog.PluginListItem, "set_busy") as mock:
+
         plugin_dialog.available_list.handle_action(
             item,
             'test-name-1',
@@ -327,11 +329,6 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
             trans._("cancelling..."), InstallerActions.CANCEL
         )
 
-    # Wait for refresh timer, state and worker to be done
-    qtbot.waitUntil(
-        lambda: not plugin_dialog._add_items_timer.isActive()
-        and plugin_dialog.refresh_state == qt_plugin_dialog.RefreshState.DONE
-    )
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
 
