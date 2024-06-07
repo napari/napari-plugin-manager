@@ -125,5 +125,7 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
 
 
 def cache_clear():
+    """Clear the cache for all cached functions in this module."""
     plugin_summaries.cache_clear()
     conda_map.cache_clear()
+    _user_agent.cache_clear()
