@@ -93,7 +93,7 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         data_set = data.result()
     except (HTTPError, URLError):
         show_warning(
-            'There seems to be an issue with network connectivity. '
+            'Plugin manager: There seems to be an issue with network connectivity. '
             'Remote plugins cannot be installed, only local ones.\n'
         )
         return

@@ -241,7 +241,7 @@ class InstallerQueue(QProcess):
 
     # emitted when all jobs are finished
     # not to be confused with finished, which is emitted when each job is finished
-    allFinished = Signal()
+    allFinished = Signal(object)
     processFinished = Signal(
         int, int, object, object
     )  # exit_code, exit_status, action, pkgs
@@ -250,6 +250,7 @@ class InstallerQueue(QProcess):
         super().__init__(parent)
         self._queue: Deque[AbstractInstallerTool] = deque()
         self._output_widget = None
+        self._exit_codes = []
 
         self.setProcessChannelMode(QProcess.MergedChannels)
         self.readyReadStandardOutput.connect(self._on_stdout_ready)
@@ -460,7 +461,8 @@ class InstallerQueue(QProcess):
 
     def _process_queue(self):
         if not self._queue:
-            self.allFinished.emit()
+            self.allFinished.emit(self._exit_codes)
+            self._exit_codes = []
             return
 
         tool = self._queue[0]
@@ -544,6 +546,7 @@ class InstallerQueue(QProcess):
             self.processFinished.emit(
                 exit_code, exit_status, item.action, item.pkgs
             )
+            self._exit_codes.append(exit_code)
 
         self._log(msg)
         self._process_queue()

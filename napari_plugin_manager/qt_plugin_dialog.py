@@ -19,6 +19,7 @@ from napari.utils.misc import (
     parse_version,
     running_as_constructor_app,
 )
+from napari.utils.notifications import show_info, show_warning
 from napari.utils.translations import trans
 from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Slot
 from qtpy.QtGui import QFont, QMovie
@@ -834,7 +835,6 @@ class QtPluginDialog(QDialog):
         self.working_indicator.show()
         self.process_success_indicator.hide()
         self.process_error_indicator.hide()
-        self.close_btn.setDisabled(True)
         self.refresh_button.setDisabled(True)
 
     def _on_process_finished(self, exit_code, exit_status, action, pkgs):
@@ -879,14 +879,21 @@ class QtPluginDialog(QDialog):
             self.process_success_indicator.show()
 
         self.cancel_all_btn.setVisible(False)
-        self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
 
-    def _on_installer_all_finished(self):
+    def _on_installer_all_finished(self, exit_codes):
         self.working_indicator.hide()
         self.cancel_all_btn.setVisible(False)
         self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
+
+        if not self.isVisible():
+            if sum(exit_codes) > 0:
+                show_warning(
+                    trans._('Plugin Manager: process completed with errors\n')
+                )
+            else:
+                show_info(trans._('Plugin Manager: process completed\n'))
 
     def _add_to_available(self, pkg_name):
         self._add_items_timer.stop()
@@ -1196,6 +1203,13 @@ class QtPluginDialog(QDialog):
                 and self.available_list.count() != 0
             ):
                 self._add_items_timer.stop()
+                if not self.isVisible():
+                    show_info(
+                        trans._(
+                            'Plugin Manager: All available plugins loaded\n'
+                        )
+                    )
+
             return
 
         batch_size = 2
