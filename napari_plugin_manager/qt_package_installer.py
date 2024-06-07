@@ -391,7 +391,9 @@ class InstallerQueue(QProcess):
                 else:  # still pending, just remove from queue
                     self._queue.remove(item)
 
-                self.processFinished.emit(1, 0, 'cancel', item.pkgs)
+                self.processFinished.emit(
+                    1, 0, InstallerActions.CANCEL, item.pkgs
+                )
                 return
 
         msg = f"No job with id {job_id}. Current queue:\n - "
@@ -401,7 +403,7 @@ class InstallerQueue(QProcess):
                 for item in self._queue
             ]
         )
-        self.processFinished.emit(1, 0, 'cancel', [])
+        self.processFinished.emit(1, 0, InstallerActions.CANCEL, [])
         raise ValueError(msg)
 
     def waitForFinished(self, msecs: int = 10000) -> bool:

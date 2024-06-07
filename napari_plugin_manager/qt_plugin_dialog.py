@@ -1,7 +1,6 @@
 import importlib.metadata
 import os
 import webbrowser
-from enum import Enum, auto
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
@@ -763,18 +762,6 @@ class QPluginList(QListWidget):
                 item = self.item(i)
                 item.setHidden(False)
 
-    # def remove_items(self):
-    #     while self._remove_list:
-    #         _, item = self._remove_list.pop()
-    #         self.takeItem(self.row(item))
-    #         item.widget.deleteLater()
-
-
-class RefreshState(Enum):
-    REFRESHING = auto()
-    OUTDATED = auto()
-    DONE = auto()
-
 
 class QtPluginDialog(QDialog):
     def __init__(self, parent=None) -> None:
@@ -787,7 +774,6 @@ class QtPluginDialog(QDialog):
         ):
             self._parent._plugin_dialog = self
 
-        self.refresh_state = RefreshState.DONE
         self.already_installed = set()
         self.available_set = set()
 
@@ -908,7 +894,6 @@ class QtPluginDialog(QDialog):
                 meta = importlib.metadata.metadata(distname)
 
             except importlib.metadata.PackageNotFoundError:
-                self.refresh_state = RefreshState.OUTDATED
                 return  # a race condition has occurred and the package is uninstalled by another thread
             if len(meta) == 0:
                 # will not add builtins.
