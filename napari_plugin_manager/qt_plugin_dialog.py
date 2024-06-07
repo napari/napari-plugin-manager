@@ -561,7 +561,6 @@ class QPluginList(QListWidget):
         for i in range(count):
             item = self.item(i)
             if item.widget.name == name:
-                # print(i, item, name)
                 self.takeItem(i)
                 break
 
@@ -678,6 +677,9 @@ class QPluginList(QListWidget):
 
     def is_running(self):
         return self.count() != len(self._data)
+
+    def packages(self):
+        return [self.item(idx).widget.name for idx in range(self.count())]
 
     @Slot(npe2.PackageMetadata, bool)
     def tag_outdated(self, metadata: npe2.PackageMetadata, is_available: bool):
@@ -806,16 +808,24 @@ class QtPluginDialog(QDialog):
         self._setup_ui()
         self.installer.set_output_widget(self.stdout_text)
         self.installer.started.connect(self._on_installer_start)
-        # self.installer.finished.connect(self._on_installer_done)
         self.installer.processFinished.connect(self._on_process_finished)
+        self.installer.allFinished.connect(self._on_installer_all_finished)
 
         if (
             parent is not None and parent._plugin_dialog is self
         ) or parent is None:
             self.refresh()
 
+        get_settings().appearance.events.theme.connect(self._update_theme)
+        self._first_open = True
+
     # Private methods
     # ------------------------------------------------------------------------
+    def _update_theme(self, event):
+        stylesheet = get_current_stylesheet([STYLES_PATH])
+        self.setStyleSheet(stylesheet)
+        self._first_open = True
+
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
         self.cancel_all_btn.setVisible(True)
@@ -825,62 +835,36 @@ class QtPluginDialog(QDialog):
         self.close_btn.setDisabled(True)
         self.refresh_button.setDisabled(True)
 
-    # def _on_installer_done(self, exit_code):
-    #     """Updates buttons and status when plugin is done installing."""
-    #     self.working_indicator.hide()
-    #     if exit_code:
-    #         self.process_error_indicator.show()
-    #         self.available_list._remove_list = []
-    #     else:
-    #         self.process_success_indicator.show()
-    #         # Remove the items if successfull
-    #         # self.available_list.remove_items()
-
-    #     self.cancel_all_btn.setVisible(False)
-    #     self.close_btn.setDisabled(False)
-    #     self.refresh()
-
     def _on_process_finished(self, exit_code, exit_status, action, pkgs):
-        print(exit_code, exit_status, action, pkgs)
-        # 0 0 install ['alveoleye==0.1.2']
         pkg_names = [pkg.split('==')[0] for pkg in pkgs]
-        # pkg_data = [
-        #     self.all_plugin_data_map[pkg_name] for pkg_name in pkg_names
-        # ]
-
         if action == 'install':
-            # Remove from available_list and add to installed_list
             if exit_code == 0:
-                # Remove from installed_list and add to available_list
-                # for pkg_name in pkg_names:
-                #     self._plugin_data.insert(0, self.all_plugin_data_map[pkg_name])
                 for pkg_name in pkg_names:
                     self.available_set.remove(pkg_name)
                     self.available_list.removeItem(pkg_name)
                     self._add_installed(pkg_name)
-                    # TODO: needs to tag outdated
+                    self._tag_outdated_plugins()
             else:
                 for pkg_name in pkg_names:
                     self.available_list.refreshItem(pkg_name)
         elif action == 'uninstall':
             if exit_code == 0:
-                # Remove from installed_list and add to available_list
                 for pkg_name in pkg_names:
                     self.already_installed.remove(pkg_name)
                     self.installed_list.removeItem(pkg_name)
-                    self._add_available(pkg_name)
+                    self._add_to_available(pkg_name)
             else:
                 for pkg_name in pkg_names:
                     self.installed_list.refreshItem(pkg_name)
         elif action == 'upgrade':
             for pkg_name in pkg_names:
                 self.installed_list.refreshItem(pkg_name)
-                # TODO: needs to tag outdated
+                self._tag_outdated_plugins()
         elif action == 'cancel':
             for pkg_name in pkg_names:
                 self.installed_list.refreshItem(pkg_name)
                 self.available_list.refreshItem(pkg_name)
-                # TODO: needs to tag outdated
+                self._tag_outdated_plugins()
 
         self.working_indicator.hide()
         if exit_code:
@@ -892,7 +876,13 @@ class QtPluginDialog(QDialog):
         self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
 
-    def _add_available(self, pkg_name):
+    def _on_installer_all_finished(self):
+        self.working_indicator.hide()
+        self.cancel_all_btn.setVisible(False)
+        self.close_btn.setDisabled(False)
+        self.refresh_button.setDisabled(False)
+
+    def _add_to_available(self, pkg_name):
         self._add_items_timer.stop()
         self._plugin_data.insert(0, self._all_plugin_data_map[pkg_name])
         self._add_items_timer.start()
@@ -1014,7 +1004,9 @@ class QtPluginDialog(QDialog):
         self.packages_filter.setMaximumWidth(350)
         self.packages_filter.setClearButtonEnabled(True)
         self.packages_filter.textChanged.connect(self._filter_timer.start)
+
         self.refresh_button = QPushButton(trans._('Refresh'), self)
+        self.refresh_button.setObjectName("refresh_button")
         self.refresh_button.setToolTip(
             trans._(
                 'This will clear the available and installed plugins lists and requery the `npe2api` service.'
@@ -1092,6 +1084,7 @@ class QtPluginDialog(QDialog):
         self.close_btn = QPushButton(trans._("Close"), self)
         self.close_btn.clicked.connect(self.accept)
         self.close_btn.setObjectName("close_button")
+
         buttonBox.addWidget(self.show_status_btn)
         buttonBox.addWidget(self.working_indicator)
         buttonBox.addWidget(self.direct_entry_edit)
@@ -1115,9 +1108,6 @@ class QtPluginDialog(QDialog):
         self.h_splitter.setStretchFactor(0, 2)
 
         self.packages_filter.setFocus()
-
-        stylesheet = get_current_stylesheet([STYLES_PATH])
-        self.setStyleSheet(stylesheet)
 
     def _update_plugin_count(self):
         """Update count labels for both installed and available plugin lists.
@@ -1180,6 +1170,14 @@ class QtPluginDialog(QDialog):
                 versions=versions,
             )
 
+    def _tag_outdated_plugins(self):
+        """Tag installed plugins that might be outdated."""
+        for pkg_name in self.installed_list.packages():
+            metadata, is_available_in_conda, _ = self._all_plugin_data_map.get(
+                pkg_name
+            )
+            self.installed_list.tag_outdated(metadata, is_available_in_conda)
+
     def _add_items(self, items=None):
         """
         Add items to the lists by `batch_size` using a timer to add a pause
@@ -1198,10 +1196,8 @@ class QtPluginDialog(QDialog):
         for _ in range(batch_size):
             data = self._plugin_data.pop(0)
             metadata, is_available_in_conda, extra_info = data
-            # print(metadata.name)
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
-                # print('tag ourdated')
                 self.installed_list.tag_outdated(
                     metadata, is_available_in_conda
                 )
@@ -1220,6 +1216,7 @@ class QtPluginDialog(QDialog):
                     self.available_list.tag_unavailable(metadata)
 
             if len(self._plugin_data) == 0:
+                self._tag_outdated_plugins()
                 break
 
         if not self._filter_timer.isActive():
@@ -1286,8 +1283,14 @@ class QtPluginDialog(QDialog):
         plugin_dialog.setModal(True)
         plugin_dialog.show()
 
+        if self._first_open:
+            stylesheet = get_current_stylesheet([STYLES_PATH])
+            self.setStyleSheet(stylesheet)
+            self._first_open = False
+
     def hideEvent(self, event):
         self.packages_filter.clear()
+        self.toggle_status(False)
         super().hideEvent(event)
 
     # Public methods

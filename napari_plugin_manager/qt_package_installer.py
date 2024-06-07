@@ -541,7 +541,6 @@ class InstallerQueue(QProcess):
             )
 
         if item is not None:
-            print('testis')
             self.processFinished.emit(
                 exit_code, exit_status, item.action, item.pkgs
             )
