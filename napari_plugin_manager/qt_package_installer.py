@@ -239,12 +239,14 @@ class CondaInstallerTool(AbstractInstallerTool):
 class InstallerQueue(QProcess):
     """Queue for installation and uninstallation tasks in the plugin manager."""
 
-    # emitted when all jobs are finished
-    # not to be confused with finished, which is emitted when each job is finished
-    allFinished = Signal(object)
-    processFinished = Signal(
-        int, int, object, object
-    )  # exit_code, exit_status, action, pkgs
+    # emitted when all jobs are finished. Not to be confused with finished,
+    # which is emitted when each job is finished.
+    # Tuple of exit codes for each job
+    allFinished = Signal(tuple)
+
+    # emitted when each job finishes
+    # exit_code, status_code, action, pkgs
+    processFinished = Signal(int, int, object, object)
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
@@ -463,7 +465,7 @@ class InstallerQueue(QProcess):
 
     def _process_queue(self):
         if not self._queue:
-            self.allFinished.emit(self._exit_codes)
+            self.allFinished.emit(tuple(self._exit_codes))
             self._exit_codes = []
             return
 

@@ -55,7 +55,7 @@ QWidget#install_choice_widget {
 }
 
 QPluginList {
-  background-color: {{ console }};;
+  background-color: {{ console }};
 }
 
 PluginListItem {
