@@ -386,9 +386,23 @@ def test_refresh(qtbot, plugin_dialog):
     with qtbot.waitSignal(plugin_dialog._add_items_timer.timeout, timeout=500):
         plugin_dialog.refresh(clear_cache=True)
 
+    with qtbot.waitSignal(plugin_dialog._add_items_timer.timeout, timeout=500):
+        plugin_dialog._refresh_and_clear_cache()
+
 
 def test_toggle_status(plugin_dialog):
     plugin_dialog.toggle_status(True)
     assert plugin_dialog.stdout_text.isVisible()
     plugin_dialog.toggle_status(False)
     assert not plugin_dialog.stdout_text.isVisible()
+
+
+def test_exec(plugin_dialog):
+    plugin_dialog.exec_()
+
+
+def test_search_in_available(plugin_dialog):
+    idxs = plugin_dialog._search_in_available("test")
+    assert idxs == [0, 1]
+    idxs = plugin_dialog._search_in_available("*&%$")
+    assert idxs == []
