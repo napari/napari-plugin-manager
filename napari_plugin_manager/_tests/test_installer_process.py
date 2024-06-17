@@ -185,6 +185,9 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     not CondaInstallerTool.available(), reason="Conda is not available."
 )
 def test_conda_installer(qtbot, tmp_conda_env: Path):
+    conda_meta = tmp_conda_env / "conda-meta"
+    glob_pat = "typing-extensions-*.json"
+    glob_pat_2 = "pyzenhub-*.json"
     installer = InstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
@@ -193,9 +196,6 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
             pkgs=['typing-extensions'],
             prefix=tmp_conda_env,
         )
-
-    conda_meta = tmp_conda_env / "conda-meta"
-    glob_pat = "typing-extensions-*.json"
 
     assert not installer.hasJobs()
     assert list(conda_meta.glob(glob_pat))
@@ -209,6 +209,61 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
 
     assert not installer.hasJobs()
     assert not list(conda_meta.glob(glob_pat))
+
+    # Check canceling all works
+    with qtbot.waitSignal(installer.allFinished, timeout=600_000):
+        installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['typing-extensions'],
+            prefix=tmp_conda_env,
+        )
+        installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['pyzenhub'],
+            prefix=tmp_conda_env,
+        )
+        assert installer.currentJobs() == 2
+        installer.cancel()
+
+    assert not installer.hasJobs()
+    assert not list(conda_meta.glob(glob_pat))
+    assert not list(conda_meta.glob(glob_pat_2))
+
+    # Check canceling current job works (1st in queue)
+    with qtbot.waitSignal(installer.allFinished, timeout=600_000):
+        job_id_1 = installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['typing-extensions'],
+            prefix=tmp_conda_env,
+        )
+        job_id_2 = installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['pyzenhub'],
+            prefix=tmp_conda_env,
+        )
+        assert installer.currentJobs() == 2
+        installer.cancel(job_id_1)
+        assert installer.currentJobs() == 1
+
+    assert not installer.hasJobs()
+
+    # Check canceling queued job works (somewhere besides 1st position in queue)
+    with qtbot.waitSignal(installer.allFinished, timeout=600_000):
+        job_id_1 = installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['typing-extensions'],
+            prefix=tmp_conda_env,
+        )
+        job_id_2 = installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['pyzenhub'],
+            prefix=tmp_conda_env,
+        )
+        assert installer.currentJobs() == 2
+        installer.cancel(job_id_2)
+        assert installer.currentJobs() == 1
+
+    assert not installer.hasJobs()
 
 
 def test_constraints_are_in_sync():
