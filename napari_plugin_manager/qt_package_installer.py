@@ -248,9 +248,12 @@ class InstallerQueue(QProcess):
     # exit_code, status_code, action, pkgs
     processFinished = Signal(int, int, object, object)
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(
+        self, parent: Optional[QObject] = None, prefix: Optional[str] = None
+    ) -> None:
         super().__init__(parent)
         self._queue: Deque[AbstractInstallerTool] = deque()
+        self._prefix = prefix
         self._output_widget = None
         self._exit_codes = []
 
@@ -458,7 +461,7 @@ class InstallerQueue(QProcess):
             pkgs=pkgs,
             action=action,
             origins=origins,
-            prefix=prefix,
+            prefix=prefix or self.prefix,
             **kwargs,
         )
 

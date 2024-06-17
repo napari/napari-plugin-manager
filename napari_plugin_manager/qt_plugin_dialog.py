@@ -764,7 +764,7 @@ class QPluginList(QListWidget):
 
 
 class QtPluginDialog(QDialog):
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, prefix=None) -> None:
         super().__init__(parent)
 
         self._parent = parent
@@ -793,7 +793,7 @@ class QtPluginDialog(QDialog):
         self._add_items_timer.setInterval(61)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
 
-        self.installer = InstallerQueue()
+        self.installer = InstallerQueue(parent=self, prefix=prefix)
         self.setWindowTitle(trans._('Plugin Manager'))
         self._setup_ui()
         self.installer.set_output_widget(self.stdout_text)

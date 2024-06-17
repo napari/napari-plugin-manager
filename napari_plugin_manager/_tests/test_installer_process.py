@@ -1,5 +1,4 @@
 import re
-import sys
 import time
 from pathlib import Path
 from types import MethodType
@@ -18,42 +17,6 @@ from napari_plugin_manager.qt_package_installer import (
 
 if TYPE_CHECKING:
     from virtualenv.run import Session
-
-
-@pytest.fixture
-def tmp_virtualenv(tmp_path) -> 'Session':
-    virtualenv = pytest.importorskip('virtualenv')
-
-    cmd = [str(tmp_path), '--no-setuptools', '--no-wheel', '--activators', '']
-    return virtualenv.cli_run(cmd)
-
-
-@pytest.fixture
-def tmp_conda_env(tmp_path):
-    import subprocess
-
-    try:
-        subprocess.check_output(
-            [
-                CondaInstallerTool.executable(),
-                'create',
-                '-yq',
-                '-p',
-                str(tmp_path),
-                '--override-channels',
-                '-c',
-                'conda-forge',
-                f'python={sys.version_info.major}.{sys.version_info.minor}',
-            ],
-            stderr=subprocess.STDOUT,
-            text=True,
-            timeout=300,
-        )
-    except subprocess.CalledProcessError as exc:
-        print(exc.output)
-        raise
-
-    return tmp_path
 
 
 def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
