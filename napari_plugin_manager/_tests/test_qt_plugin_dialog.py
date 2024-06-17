@@ -10,7 +10,7 @@ import pytest
 import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
-from qtpy.QtCore import QMimeData, QPoint, Qt, QUrl
+from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
 from qtpy.QtGui import QDropEvent
 
 if (qtpy.API_NAME == 'PySide2' and platform.system() != "Linux") or (
@@ -418,7 +418,7 @@ def test_drop_event(plugin_dialog, tmp_path):
         [QUrl('file://' + str(path_1)), QUrl('file://' + str(path_2))]
     )
     event = QDropEvent(
-        QPoint(5, 5), Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier
+        QPointF(5.0, 5.0), Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier
     )
     plugin_dialog.dropEvent(event)
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
