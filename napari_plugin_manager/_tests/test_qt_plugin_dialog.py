@@ -10,6 +10,8 @@ import pytest
 import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
+from qtpy.QtCore import QMimeData, QPoint, Qt, QUrl
+from qtpy.QtGui import QDropEvent
 
 if (qtpy.API_NAME == 'PySide2' and platform.system() != "Linux") or (
     sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
@@ -406,3 +408,17 @@ def test_search_in_available(plugin_dialog):
     assert idxs == [0, 1]
     idxs = plugin_dialog._search_in_available("*&%$")
     assert idxs == []
+
+
+def test_drop_event(plugin_dialog, tmp_path):
+    path_1 = tmp_path / "example-1.txt"
+    path_2 = tmp_path / "example-2.txt"
+    data = QMimeData()
+    data.setUrls(
+        [QUrl('file://' + str(path_1)), QUrl('file://' + str(path_2))]
+    )
+    event = QDropEvent(
+        QPoint(5, 5), Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier
+    )
+    plugin_dialog.dropEvent(event)
+    assert plugin_dialog.direct_entry_edit.text() == str(path_1)

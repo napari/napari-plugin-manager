@@ -20,7 +20,7 @@ from napari.utils.misc import (
 )
 from napari.utils.notifications import show_info, show_warning
 from napari.utils.translations import trans
-from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Slot
+from qtpy.QtCore import QPoint, QSize, Qt, QTimer, Slot
 from qtpy.QtGui import QFont, QMovie
 from qtpy.QtWidgets import (
     QCheckBox,
@@ -800,6 +800,7 @@ class QtPluginDialog(QDialog):
         self.installer.started.connect(self._on_installer_start)
         self.installer.processFinished.connect(self._on_process_finished)
         self.installer.allFinished.connect(self._on_installer_all_finished)
+        self.setAcceptDrops(True)
 
         if (
             parent is not None and parent._plugin_dialog is self
@@ -1267,18 +1268,17 @@ class QtPluginDialog(QDialog):
         else:
             super().closeEvent(event)
 
-    def eventFilter(self, watched, event):
-        if event.type() == QEvent.DragEnter:
-            # we need to accept this event explicitly to be able
-            # to receive QDropEvents!
-            event.accept()
-        if event.type() == QEvent.Drop:
-            md = event.mimeData()
-            if md.hasUrls():
-                files = [url.toLocalFile() for url in md.urls()]
-                self.direct_entry_edit.setText(files[0])
-                return True
-        return super().eventFilter(watched, event)
+    def dragEnterEvent(self, event):
+        event.accept()
+
+    def dropEvent(self, event):
+        md = event.mimeData()
+        if md.hasUrls():
+            files = [url.toLocalFile() for url in md.urls()]
+            self.direct_entry_edit.setText(files[0])
+            return True
+
+        return super().dropEvent(event)
 
     def exec_(self):
         plugin_dialog = getattr(self._parent, '_plugin_dialog', self)
@@ -1357,9 +1357,3 @@ if __name__ == "__main__":
     w = QtPluginDialog()
     w.show()
     app.exec_()
-
-    """
-    pytest napari_plugin_manager/_tests/test_qt_plugin_dialog.py::test_filter_not_available_plugins
-    pytest napari_plugin_manager/_tests/test_qt_plugin_dialog.py::test_filter_available_plugins
-    pytest napari_plugin_manager/_tests/test_qt_plugin_dialog.py::test_filter_installed_plugins
-    """
