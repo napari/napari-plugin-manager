@@ -19,7 +19,7 @@ from napari._qt.qt_resources import QColoredSVGIcon, get_current_stylesheet
 from napari._qt.qthreading import create_worker
 from napari._qt.widgets.qt_message_popup import WarnPopup
 from napari._qt.widgets.qt_tooltip import QtToolTipLabel
-from napari.plugins.utils import normalized_name
+from napari.plugins.utils import PluginStatus, normalized_name
 from napari.settings import get_settings
 from napari.utils.misc import (
     parse_version,
