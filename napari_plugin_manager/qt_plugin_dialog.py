@@ -1008,12 +1008,10 @@ class QtPluginDialog(QDialog):
         self.refresh_button.setObjectName("refresh_button")
         self.refresh_button.setToolTip(
             trans._(
-                'This will clear the available and installed plugins lists and requery the `npe2api` service.'
+                'This will clear and refresh the available and installed plugins lists.'
             )
         )
-        self.refresh_button.clicked.connect(
-            lambda: self.refresh(clear_cache=True)
-        )
+        self.refresh_button.clicked.connect(self._refresh_and_clear_cache)
 
         mid_layout = QVBoxLayout()
         horizontal_mid_layout = QHBoxLayout()
@@ -1078,7 +1076,7 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn = QPushButton(trans._("cancel all actions"), self)
         self.cancel_all_btn.setObjectName("remove_button")
         self.cancel_all_btn.setVisible(False)
-        # self.cancel_all_btn.clicked.connect(lambda x: self.installer.cancel())
+        self.cancel_all_btn.clicked.connect(self.installer.cancel)
 
         self.close_btn = QPushButton(trans._("Close"), self)
         self.close_btn.clicked.connect(self.accept)
@@ -1252,6 +1250,9 @@ class QtPluginDialog(QDialog):
                 self._filter_idxs_cache.add(idx)
 
         return idxs
+
+    def _refresh_and_clear_cache(self):
+        self.refresh(clear_cache=True)
 
     # Qt overrides
     # ------------------------------------------------------------------------
