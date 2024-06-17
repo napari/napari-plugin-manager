@@ -1340,7 +1340,8 @@ class QtPluginDialog(QDialog):
         self._add_installed()
         self._fetch_available_plugins(clear_cache=clear_cache)
 
-    def toggle_status(self, show):
+    def toggle_status(self, show=None):
+        show = not self.stdout_text.isVisible() if show is None else show
         if show:
             self.show_status_btn.setText(trans._("Hide Status"))
             self.stdout_text.show()

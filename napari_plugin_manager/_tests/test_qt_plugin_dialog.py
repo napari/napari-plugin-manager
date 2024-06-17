@@ -377,3 +377,10 @@ def test_add_items_outdated(plugin_dialog):
     widget = plugin_dialog.installed_list.itemWidget(item)
 
     assert widget.update_btn.isVisible()
+
+
+def test_toggle_status(plugin_dialog):
+    plugin_dialog.toggle_status(True)
+    assert plugin_dialog.stdout_text.isVisible()
+    plugin_dialog.toggle_status(False)
+    assert not plugin_dialog.stdout_text.isVisible()
