@@ -388,8 +388,8 @@ class InstallerQueue(QProcess):
         for i, item in enumerate(deque(self._queue)):
             if item.ident == job_id:
                 if i == 0:  # first in queue, currently running
-                    self._end_process()
                     self._queue.remove(item)
+                    self._end_process()
                 else:  # still pending, just remove from queue
                     self._queue.remove(item)
 
@@ -423,6 +423,10 @@ class InstallerQueue(QProcess):
     def hasJobs(self) -> bool:
         """True if there are jobs remaining in the queue."""
         return bool(self._queue)
+
+    def currentJobs(self) -> int:
+        """Return the number of running jobs in the queue."""
+        return len(self._queue)
 
     def set_output_widget(self, output_widget: QTextEdit):
         if output_widget:
@@ -491,6 +495,7 @@ class InstallerQueue(QProcess):
             self.kill()
         else:
             self.terminate()
+
         if self._output_widget:
             self._output_widget.append(
                 trans._("\nTask was cancelled by the user.")
