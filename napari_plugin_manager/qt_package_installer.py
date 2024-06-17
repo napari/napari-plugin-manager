@@ -85,7 +85,7 @@ class AbstractInstallerTool:
         """
         Version constraints to limit unwanted changes in installation.
         """
-        return [f"napari=={_napari_version}", "pydantic<2", "numpy<2"]
+        return [f"napari=={_napari_version}", "numpy<2"]
 
     @classmethod
     def available(cls) -> bool:
@@ -215,7 +215,7 @@ class CondaInstallerTool(AbstractInstallerTool):
         pin_level = 2 if is_dev else 3
         version = ".".join([str(x) for x in _napari_version_tuple[:pin_level]])
 
-        return [f"napari={version}", "pydantic<2.0a0", "numpy<2.0a0"]
+        return [f"napari={version}", "numpy<2.0a0"]
 
     def _add_constraints_to_env(
         self, env: QProcessEnvironment
