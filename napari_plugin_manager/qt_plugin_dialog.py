@@ -3,6 +3,11 @@ import importlib.metadata
 import os
 import sys
 import webbrowser
+import datetime
+import importlib.metadata
+import os
+import uuid
+from enum import Enum, auto
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
@@ -81,6 +86,11 @@ def _show_message(widget):
         )
         warn_dialog.move(global_point)
         warn_dialog.exec_()
+
+
+class PluginStatus(Enum):
+    BUSY = auto()
+    IDLE = auto()
 
 
 class ProjectInfoVersions(NamedTuple):
@@ -1446,6 +1456,26 @@ class QtPluginDialog(QDialog):
             item.widget.prefix = prefix
 
     # endregion - Public methods
+
+    def query_status(self) -> dict:
+        """Return the current status of the plugin."""
+        if self.installer.hasJobs():
+            status = PluginStatus.BUSY
+            description = trans._n(
+                'The plugin manager is currently busy with {n} task.',
+                'The plugin manager is currently busy with {n} tasks.',
+                n=self.installer.currentJobs(),
+            )
+        else:
+            status = PluginStatus.IDLE
+            description = ''
+
+        return {
+            "id": uuid.uuid4(),
+            "timestamp": datetime.datetime.now().isoformat(),
+            "status": status,
+            "description": description,
+        }
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ if (qtpy.API_NAME == 'PySide2') or (
 
 from napari_plugin_manager import qt_plugin_dialog
 from napari_plugin_manager.qt_package_installer import InstallerActions
+from napari_plugin_manager.qt_plugin_dialog import PluginStatus
 
 N_MOCKED_PLUGINS = 2
 
@@ -198,7 +199,6 @@ def plugin_dialog(
     monkeypatch.setattr(
         napari.plugins, 'plugin_manager', OldPluginManagerMock()
     )
-
     monkeypatch.setattr(importlib.metadata, 'metadata', mock_metadata)
 
     monkeypatch.setattr(npe2, 'PluginManager', PluginManagerMock())
@@ -385,6 +385,7 @@ def test_add_items_outdated(plugin_dialog, qtbot):
     assert widget.update_btn.isVisible()
 
 
+<<<<<<< HEAD
 @pytest.mark.skipif(
     qtpy.API_NAME.lower().startswith('pyside')
     and sys.version_info[:2] > (3, 10)
@@ -538,3 +539,26 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     )
     qtbot.wait(200)
     assert not plugin_dialog.isVisible()
+=======
+def test_query_status(plugin_dialog, monkeypatch):
+    res = plugin_dialog.query_status()
+    assert res['status'] == PluginStatus.IDLE
+    assert not res['description']
+
+    monkeypatch.setattr(
+        plugin_dialog.installer,
+        "_queue",
+        ['mock'],
+    )
+    res = plugin_dialog.query_status()
+    assert res['status'] == PluginStatus.BUSY
+    assert res['description']
+
+    monkeypatch.setattr(
+        plugin_dialog.installer,
+        "_queue",
+        ['mock', 'other-mock'],
+    )
+    assert res['status'] == PluginStatus.BUSY
+    assert res['description']
+>>>>>>> 04b4f8c (Add utility function to query the plugin status from napari side and prevent closing if busy)
