@@ -19,7 +19,7 @@ from napari._qt.qt_resources import QColoredSVGIcon, get_current_stylesheet
 from napari._qt.qthreading import create_worker
 from napari._qt.widgets.qt_message_popup import WarnPopup
 from napari._qt.widgets.qt_tooltip import QtToolTipLabel
-from napari.plugins.utils import PluginStatus, normalized_name
+from napari.plugins.utils import normalized_name
 from napari.settings import get_settings
 from napari.utils.misc import (
     parse_version,
@@ -62,6 +62,17 @@ from napari_plugin_manager.qt_package_installer import (
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
 
+try:
+    from napari.plugins.utils import PluginStatus
+except ImportError:
+
+    class PluginStatus(Enum):
+        BUSY = auto()
+        IDLE = auto()
+
+
+# TODO: add error icon and handle pip install errors
+
 # Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'
 PYPI = 'PyPI'
@@ -86,11 +97,6 @@ def _show_message(widget):
         )
         warn_dialog.move(global_point)
         warn_dialog.exec_()
-
-
-class PluginStatus(Enum):
-    BUSY = auto()
-    IDLE = auto()
 
 
 class ProjectInfoVersions(NamedTuple):
