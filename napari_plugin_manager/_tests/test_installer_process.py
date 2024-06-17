@@ -10,6 +10,7 @@ from qtpy.QtCore import QProcessEnvironment
 from napari_plugin_manager.qt_package_installer import (
     AbstractInstallerTool,
     CondaInstallerTool,
+    InstallerActions,
     InstallerQueue,
     InstallerTools,
     PipInstallerTool,
@@ -17,6 +18,41 @@ from napari_plugin_manager.qt_package_installer import (
 
 if TYPE_CHECKING:
     from virtualenv.run import Session
+
+
+def _assert_exit_code_not_zero(
+    self, exit_code=None, exit_status=None, error=None
+):
+    errors = []
+    if exit_code == 0:
+        errors.append("- 'exit_code' should have been non-zero!")
+    if error is not None:
+        errors.append("- 'error' should have been None!")
+    if errors:
+        raise AssertionError("\n".join(errors))
+    return self._on_process_done_original(exit_code, exit_status, error)
+
+
+def _assert_error_used(self, exit_code=None, exit_status=None, error=None):
+    errors = []
+    if error is None:
+        errors.append("- 'error' should have been populated!")
+    if exit_code is not None:
+        errors.append("- 'exit_code' should not have been populated!")
+    if errors:
+        raise AssertionError("\n".join(errors))
+    return self._on_process_done_original(exit_code, exit_status, error)
+
+
+class _NonExistingTool(AbstractInstallerTool):
+    def executable(self):
+        return f"this-tool-does-not-exist-{hash(time.time())}"
+
+    def arguments(self):
+        return ()
+
+    def environment(self, env=None):
+        return QProcessEnvironment.systemEnvironment()
 
 
 def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
@@ -63,43 +99,15 @@ def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
         assert not (
             pth / 'pip_install_test'
         ).exists(), 'pip_install_test still installed'
-
     assert not installer.hasJobs()
 
-
-def _assert_exit_code_not_zero(
-    self, exit_code=None, exit_status=None, error=None
-):
-    errors = []
-    if exit_code == 0:
-        errors.append("- 'exit_code' should have been non-zero!")
-    if error is not None:
-        errors.append("- 'error' should have been None!")
-    if errors:
-        raise AssertionError("\n".join(errors))
-    return self._on_process_done_original(exit_code, exit_status, error)
-
-
-class _NonExistingTool(AbstractInstallerTool):
-    def executable(self):
-        return f"this-tool-does-not-exist-{hash(time.time())}"
-
-    def arguments(self):
-        return ()
-
-    def environment(self, env=None):
-        return QProcessEnvironment.systemEnvironment()
-
-
-def _assert_error_used(self, exit_code=None, exit_status=None, error=None):
-    errors = []
-    if error is None:
-        errors.append("- 'error' should have been populated!")
-    if exit_code is not None:
-        errors.append("- 'exit_code' should not have been populated!")
-    if errors:
-        raise AssertionError("\n".join(errors))
-    return self._on_process_done_original(exit_code, exit_status, error)
+    # Test new signals
+    with qtbot.waitSignal(installer.processFinished, timeout=20000) as blocker:
+        installer.install(
+            tool=InstallerTools.PIP,
+            pkgs=['pydantic'],
+        )
+    assert blocker.args[2:] == [InstallerActions.INSTALL, ["pydantic"]]
 
 
 def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
