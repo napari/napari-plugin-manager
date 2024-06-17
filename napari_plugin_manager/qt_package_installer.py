@@ -411,6 +411,10 @@ class InstallerQueue(QProcess):
         """True if there are jobs remaining in the queue."""
         return bool(self._queue)
 
+    def currentJobs(self) -> int:
+        """Returns the number of jobs."""
+        return len(self._queue)
+
     def set_output_widget(self, output_widget: QTextEdit):
         if output_widget:
             self._output_widget = output_widget

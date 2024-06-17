@@ -1,5 +1,7 @@
+import datetime
 import importlib.metadata
 import os
+import uuid
 from enum import Enum, auto
 from functools import partial
 from pathlib import Path
@@ -59,6 +61,11 @@ PYPI = 'PyPI'
 ON_BUNDLE = running_as_constructor_app()
 IS_NAPARI_CONDA_INSTALLED = is_conda_package('napari')
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
+
+
+class PluginStatus(Enum):
+    BUSY = auto()
+    IDLE = auto()
 
 
 class ProjectInfoVersions(NamedTuple):
@@ -1200,6 +1207,26 @@ class QtPluginDialog(QDialog):
         self.installed_list.filter(text)
         self.available_list.filter(text)
         self._update_count_in_label()
+
+    def query_status(self) -> dict:
+        """Return the current status of the plugin."""
+        if self.installer.hasJobs():
+            status = PluginStatus.BUSY
+            description = trans._n(
+                'The plugin manager is currently busy with {n} task.',
+                'The plugin manager is currently busy with {n} tasks.',
+                n=self.installer.currentJobs(),
+            )
+        else:
+            status = PluginStatus.IDLE
+            description = ''
+
+        return {
+            "id": uuid.uuid4(),
+            "timestamp": datetime.datetime.now().isoformat(),
+            "status": status,
+            "description": description,
+        }
 
 
 if __name__ == "__main__":
