@@ -461,7 +461,7 @@ class InstallerQueue(QProcess):
             pkgs=pkgs,
             action=action,
             origins=origins,
-            prefix=prefix or self.prefix,
+            prefix=prefix or self._prefix,
             **kwargs,
         )
 
