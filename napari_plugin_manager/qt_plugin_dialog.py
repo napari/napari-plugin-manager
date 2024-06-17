@@ -92,6 +92,7 @@ class PluginListItem(QFrame):
     ) -> None:
         super().__init__(parent)
         self.url = url
+        self.name = package_name
         self._versions_conda = versions_conda
         self._versions_pypi = versions_pypi
         self.setup_ui(enabled)
@@ -321,6 +322,8 @@ class PluginListItem(QFrame):
 
         self.source_choice_text = QLabel('Source:')
         self.version_choice_text = QLabel('Version:')
+        self.source_choice_dropdown = QComboBox()
+        self.version_choice_dropdown = QComboBox()
 
         if IS_NAPARI_CONDA_INSTALLED and self._versions_conda:
             self.source_choice_dropdown.addItem(CONDA)
@@ -328,15 +331,12 @@ class PluginListItem(QFrame):
         if self._versions_pypi:
             self.source_choice_dropdown.addItem(PYPI)
 
-        self.version_choice_dropdown = QComboBox()
-
         source = self.get_installer_source()
         self.source_choice_dropdown.setCurrentText(source)
         self._populate_version_dropdown(source)
         self.source_choice_dropdown.currentTextChanged.connect(
             self._populate_version_dropdown
         )
-        self.version_choice_dropdown = QComboBox()
         self.row2.addWidget(
             self.install_info_button,
             0,
@@ -573,8 +573,8 @@ class QPluginList(QListWidget):
     ):
         """Determine which action is called (install, uninstall, update, cancel).
         Update buttons appropriately and run the action."""
-        tool = widget.get_installer_tool()
         widget = item.widget
+        tool = widget.get_installer_tool()
         item.setText(f"0-{item.text()}")
         self._remove_list.append((pkg_name, item))
         self._warn_dialog = None
