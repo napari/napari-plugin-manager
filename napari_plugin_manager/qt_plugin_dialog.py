@@ -133,8 +133,9 @@ class PluginListItem(QFrame):
             self.info_widget.hide()
             self.install_info_button.addWidget(self.info_choice_wdg)
             self.install_info_button.setFixedWidth(170)
-
             self.info_choice_wdg.show()
+
+        self._populate_version_dropdown(self.get_installer_source())
 
     def _handle_npe2_plugin(self, npe_version):
         if npe_version in (None, 1):
