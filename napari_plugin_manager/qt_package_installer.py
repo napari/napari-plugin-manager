@@ -385,7 +385,7 @@ class InstallerQueue(QProcess):
             self._end_process()
             return
 
-        for i, item in enumerate(self._queue):
+        for i, item in enumerate(deque(self._queue)):
             if item.ident == job_id:
                 if i == 0:  # first in queue, currently running
                     self._end_process()
