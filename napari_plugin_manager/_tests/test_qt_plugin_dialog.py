@@ -1,4 +1,5 @@
 import importlib.metadata
+import os
 import platform
 import sys
 from typing import Generator, Optional, Tuple
@@ -413,9 +414,10 @@ def test_search_in_available(plugin_dialog):
 def test_drop_event(plugin_dialog, tmp_path):
     path_1 = tmp_path / "example-1.txt"
     path_2 = tmp_path / "example-2.txt"
+    url_prefix = 'file:///' if os.name == 'nt' else 'file://'
     data = QMimeData()
     data.setUrls(
-        [QUrl('file://' + str(path_1)), QUrl('file://' + str(path_2))]
+        [QUrl(f'{url_prefix}{path_1}'), QUrl(f'{url_prefix}{path_2}')]
     )
     event = QDropEvent(
         QPointF(5.0, 5.0), Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier

@@ -109,6 +109,17 @@ def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
         )
     assert blocker.args[2:] == [InstallerActions.INSTALL, ["pydantic"]]
 
+    # Test upgrade
+    with qtbot.waitSignal(installer.allFinished, timeout=20000):
+        installer.install(
+            tool=InstallerTools.PIP,
+            pkgs=['requests==2.30.0'],
+        )
+        installer.upgrade(
+            tool=InstallerTools.PIP,
+            pkgs=['requests'],
+        )
+
 
 def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     installer = InstallerQueue()
@@ -250,3 +261,13 @@ def test_constraints_are_in_sync():
         conda_name = name_re.match(conda_constraint).group(1)
         pip_name = name_re.match(pip_constraint).group(1)
         assert conda_name == pip_name
+
+
+def test_executables():
+    assert CondaInstallerTool.executable()
+    assert PipInstallerTool.executable()
+
+
+def test_available():
+    assert CondaInstallerTool.available()
+    assert PipInstallerTool.available()
