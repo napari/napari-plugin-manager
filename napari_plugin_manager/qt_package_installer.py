@@ -411,6 +411,9 @@ class InstallerQueue(QProcess):
         self.processFinished.emit(1, 0, InstallerActions.CANCEL, [])
         raise ValueError(msg)
 
+    def cancel_all(self):
+        self.cancel()
+
     def waitForFinished(self, msecs: int = 10000) -> bool:
         """Block and wait for all jobs to finish.
 
