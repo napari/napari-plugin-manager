@@ -239,14 +239,23 @@ class CondaInstallerTool(AbstractInstallerTool):
 class InstallerQueue(QProcess):
     """Queue for installation and uninstallation tasks in the plugin manager."""
 
-    # emitted when all jobs are finished
-    # not to be confused with finished, which is emitted when each job is finished
-    allFinished = Signal()
+    # emitted when all jobs are finished. Not to be confused with finished,
+    # which is emitted when each job is finished.
+    # Tuple of exit codes for each job
+    allFinished = Signal(tuple)
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    # emitted when each job finishes
+    # exit_code, status_code, action, pkgs
+    processFinished = Signal(int, int, object, object)
+
+    def __init__(
+        self, parent: Optional[QObject] = None, prefix: Optional[str] = None
+    ) -> None:
         super().__init__(parent)
         self._queue: Deque[AbstractInstallerTool] = deque()
+        self._prefix = prefix
         self._output_widget = None
+        self._exit_codes = []
 
         self.setProcessChannelMode(QProcess.MergedChannels)
         self.readyReadStandardOutput.connect(self._on_stdout_ready)
@@ -379,13 +388,19 @@ class InstallerQueue(QProcess):
             self._end_process()
             return
 
-        for i, item in enumerate(self._queue):
+        for i, item in enumerate(deque(self._queue)):
             if item.ident == job_id:
                 if i == 0:  # first in queue, currently running
+                    self._queue.remove(item)
                     self._end_process()
                 else:  # still pending, just remove from queue
                     self._queue.remove(item)
+
+                self.processFinished.emit(
+                    1, 0, InstallerActions.CANCEL, item.pkgs
+                )
                 return
+
         msg = f"No job with id {job_id}. Current queue:\n - "
         msg += "\n - ".join(
             [
@@ -393,7 +408,11 @@ class InstallerQueue(QProcess):
                 for item in self._queue
             ]
         )
+        self.processFinished.emit(1, 0, InstallerActions.CANCEL, [])
         raise ValueError(msg)
+
+    def cancel_all(self):
+        self.cancel()
 
     def waitForFinished(self, msecs: int = 10000) -> bool:
         """Block and wait for all jobs to finish.
@@ -410,6 +429,10 @@ class InstallerQueue(QProcess):
     def hasJobs(self) -> bool:
         """True if there are jobs remaining in the queue."""
         return bool(self._queue)
+
+    def currentJobs(self) -> int:
+        """Return the number of running jobs in the queue."""
+        return len(self._queue)
 
     def set_output_widget(self, output_widget: QTextEdit):
         if output_widget:
@@ -441,7 +464,7 @@ class InstallerQueue(QProcess):
             pkgs=pkgs,
             action=action,
             origins=origins,
-            prefix=prefix,
+            prefix=prefix or self._prefix,
             **kwargs,
         )
 
@@ -452,8 +475,10 @@ class InstallerQueue(QProcess):
 
     def _process_queue(self):
         if not self._queue:
-            self.allFinished.emit()
+            self.allFinished.emit(tuple(self._exit_codes))
+            self._exit_codes = []
             return
+
         tool = self._queue[0]
         self.setProgram(str(tool.executable()))
         self.setProcessEnvironment(tool.environment())
@@ -476,6 +501,7 @@ class InstallerQueue(QProcess):
             self.kill()
         else:
             self.terminate()
+
         if self._output_widget:
             self._output_widget.append(
                 trans._("\nTask was cancelled by the user.")
@@ -516,8 +542,10 @@ class InstallerQueue(QProcess):
         exit_status: Optional[QProcess.ExitStatus] = None,
         error: Optional[QProcess.ProcessError] = None,
     ):
+        item = None
         with contextlib.suppress(IndexError):
-            self._queue.popleft()
+            item = self._queue.popleft()
+
         if error:
             msg = trans._(
                 "Task finished with errors! Error: {error}.", error=error
@@ -528,6 +556,13 @@ class InstallerQueue(QProcess):
                 exit_code=exit_code,
                 exit_status=exit_status,
             )
+
+        if item is not None:
+            self.processFinished.emit(
+                exit_code, exit_status, item.action, item.pkgs
+            )
+            self._exit_codes.append(exit_code)
+
         self._log(msg)
         self._process_queue()
 

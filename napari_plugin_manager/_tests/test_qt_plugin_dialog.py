@@ -1,4 +1,5 @@
 import importlib.metadata
+import os
 import platform
 import sys
 from typing import Generator, Optional, Tuple
@@ -10,8 +11,10 @@ import pytest
 import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
+from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
+from qtpy.QtGui import QDropEvent
 
-if (qtpy.API_NAME == 'PySide2' and platform.system() != "Linux") or (
+if (qtpy.API_NAME == 'PySide2') or (
     sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
 ):
     pytest.skip(
@@ -36,11 +39,10 @@ def _iter_napari_pypi_plugin_info(
     This will mock napari.plugins.pypi.iter_napari_plugin_info` for pypi.
 
     It will return two fake plugins that will populate the available plugins
-    list (the bottom one). The first plugin will not be available on
-    conda-forge so will be greyed out ("test-name-0"). The second plugin will
-    be available on conda-forge so will be enabled ("test-name-1").
+    list (the bottom one).
     """
     # This mock `base_data`` will be the same for both fake plugins.
+    packages = ['pyzenhub', 'requests']
     base_data = {
         "metadata_version": "1.0",
         "version": "0.1.0",
@@ -50,27 +52,29 @@ def _iter_napari_pypi_plugin_info(
         "license": "UNKNOWN",
     }
     for i in range(N_MOCKED_PLUGINS):
-        yield npe2.PackageMetadata(name=f"test-name-{i}", **base_data), bool(
+        yield npe2.PackageMetadata(name=f"{packages[i]}", **base_data), bool(
             i
         ), {
             "home_page": 'www.mywebsite.com',
-            "pypi_versions": ['3'],
-            "conda_versions": ['4.5'],
+            "pypi_versions": ['2.31.0'],
+            "conda_versions": ['2.32.1'],
         }
 
 
 class PluginsMock:
     def __init__(self):
         self.plugins = {
-            'test-name-0': True,
-            'test-name-1': True,
+            'requests': True,
+            'pyzenhub': True,
             'my-plugin': True,
         }
 
 
 class OldPluginsMock:
     def __init__(self):
-        self.plugins = [('test-1', False, 'test-1')]
+        self.plugins = [
+            ('my-test-old-plugin-1', False, 'my-test-old-plugin-1')
+        ]
         self.enabled = [True]
 
 
@@ -191,6 +195,7 @@ def plugin_dialog(
     monkeypatch.setattr(npe2, 'PluginManager', PluginManagerMock())
 
     widget = qt_plugin_dialog.QtPluginDialog()
+    monkeypatch.setattr(widget, '_tag_outdated_plugins', lambda: None)
     widget.show()
     qtbot.waitUntil(widget.isVisible, timeout=300)
 
@@ -209,12 +214,6 @@ def test_filter_not_available_plugins(request, plugin_dialog):
     """
     Check that the plugins listed under available plugins are
     enabled and disabled accordingly.
-
-    The first plugin ("test-name-0") is not available on conda-forge and
-    should be disabled, and show a tooltip warning.
-
-    The second plugin ("test-name-1") is available on conda-forge and
-    should be enabled without the tooltip warning.
     """
     if "no-constructor" in request.node.name:
         pytest.skip(
@@ -245,7 +244,7 @@ def test_filter_available_plugins(plugin_dialog):
     assert plugin_dialog.available_list.count_visible() == 0
 
     plugin_dialog.filter("")
-    plugin_dialog.filter("test-name-0")
+    plugin_dialog.filter("requests")
     assert plugin_dialog.available_list.count_visible() == 1
 
 
@@ -278,10 +277,10 @@ def test_version_dropdown(plugin_dialog):
     Test that when the source drop down is changed, it displays the other versions properly.
     """
     widget = plugin_dialog.available_list.item(1).widget
-    assert widget.version_choice_dropdown.currentText() == "3"
+    assert widget.version_choice_dropdown.currentText() == "2.31.0"
     # switch from PyPI source to conda one.
     widget.source_choice_dropdown.setCurrentIndex(1)
-    assert widget.version_choice_dropdown.currentText() == "4.5"
+    assert widget.version_choice_dropdown.currentText() == "2.32.1"
 
 
 def test_plugin_list_count_items(plugin_dialog):
@@ -293,7 +292,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
     with patch.object(qt_plugin_dialog.PluginListItem, "set_busy") as mock:
         plugin_dialog.installed_list.handle_action(
             item,
-            'test-name-1',
+            'my-test-old-plugin-1',
             InstallerActions.UPGRADE,
         )
         mock.assert_called_with(
@@ -303,16 +302,17 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
     with patch.object(qt_plugin_dialog.WarnPopup, "exec_") as mock:
         plugin_dialog.installed_list.handle_action(
             item,
-            'test-name-1',
+            'my-test-old-plugin-1',
             InstallerActions.UNINSTALL,
         )
         assert mock.called
 
     item = plugin_dialog.available_list.item(0)
     with patch.object(qt_plugin_dialog.PluginListItem, "set_busy") as mock:
+
         plugin_dialog.available_list.handle_action(
             item,
-            'test-name-1',
+            'my-test-old-plugin-1',
             InstallerActions.INSTALL,
             version='3',
         )
@@ -321,17 +321,12 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
         )
 
         plugin_dialog.available_list.handle_action(
-            item, 'test-name-1', InstallerActions.CANCEL, version='3'
+            item, 'my-test-old-plugin-1', InstallerActions.CANCEL, version='3'
         )
         mock.assert_called_with(
             trans._("cancelling..."), InstallerActions.CANCEL
         )
 
-    # Wait for refresh timer, state and worker to be done
-    qtbot.waitUntil(
-        lambda: not plugin_dialog._add_items_timer.isActive()
-        and plugin_dialog.refresh_state == qt_plugin_dialog.RefreshState.DONE
-    )
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
 
@@ -361,7 +356,7 @@ def test_add_items_outdated(plugin_dialog):
     # The plugin is being added to the available plugins list.  When the dialog is being built
     # this one will be listed as available, and it will be found as already installed.
     # Then, it will check if the installed version is a lower version than the one available.
-    # In this case, my-plugin is installed with version 0.1.0, so the one we are trying to install
+    # In this case, pydantic is installed with version 0.1.0, so the one we are trying to install
     # is newer, so the update button should pop up.
     new_plugin = (
         npe2.PackageMetadata(name="my-plugin", version="0.4.0"),
@@ -380,3 +375,116 @@ def test_add_items_outdated(plugin_dialog):
     widget = plugin_dialog.installed_list.itemWidget(item)
 
     assert widget.update_btn.isVisible()
+
+
+def test_refresh(qtbot, plugin_dialog):
+    with qtbot.waitSignal(plugin_dialog._add_items_timer.timeout, timeout=500):
+        plugin_dialog.refresh(clear_cache=False)
+
+    with qtbot.waitSignal(plugin_dialog._add_items_timer.timeout, timeout=500):
+        plugin_dialog.refresh(clear_cache=True)
+
+    with qtbot.waitSignal(plugin_dialog._add_items_timer.timeout, timeout=500):
+        plugin_dialog._refresh_and_clear_cache()
+
+
+def test_toggle_status(plugin_dialog):
+    plugin_dialog.toggle_status(True)
+    assert plugin_dialog.stdout_text.isVisible()
+    plugin_dialog.toggle_status(False)
+    assert not plugin_dialog.stdout_text.isVisible()
+
+
+def test_exec(plugin_dialog):
+    plugin_dialog.exec_()
+
+
+def test_search_in_available(plugin_dialog):
+    idxs = plugin_dialog._search_in_available("test")
+    assert idxs == [0, 1]
+    idxs = plugin_dialog._search_in_available("*&%$")
+    assert idxs == []
+
+
+def test_drop_event(plugin_dialog, tmp_path):
+    path_1 = tmp_path / "example-1.txt"
+    path_2 = tmp_path / "example-2.txt"
+    url_prefix = 'file:///' if os.name == 'nt' else 'file://'
+    data = QMimeData()
+    data.setUrls(
+        [QUrl(f'{url_prefix}{path_1}'), QUrl(f'{url_prefix}{path_2}')]
+    )
+    event = QDropEvent(
+        QPointF(5.0, 5.0), Qt.CopyAction, data, Qt.LeftButton, Qt.NoModifier
+    )
+    plugin_dialog.dropEvent(event)
+    assert plugin_dialog.direct_entry_edit.text() == str(path_1)
+
+
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
+)
+def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
+    if "[constructor]" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    item = plugin_dialog.available_list.item(1)
+    widget = plugin_dialog.available_list.itemWidget(item)
+    with qtbot.waitSignal(
+        plugin_dialog.installer.processFinished, timeout=60_000
+    ) as blocker:
+        widget.action_button.click()
+
+    assert blocker.args[2] == InstallerActions.INSTALL
+    assert blocker.args[3][0].startswith("requests")
+    qtbot.wait(5000)
+
+
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
+)
+def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
+    if "[constructor]" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    item = plugin_dialog.available_list.item(1)
+    widget = plugin_dialog.available_list.itemWidget(item)
+    with qtbot.waitSignal(
+        plugin_dialog.installer.processFinished, timeout=60_000
+    ) as blocker:
+        widget.action_button.click()
+        widget.cancel_btn.click()
+
+    assert blocker.args[2] == InstallerActions.CANCEL
+    assert blocker.args[3][0].startswith("requests")
+    assert plugin_dialog.available_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 2
+
+
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
+)
+def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
+    if "[constructor]" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    item_1 = plugin_dialog.available_list.item(0)
+    item_2 = plugin_dialog.available_list.item(1)
+    widget_1 = plugin_dialog.available_list.itemWidget(item_1)
+    widget_2 = plugin_dialog.available_list.itemWidget(item_2)
+    with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
+        widget_1.action_button.click()
+        widget_2.action_button.click()
+        plugin_dialog.cancel_all_btn.click()
+
+    assert plugin_dialog.available_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 2
