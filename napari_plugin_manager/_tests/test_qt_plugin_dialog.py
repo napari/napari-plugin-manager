@@ -39,11 +39,10 @@ def _iter_napari_pypi_plugin_info(
     This will mock napari.plugins.pypi.iter_napari_plugin_info` for pypi.
 
     It will return two fake plugins that will populate the available plugins
-    list (the bottom one). The first plugin will not be available on
-    conda-forge so will be greyed out ("test-name-0"). The second plugin will
-    be available on conda-forge so will be enabled ("test-name-1").
+    list (the bottom one).
     """
     # This mock `base_data`` will be the same for both fake plugins.
+    packages = ['pyzenhub', 'requests']
     base_data = {
         "metadata_version": "1.0",
         "version": "0.1.0",
@@ -53,7 +52,7 @@ def _iter_napari_pypi_plugin_info(
         "license": "UNKNOWN",
     }
     for i in range(N_MOCKED_PLUGINS):
-        yield npe2.PackageMetadata(name=f"test-name-{i}", **base_data), bool(
+        yield npe2.PackageMetadata(name=f"{packages[i]}", **base_data), bool(
             i
         ), {
             "home_page": 'www.mywebsite.com',
@@ -65,8 +64,8 @@ def _iter_napari_pypi_plugin_info(
 class PluginsMock:
     def __init__(self):
         self.plugins = {
-            'test-name-0': True,
-            'test-name-1': True,
+            'requests': True,
+            'pyzenhub': True,
             'my-plugin': True,
         }
 
@@ -213,12 +212,6 @@ def test_filter_not_available_plugins(request, plugin_dialog):
     """
     Check that the plugins listed under available plugins are
     enabled and disabled accordingly.
-
-    The first plugin ("test-name-0") is not available on conda-forge and
-    should be disabled, and show a tooltip warning.
-
-    The second plugin ("test-name-1") is available on conda-forge and
-    should be enabled without the tooltip warning.
     """
     if "no-constructor" in request.node.name:
         pytest.skip(
@@ -249,7 +242,7 @@ def test_filter_available_plugins(plugin_dialog):
     assert plugin_dialog.available_list.count_visible() == 0
 
     plugin_dialog.filter("")
-    plugin_dialog.filter("test-name-0")
+    plugin_dialog.filter("requests")
     assert plugin_dialog.available_list.count_visible() == 1
 
 
@@ -361,7 +354,7 @@ def test_add_items_outdated(plugin_dialog):
     # The plugin is being added to the available plugins list.  When the dialog is being built
     # this one will be listed as available, and it will be found as already installed.
     # Then, it will check if the installed version is a lower version than the one available.
-    # In this case, my-plugin is installed with version 0.1.0, so the one we are trying to install
+    # In this case, pydantic is installed with version 0.1.0, so the one we are trying to install
     # is newer, so the update button should pop up.
     new_plugin = (
         npe2.PackageMetadata(name="my-plugin", version="0.4.0"),
