@@ -608,9 +608,8 @@ class QPluginList(QListWidget):
     ):
         """Determine which action is called (install, uninstall, update, cancel).
         Update buttons appropriately and run the action."""
-        tool = installer_choice
         widget = item.widget
-        tool = widget.get_installer_tool()
+        tool = installer_choice or widget.get_installer_tool()
         item.setText(f"0-{item.text()}")
         self._remove_list.append((pkg_name, item))
         self._warn_dialog = None

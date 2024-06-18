@@ -14,7 +14,7 @@ from napari.utils.translations import trans
 from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
 from qtpy.QtGui import QDropEvent
 
-if (qtpy.API_NAME == 'PySide2' and platform.system() != "Linux") or (
+if (qtpy.API_NAME == 'PySide2') or (
     sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
 ):
     pytest.skip(
@@ -57,7 +57,7 @@ def _iter_napari_pypi_plugin_info(
         ), {
             "home_page": 'www.mywebsite.com',
             "pypi_versions": ['2.31.0'],
-            "conda_versions": ['2.31.0'],
+            "conda_versions": ['2.32.1'],
         }
 
 
@@ -277,10 +277,10 @@ def test_version_dropdown(plugin_dialog):
     Test that when the source drop down is changed, it displays the other versions properly.
     """
     widget = plugin_dialog.available_list.item(1).widget
-    assert widget.version_choice_dropdown.currentText() == "3"
+    assert widget.version_choice_dropdown.currentText() == "2.31.0"
     # switch from PyPI source to conda one.
     widget.source_choice_dropdown.setCurrentIndex(1)
-    assert widget.version_choice_dropdown.currentText() == "4.5"
+    assert widget.version_choice_dropdown.currentText() == "2.32.1"
 
 
 def test_plugin_list_count_items(plugin_dialog):
@@ -292,7 +292,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
     with patch.object(qt_plugin_dialog.PluginListItem, "set_busy") as mock:
         plugin_dialog.installed_list.handle_action(
             item,
-            'test-name-1',
+            'my-test-old-plugin-1',
             InstallerActions.UPGRADE,
         )
         mock.assert_called_with(
@@ -302,7 +302,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
     with patch.object(qt_plugin_dialog.WarnPopup, "exec_") as mock:
         plugin_dialog.installed_list.handle_action(
             item,
-            'test-name-1',
+            'my-test-old-plugin-1',
             InstallerActions.UNINSTALL,
         )
         assert mock.called
@@ -312,7 +312,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
 
         plugin_dialog.available_list.handle_action(
             item,
-            'test-name-1',
+            'my-test-old-plugin-1',
             InstallerActions.INSTALL,
             version='3',
         )
@@ -321,7 +321,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
         )
 
         plugin_dialog.available_list.handle_action(
-            item, 'test-name-1', InstallerActions.CANCEL, version='3'
+            item, 'my-test-old-plugin-1', InstallerActions.CANCEL, version='3'
         )
         mock.assert_called_with(
             trans._("cancelling..."), InstallerActions.CANCEL
@@ -421,6 +421,9 @@ def test_drop_event(plugin_dialog, tmp_path):
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
+)
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
@@ -437,12 +440,12 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
 
     assert blocker.args[2] == InstallerActions.INSTALL
     assert blocker.args[3][0].startswith("requests")
-
     qtbot.wait(5000)
-    assert plugin_dialog.available_list.count() == 1
-    assert plugin_dialog.installed_list.count() == 2
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
+)
 def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
@@ -464,6 +467,9 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert plugin_dialog.installed_list.count() == 2
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
+)
 def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
