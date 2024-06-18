@@ -56,8 +56,8 @@ def _iter_napari_pypi_plugin_info(
             i
         ), {
             "home_page": 'www.mywebsite.com',
-            "pypi_versions": ['3'],
-            "conda_versions": ['4.5'],
+            "pypi_versions": ['2.31.0'],
+            "conda_versions": ['2.31.0'],
         }
 
 
@@ -72,7 +72,9 @@ class PluginsMock:
 
 class OldPluginsMock:
     def __init__(self):
-        self.plugins = [('test-1', False, 'test-1')]
+        self.plugins = [
+            ('my-test-old-plugin-1', False, 'my-test-old-plugin-1')
+        ]
         self.enabled = [True]
 
 
@@ -417,3 +419,66 @@ def test_drop_event(plugin_dialog, tmp_path):
     )
     plugin_dialog.dropEvent(event)
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
+
+
+def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
+    if "[constructor]" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    item = plugin_dialog.available_list.item(1)
+    widget = plugin_dialog.available_list.itemWidget(item)
+    with qtbot.waitSignal(
+        plugin_dialog.installer.processFinished, timeout=60_000
+    ) as blocker:
+        widget.action_button.click()
+
+    assert blocker.args[2] == InstallerActions.INSTALL
+    assert blocker.args[3][0].startswith("requests")
+
+    qtbot.wait(5000)
+    assert plugin_dialog.available_list.count() == 1
+    assert plugin_dialog.installed_list.count() == 2
+
+
+def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
+    if "[constructor]" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    item = plugin_dialog.available_list.item(1)
+    widget = plugin_dialog.available_list.itemWidget(item)
+    with qtbot.waitSignal(
+        plugin_dialog.installer.processFinished, timeout=60_000
+    ) as blocker:
+        widget.action_button.click()
+        widget.cancel_btn.click()
+
+    assert blocker.args[2] == InstallerActions.CANCEL
+    assert blocker.args[3][0].startswith("requests")
+    assert plugin_dialog.available_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 2
+
+
+def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
+    if "[constructor]" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    item_1 = plugin_dialog.available_list.item(0)
+    item_2 = plugin_dialog.available_list.item(1)
+    widget_1 = plugin_dialog.available_list.itemWidget(item_1)
+    widget_2 = plugin_dialog.available_list.itemWidget(item_2)
+    with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
+        widget_1.action_button.click()
+        widget_2.action_button.click()
+        plugin_dialog.cancel_all_btn.click()
+
+    assert plugin_dialog.available_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 2

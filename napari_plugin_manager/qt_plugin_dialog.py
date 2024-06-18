@@ -20,7 +20,7 @@ from napari.utils.misc import (
 )
 from napari.utils.notifications import show_info, show_warning
 from napari.utils.translations import trans
-from qtpy.QtCore import QPoint, QSize, Qt, QTimer, Slot
+from qtpy.QtCore import QPoint, QSize, Qt, QTimer, Signal, Slot
 from qtpy.QtGui import QFont, QMovie
 from qtpy.QtWidgets import (
     QCheckBox,
@@ -76,8 +76,14 @@ class PluginListItem(QFrame):
     """An entry in the plugin dialog.  This will include the package name, summary,
     author, source, version, and buttons to update, install/uninstall, etc."""
 
+    # item, package_name, action_name, version, installer_choice
+    actionRequested = Signal(
+        QListWidgetItem, str, InstallerActions, str, InstallerTools
+    )
+
     def __init__(
         self,
+        item: QListWidgetItem,
         package_name: str,
         display_name: str,
         version: str = '',
@@ -93,8 +99,11 @@ class PluginListItem(QFrame):
         npe_version=1,
         versions_conda: Optional[List[str]] = None,
         versions_pypi: Optional[List[str]] = None,
+        prefix=None,
     ) -> None:
         super().__init__(parent)
+        self.prefix = prefix
+        self.item = item
         self.url = url
         self.name = package_name
         self._versions_conda = versions_conda
@@ -292,6 +301,7 @@ class PluginListItem(QFrame):
         self.update_btn.setSizePolicy(sizePolicy)
         self.update_btn.setObjectName("install_button")
         self.update_btn.setVisible(False)
+        self.update_btn.clicked.connect(self._update_requested)
 
         self.row2.addWidget(
             self.update_btn, 0, 6, 1, 1, alignment=Qt.AlignmentFlag.AlignTop
@@ -364,6 +374,7 @@ class PluginListItem(QFrame):
         self.row2.addWidget(
             self.cancel_btn, 0, 8, 1, 1, alignment=Qt.AlignmentFlag.AlignTop
         )
+        self.cancel_btn.clicked.connect(self._cancel_requested)
 
         self.action_button = QPushButton(self)
         self.action_button.setFixedWidth(70)
@@ -372,6 +383,7 @@ class PluginListItem(QFrame):
         self.row2.addWidget(
             self.action_button, 0, 8, 1, 1, alignment=Qt.AlignmentFlag.AlignTop
         )
+        self.action_button.clicked.connect(self._action_requested)
 
         self.v_lay.addLayout(self.row2)
 
@@ -425,10 +437,42 @@ class PluginListItem(QFrame):
                 )
                 return
 
+    def _cancel_requested(self):
+        version = self.version_choice_dropdown.currentText()
+        tool = self.get_installer_tool()
+        self.actionRequested.emit(
+            self.item, self.name, InstallerActions.CANCEL, version, tool
+        )
+
+    def _action_requested(self):
+        version = self.version_choice_dropdown.currentText()
+        tool = self.get_installer_tool()
+        action = (
+            InstallerActions.INSTALL
+            if self.action_button.objectName() == 'install_button'
+            else InstallerActions.UNINSTALL
+        )
+        self.actionRequested.emit(self.item, self.name, action, version, tool)
+
+    def _update_requested(self):
+        version = self.version_choice_dropdown.currentText()
+        tool = self.get_installer_tool()
+        self.actionRequested.emit(
+            self.item, self.name, InstallerActions.UPGRADE, version, tool
+        )
+
     def show_warning(self, message: str = ""):
         """Show warning icon and tooltip."""
         self.warning_tooltip.setVisible(bool(message))
         self.warning_tooltip.setToolTip(message)
+
+    def get_installer_tool(self):
+        return (
+            InstallerTools.CONDA
+            if self.source_choice_dropdown.currentText() == CONDA
+            or is_conda_package(self.name, prefix=self.prefix)
+            else InstallerTools.PIP
+        )
 
 
 class QPluginList(QListWidget):
@@ -478,6 +522,7 @@ class QPluginList(QListWidget):
         item.version = project_info.metadata.version
         super().addItem(item)
         widg = PluginListItem(
+            item=item,
             package_name=pkg_name,
             display_name=project_info.display_name,
             version=project_info.metadata.version,
@@ -495,7 +540,6 @@ class QPluginList(QListWidget):
         )
         item.widget = widg
         item.npe_version = npe_version
-        action_name = 'uninstall' if installed else 'install'
         item.setSizeHint(widg.sizeHint())
         self.setItemWidget(item, widg)
 
@@ -504,32 +548,7 @@ class QPluginList(QListWidget):
                 partial(webbrowser.open, project_info.metadata.home_page)
             )
 
-        # FIXME: Partial may lead to leak memory when connecting to Qt signals.
-        widg.action_button.clicked.connect(
-            partial(
-                self.handle_action,
-                item,
-                pkg_name,
-                action_name,
-                version=widg.version_choice_dropdown.currentText(),
-                installer_choice=widg.source_choice_dropdown.currentText(),
-            )
-        )
-
-        widg.update_btn.clicked.connect(
-            partial(
-                self.handle_action,
-                item,
-                pkg_name,
-                InstallerActions.UPGRADE,
-            )
-        )
-        widg.cancel_btn.clicked.connect(
-            partial(
-                self.handle_action, item, pkg_name, InstallerActions.CANCEL
-            )
-        )
-
+        widg.actionRequested.connect(self.handle_action)
         item.setSizeHint(item.widget.size())
         widg.install_info_button.setDuration(0)
         widg.install_info_button.toggled.connect(
@@ -577,13 +596,7 @@ class QPluginList(QListWidget):
     ):
         """Determine which action is called (install, uninstall, update, cancel).
         Update buttons appropriately and run the action."""
-        tool = (
-            InstallerTools.CONDA
-            if item.widget.source_choice_dropdown.currentText() == CONDA
-            or is_conda_package(pkg_name)
-            else InstallerTools.PIP
-        )
-
+        tool = installer_choice
         widget = item.widget
         item.setText(f"0-{item.text()}")
         self._remove_list.append((pkg_name, item))
@@ -762,6 +775,7 @@ class QtPluginDialog(QDialog):
 
         self.already_installed = set()
         self.available_set = set()
+        self._prefix = prefix
 
         self._plugin_data = []  # Store plugin data while populating lists
         self._all_plugin_data = []  # Store all plugin data
@@ -1063,7 +1077,7 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn = QPushButton(trans._("cancel all actions"), self)
         self.cancel_all_btn.setObjectName("remove_button")
         self.cancel_all_btn.setVisible(False)
-        self.cancel_all_btn.clicked.connect(self.installer.cancel)
+        self.cancel_all_btn.clicked.connect(self.installer.cancel_all)
 
         self.close_btn = QPushButton(trans._("Close"), self)
         self.close_btn.clicked.connect(self.accept)
@@ -1141,7 +1155,6 @@ class QtPluginDialog(QDialog):
         packages: Sequence[str] = (),
         versions: Optional[Sequence[str]] = None,
     ):
-        # FIXME: Direct entry test check!
         if not packages:
             _packages = self.direct_entry_edit.text()
             packages = (
@@ -1334,6 +1347,17 @@ class QtPluginDialog(QDialog):
         else:
             self.show_status_btn.setText(trans._("Show Status"))
             self.stdout_text.hide()
+
+    def set_prefix(self, prefix):
+        self._prefix = prefix
+        self.installer._prefix = prefix
+        for idx in range(self.available_list.count()):
+            item = self.available_list.item(idx)
+            item.widget.prefix = prefix
+
+        for idx in range(self.installed_list.count()):
+            item = self.installed_list.item(idx)
+            item.widget.prefix = prefix
 
 
 if __name__ == "__main__":
