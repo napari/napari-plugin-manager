@@ -269,5 +269,5 @@ def test_executables():
 
 
 def test_available():
-    assert CondaInstallerTool.available()
+    assert str(CondaInstallerTool.available())
     assert PipInstallerTool.available()
