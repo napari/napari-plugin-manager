@@ -9,21 +9,18 @@ Available actions for each tool are `install`, `uninstall`
 and `cancel`.
 """
 
-import atexit
 import contextlib
 import os
 import sys
 from collections import deque
 from dataclasses import dataclass
 from enum import auto
-from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
 from subprocess import call
-from tempfile import gettempdir, mkstemp
+from tempfile import gettempdir
 from typing import Deque, Optional, Sequence, Tuple
 
-from napari._version import version as _napari_version
 from napari._version import version_tuple as _napari_version_tuple
 from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
@@ -85,7 +82,7 @@ class AbstractInstallerTool:
         """
         Version constraints to limit unwanted changes in installation.
         """
-        return [f"napari=={_napari_version}", "numpy<2"]
+        return NotImplementedError
 
     @classmethod
     def available(cls) -> bool:
@@ -107,16 +104,15 @@ class PipInstallerTool(AbstractInstallerTool):
     def arguments(self) -> Tuple[str, ...]:
         args = ['-m', 'pip']
         if self.action == InstallerActions.INSTALL:
-            args += ['install', '-c', self._constraints_file()]
+            args += ['install']
+            for constraint in self.constraints():
+                args += ['-c', constraint]
             for origin in self.origins:
                 args += ['--extra-index-url', origin]
         elif self.action == InstallerActions.UPGRADE:
-            args += [
-                'install',
-                '--upgrade',
-                '-c',
-                self._constraints_file(),
-            ]
+            args += ['install', '--upgrade']
+            for constraint in self.constraints():
+                args += ['-c', constraint]
             for origin in self.origins:
                 args += ['--extra-index-url', origin]
         elif self.action == InstallerActions.UNINSTALL:
@@ -137,14 +133,10 @@ class PipInstallerTool(AbstractInstallerTool):
         env.insert("PIP_USER_AGENT_USER_DATA", _user_agent())
         return env
 
-    @classmethod
-    @lru_cache(maxsize=0)
-    def _constraints_file(cls) -> str:
-        _, path = mkstemp("-napari-constraints.txt", text=True)
-        with open(path, "w") as f:
-            f.write("\n".join(cls.constraints()))
-        atexit.register(os.unlink, path)
-        return path
+    def constraints(self) -> tuple[str]:
+        n_components = 3 if _napari_version_tuple[:2] == (0, 4) else 2
+        channel_version = ".".join([str(x) for x in _napari_version_tuple[:n_components]])
+        return (f"https://napari.org/pins/pypi/v{channel_version}/pypi.txt",)
 
 
 class CondaInstallerTool(AbstractInstallerTool):
@@ -204,31 +196,16 @@ class CondaInstallerTool(AbstractInstallerTool):
 
     @staticmethod
     def constraints() -> Sequence[str]:
-        # FIXME
-        # dev or rc versions might not be available in public channels
-        # but only installed locally - if we try to pin those, mamba
-        # will fail to pin it because there's no record of that version
-        # in the remote index, only locally; to work around this bug
-        # we will have to pin to e.g. 0.4.* instead of 0.4.17.* for now
-        version_lower = _napari_version.lower()
-        is_dev = "rc" in version_lower or "dev" in version_lower
-        pin_level = 2 if is_dev else 3
-        version = ".".join([str(x) for x in _napari_version_tuple[:pin_level]])
-
-        return [f"napari={version}", "numpy<2.0a0"]
-
-    def _add_constraints_to_env(
-        self, env: QProcessEnvironment
-    ) -> QProcessEnvironment:
-        PINNED = 'CONDA_PINNED_PACKAGES'
-        constraints = self.constraints()
-        if env.contains(PINNED):
-            constraints.append(env.value(PINNED))
-        env.insert(PINNED, "&".join(constraints))
-        return env
+        """
+        With conda, the constraints are taken care of
+        by the custom channels. No need to pin here.
+        """
+        return ()
 
     def _default_channels(self):
-        return ('conda-forge',)
+        n_components = 3 if _napari_version_tuple[:2] == (0, 4) else 2
+        channel_version = ".".join([str(x) for x in _napari_version_tuple[:n_components]])
+        return (f"https://github.com/napari/pins/releases/download/napari-v{channel_version}",)
 
     def _default_prefix(self):
         if (Path(sys.prefix) / "conda-meta").is_dir():
