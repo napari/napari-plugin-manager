@@ -135,7 +135,9 @@ class PipInstallerTool(AbstractInstallerTool):
 
     def constraints(self) -> tuple[str]:
         n_components = 3 if _napari_version_tuple[:2] == (0, 4) else 2
-        channel_version = ".".join([str(x) for x in _napari_version_tuple[:n_components]])
+        channel_version = ".".join(
+            [str(x) for x in _napari_version_tuple[:n_components]]
+        )
         return (f"https://napari.org/pins/pypi/v{channel_version}/pypi.txt",)
 
 
@@ -204,8 +206,12 @@ class CondaInstallerTool(AbstractInstallerTool):
 
     def _default_channels(self):
         n_components = 3 if _napari_version_tuple[:2] == (0, 4) else 2
-        channel_version = ".".join([str(x) for x in _napari_version_tuple[:n_components]])
-        return (f"https://github.com/napari/pins/releases/download/napari-v{channel_version}",)
+        channel_version = ".".join(
+            [str(x) for x in _napari_version_tuple[:n_components]]
+        )
+        return (
+            f"https://github.com/napari/pins/releases/download/napari-v{channel_version}",
+        )
 
     def _default_prefix(self):
         if (Path(sys.prefix) / "conda-meta").is_dir():
