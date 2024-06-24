@@ -1,3 +1,4 @@
+import contextlib
 import importlib.metadata
 import os
 import platform
@@ -786,15 +787,15 @@ class QtPluginDialog(QDialog):
 
     def _quit(self):
         self.close()
-        self._parent.close(quit_app=True)
+        with contextlib.suppress(AttributeError):
+            self._parent.close(quit_app=True)
 
     def _setup_shortcuts(self):
-        if self._parent is not None:
-            self._quit_action = QAction(trans._('Exit'), self)
-            self._quit_action.setShortcut('Ctrl+Q')
-            self._quit_action.setMenuRole(QAction.QuitRole)
-            self._quit_action.triggered.connect(self._quit)
-            self.addAction(self._quit_action)
+        self._quit_action = QAction(trans._('Exit'), self)
+        self._quit_action.setShortcut('Ctrl+Q')
+        self._quit_action.setMenuRole(QAction.QuitRole)
+        self._quit_action.triggered.connect(self._quit)
+        self.addAction(self._quit_action)
 
         if platform.system() == "Darwin":
             self._close_shortcut = QShortcut(
