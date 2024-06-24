@@ -21,7 +21,7 @@ from napari.utils.misc import (
 )
 from napari.utils.translations import trans
 from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Slot
-from qtpy.QtGui import QFont, QKeySequence, QMovie, QShortcut
+from qtpy.QtGui import QAction, QFont, QKeySequence, QMovie, QShortcut
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -782,6 +782,19 @@ class QtPluginDialog(QDialog):
             or parent is None
         ):
             self.refresh()
+            self._setup_shortcuts()
+
+    def _quit(self):
+        self.close()
+        self._parent.close(quit_app=True)
+
+    def _setup_shortcuts(self):
+        if self._parent is not None:
+            self._quit_action = QAction(trans._('Exit'), self)
+            self._quit_action.setShortcut('Ctrl+Q')
+            self._quit_action.setMenuRole(QAction.QuitRole)
+            self._quit_action.triggered.connect(self._quit)
+            self.addAction(self._quit_action)
 
         if platform.system() == "Darwin":
             self._close_shortcut = QShortcut(
