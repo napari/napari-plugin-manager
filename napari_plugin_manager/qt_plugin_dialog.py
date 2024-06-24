@@ -1,5 +1,6 @@
 import importlib.metadata
 import os
+import platform
 from enum import Enum, auto
 from functools import partial
 from pathlib import Path
@@ -20,7 +21,7 @@ from napari.utils.misc import (
 )
 from napari.utils.translations import trans
 from qtpy.QtCore import QEvent, QPoint, QSize, Qt, QTimer, Slot
-from qtpy.QtGui import QFont, QMovie
+from qtpy.QtGui import QFont, QKeySequence, QMovie, QShortcut
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -781,6 +782,12 @@ class QtPluginDialog(QDialog):
             or parent is None
         ):
             self.refresh()
+
+        if platform.system() == "Darwin":
+            self._close_shortcut = QShortcut(
+                QKeySequence(Qt.CTRL | Qt.Key_W), self
+            )
+            self._close_shortcut.activated.connect(self.close)
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
