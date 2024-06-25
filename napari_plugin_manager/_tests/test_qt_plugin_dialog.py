@@ -10,6 +10,7 @@ import pytest
 import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
+from qtpy.QtCore import Qt
 
 if (qtpy.API_NAME == 'PySide2' and platform.system() != "Linux") or (
     sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
@@ -380,3 +381,22 @@ def test_add_items_outdated(plugin_dialog):
     widget = plugin_dialog.installed_list.itemWidget(item)
 
     assert widget.update_btn.isVisible()
+
+
+@pytest.mark.skipif(
+    platform.system() != "Darwin", reason="shortcut only on mac systems"
+)
+def test_shortcut_close(plugin_dialog, qtbot):
+    qtbot.keyClicks(
+        plugin_dialog, 'W', modifier=Qt.KeyboardModifier.ControlModifier
+    )
+    qtbot.wait(200)
+    assert not plugin_dialog.isVisible()
+
+
+def test_shortcut_quit(plugin_dialog, qtbot):
+    qtbot.keyClicks(
+        plugin_dialog, 'Q', modifier=Qt.KeyboardModifier.ControlModifier
+    )
+    qtbot.wait(200)
+    assert not plugin_dialog.isVisible()
