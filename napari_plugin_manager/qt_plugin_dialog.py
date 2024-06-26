@@ -1,5 +1,7 @@
+import datetime
 import importlib.metadata
 import os
+import uuid
 from enum import Enum, auto
 from functools import partial
 from pathlib import Path
@@ -49,6 +51,15 @@ from napari_plugin_manager.qt_package_installer import (
 )
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
+
+try:
+    from napari.plugins.utils import PluginStatus
+except ImportError:
+
+    class PluginStatus(Enum):
+        BUSY = auto()
+        IDLE = auto()
+
 
 # TODO: add error icon and handle pip install errors
 
@@ -1215,6 +1226,26 @@ class QtPluginDialog(QDialog):
         self.installed_list.filter(text)
         self.available_list.filter(text)
         self._update_count_in_label()
+
+    def query_status(self) -> dict:
+        """Return the current status of the plugin."""
+        if self.installer.hasJobs():
+            status = PluginStatus.BUSY
+            description = trans._n(
+                'The plugin manager is currently busy with {n} task.',
+                'The plugin manager is currently busy with {n} tasks.',
+                n=self.installer.currentJobs(),
+            )
+        else:
+            status = PluginStatus.IDLE
+            description = ''
+
+        return {
+            "id": uuid.uuid4(),
+            "timestamp": datetime.datetime.now().isoformat(),
+            "status": status,
+            "description": description,
+        }
 
 
 if __name__ == "__main__":
