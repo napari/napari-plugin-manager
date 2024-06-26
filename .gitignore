@@ -83,3 +83,7 @@ target/
 
 # ruff stuff
 .ruff_cache/
+
+# spyder stuff
+.spyproject/
+
