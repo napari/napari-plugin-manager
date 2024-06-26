@@ -92,6 +92,7 @@ class PluginListItem(QFrame):
     ) -> None:
         super().__init__(parent)
         self.url = url
+        self.name = package_name
         self._versions_conda = versions_conda
         self._versions_pypi = versions_pypi
         self.setup_ui(enabled)
@@ -133,8 +134,9 @@ class PluginListItem(QFrame):
             self.info_widget.hide()
             self.install_info_button.addWidget(self.info_choice_wdg)
             self.install_info_button.setFixedWidth(170)
-
             self.info_choice_wdg.show()
+
+        self._populate_version_dropdown(self.get_installer_source())
 
     def _handle_npe2_plugin(self, npe_version):
         if npe_version in (None, 1):
@@ -321,17 +323,20 @@ class PluginListItem(QFrame):
         self.source_choice_text = QLabel('Source:')
         self.version_choice_text = QLabel('Version:')
         self.source_choice_dropdown = QComboBox()
-
-        if self._versions_pypi:
-            self.source_choice_dropdown.addItem(PYPI)
+        self.version_choice_dropdown = QComboBox()
 
         if IS_NAPARI_CONDA_INSTALLED and self._versions_conda:
             self.source_choice_dropdown.addItem(CONDA)
 
+        if self._versions_pypi:
+            self.source_choice_dropdown.addItem(PYPI)
+
+        source = self.get_installer_source()
+        self.source_choice_dropdown.setCurrentText(source)
+        self._populate_version_dropdown(source)
         self.source_choice_dropdown.currentTextChanged.connect(
             self._populate_version_dropdown
         )
-        self.version_choice_dropdown = QComboBox()
         self.row2.addWidget(
             self.install_info_button,
             0,
@@ -424,6 +429,22 @@ class PluginListItem(QFrame):
         """Show warning icon and tooltip."""
         self.warning_tooltip.setVisible(bool(message))
         self.warning_tooltip.setToolTip(message)
+
+    def get_installer_source(self):
+        return (
+            CONDA
+            if self.source_choice_dropdown.currentText() == CONDA
+            or is_conda_package(self.name)
+            else PYPI
+        )
+
+    def get_installer_tool(self):
+        return (
+            InstallerTools.CONDA
+            if self.source_choice_dropdown.currentText() == CONDA
+            or is_conda_package(self.name)
+            else InstallerTools.PIP
+        )
 
 
 class QPluginList(QListWidget):
@@ -552,14 +573,8 @@ class QPluginList(QListWidget):
     ):
         """Determine which action is called (install, uninstall, update, cancel).
         Update buttons appropriately and run the action."""
-        tool = (
-            InstallerTools.CONDA
-            if item.widget.source_choice_dropdown.currentText() == CONDA
-            or is_conda_package(pkg_name)
-            else InstallerTools.PIP
-        )
-
         widget = item.widget
+        tool = widget.get_installer_tool()
         item.setText(f"0-{item.text()}")
         self._remove_list.append((pkg_name, item))
         self._warn_dialog = None
