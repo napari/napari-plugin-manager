@@ -20,7 +20,7 @@ from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
 from subprocess import call
-from tempfile import gettempdir, mkstemp
+from tempfile import gettempdir
 from typing import Deque, Optional, Sequence, Tuple
 
 from napari._version import version as _napari_version
