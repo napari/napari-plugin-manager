@@ -140,10 +140,9 @@ class PipInstallerTool(AbstractInstallerTool):
     @classmethod
     @lru_cache(maxsize=0)
     def _constraints_file(cls) -> str:
-        file_descriptor, path = mkstemp("-napari-constraints.txt", text=True)
-        with os.fdopen(file_descriptor, "w") as f:
+        with NamedTemporaryFile("-napari-constraints.txt", delete=False) as f:
             f.write("\n".join(cls.constraints()))
-        atexit.register(os.unlink, path)
+        atexit.register(os.unlink, f.name)
         return path
 
 
