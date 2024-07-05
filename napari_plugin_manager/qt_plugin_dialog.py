@@ -924,10 +924,10 @@ class QtPluginDialog(QDialog):
                 'you must restart napari for UI changes to take effect.'
             )
             self._warn_dialog = WarnPopup(text=message)
-            global_point = self.process_error_indicator.mapToGlobal(
-                self.process_error_indicator.rect().topLeft()
+            global_point = self.close_btn.mapToGlobal(
+                self.close_btn.rect().topLeft()
             )
-            global_point = QPoint(global_point.x(), global_point.y() - 75)
+            global_point = QPoint(global_point.x() - 50, global_point.y())
             self._warn_dialog.move(global_point)
             self._warn_dialog.exec_()
 
