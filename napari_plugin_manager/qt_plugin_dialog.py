@@ -924,10 +924,18 @@ class QtPluginDialog(QDialog):
                 'you must restart napari for UI changes to take effect.'
             )
             self._warn_dialog = WarnPopup(text=message)
-            global_point = self.close_btn.mapToGlobal(
-                self.close_btn.rect().topLeft()
+            global_point = self.installed_label.mapToGlobal(
+                self.installed_label.rect().topLeft()
             )
-            global_point = QPoint(global_point.x() - 50, global_point.y())
+            delta_text = (
+                5  # To have some space between the label text and the popup
+                + self.installed_label.fontMetrics()
+                .boundingRect(self.installed_label.text())
+                .width()
+            )
+            global_point = QPoint(
+                global_point.x() + delta_text, global_point.y()
+            )
             self._warn_dialog.move(global_point)
             self._warn_dialog.exec_()
 
