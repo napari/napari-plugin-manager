@@ -797,11 +797,10 @@ class QtPluginDialog(QDialog):
         self._quit_action.triggered.connect(self._quit)
         self.addAction(self._quit_action)
 
-        if platform.system() == "Darwin":
-            self._close_shortcut = QShortcut(
-                QKeySequence(Qt.CTRL | Qt.Key_W), self
-            )
-            self._close_shortcut.activated.connect(self.close)
+        self._close_shortcut = QShortcut(
+            QKeySequence(Qt.CTRL | Qt.Key_W), self
+        )
+        self._close_shortcut.activated.connect(self.close)
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
