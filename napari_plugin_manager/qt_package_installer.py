@@ -42,6 +42,7 @@ class InstallerActions(StringEnum):
     INSTALL = auto()
     UNINSTALL = auto()
     CANCEL = auto()
+    CANCEL_ALL = auto()
     UPGRADE = auto()
 
 
@@ -383,9 +384,16 @@ class InstallerQueue(QProcess):
             Job ID to cancel.  If not provided, cancel all jobs.
         """
         if job_id is None:
+            all_pkgs = []
+            for item in deque(self._queue):
+                all_pkgs.extend(item.pkgs)
+
             # cancel all jobs
             self._queue.clear()
             self._end_process()
+            self.processFinished.emit(
+                1, 0, InstallerActions.CANCEL_ALL, all_pkgs
+            )
             return
 
         for i, item in enumerate(deque(self._queue)):

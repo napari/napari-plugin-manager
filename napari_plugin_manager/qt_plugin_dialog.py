@@ -580,9 +580,7 @@ class QPluginList(QListWidget):
         for i in range(count):
             item = self.item(i)
             if item.widget.name == name:
-                item.widget.set_busy(
-                    trans._("cancelling..."), InstallerActions.CANCEL
-                )
+                item.widget.set_busy('', InstallerActions.CANCEL)
                 if item.text().startswith('0-'):
                     item.setText(
                         item.text().replace('0-', '')
@@ -866,7 +864,7 @@ class QtPluginDialog(QDialog):
             for pkg_name in pkg_names:
                 self.installed_list.refreshItem(pkg_name)
                 self._tag_outdated_plugins()
-        elif action == 'cancel':
+        elif action in ['cancel', 'cancel_all']:
             for pkg_name in pkg_names:
                 self.installed_list.refreshItem(pkg_name)
                 self.available_list.refreshItem(pkg_name)
@@ -938,6 +936,7 @@ class QtPluginDialog(QDialog):
 
     def _add_installed(self, pkg_name=None):
         pm2 = npe2.PluginManager.instance()
+        pm2.discover()
         for manifest in pm2.iter_manifests():
             distname = normalized_name(manifest.name or '')
             if distname in self.already_installed or distname == 'napari':
@@ -967,9 +966,6 @@ class QtPluginDialog(QDialog):
         self._update_plugin_count()
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
-        pm2 = npe2.PluginManager.instance()
-        discovered = pm2.discover()
-
         # fetch available plugins
         get_settings()
 
@@ -983,6 +979,8 @@ class QtPluginDialog(QDialog):
         self.worker.finished.connect(self._add_items_timer.start)
         self.worker.start()
 
+        pm2 = npe2.PluginManager.instance()
+        discovered = pm2.discover()
         if discovered:
             message = trans._(
                 'When installing/uninstalling npe2 plugins, '
