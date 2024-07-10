@@ -323,9 +323,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
         plugin_dialog.available_list.handle_action(
             item, 'my-test-old-plugin-1', InstallerActions.CANCEL, version='3'
         )
-        mock.assert_called_with(
-            trans._("cancelling..."), InstallerActions.CANCEL
-        )
+        mock.assert_called_with("", InstallerActions.CANCEL)
 
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
