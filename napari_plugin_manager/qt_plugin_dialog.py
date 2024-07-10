@@ -788,7 +788,7 @@ class QtPluginDialog(QDialog):
     def _quit(self):
         self.close()
         with contextlib.suppress(AttributeError):
-            self._parent.close(quit_app=True)
+            self._parent.close(quit_app=True, confirm_need=True)
 
     def _setup_shortcuts(self):
         self._quit_action = QAction(trans._('Exit'), self)
