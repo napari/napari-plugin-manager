@@ -383,9 +383,6 @@ def test_add_items_outdated(plugin_dialog):
     assert widget.update_btn.isVisible()
 
 
-@pytest.mark.skipif(
-    platform.system() != "Darwin", reason="shortcut only on mac systems"
-)
 def test_shortcut_close(plugin_dialog, qtbot):
     qtbot.keyClicks(
         plugin_dialog, 'W', modifier=Qt.KeyboardModifier.ControlModifier
