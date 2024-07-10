@@ -20,7 +20,7 @@ from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
 from subprocess import call
-from tempfile import gettempdir, mkstemp
+from tempfile import NamedTemporaryFile, gettempdir
 from typing import Deque, Optional, Sequence, Tuple
 
 from napari._version import version as _napari_version
@@ -140,11 +140,12 @@ class PipInstallerTool(AbstractInstallerTool):
     @classmethod
     @lru_cache(maxsize=0)
     def _constraints_file(cls) -> str:
-        _, path = mkstemp("-napari-constraints.txt", text=True)
-        with open(path, "w") as f:
+        with NamedTemporaryFile(
+            "w", suffix="-napari-constraints.txt", delete=False
+        ) as f:
             f.write("\n".join(cls.constraints()))
-        atexit.register(os.unlink, path)
-        return path
+        atexit.register(os.unlink, f.name)
+        return f.name
 
 
 class CondaInstallerTool(AbstractInstallerTool):
