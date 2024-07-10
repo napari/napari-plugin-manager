@@ -1,7 +1,6 @@
 import contextlib
 import importlib.metadata
 import os
-import platform
 from enum import Enum, auto
 from functools import partial
 from pathlib import Path
