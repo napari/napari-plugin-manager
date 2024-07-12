@@ -21,7 +21,7 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import call
 from tempfile import gettempdir, mkstemp
-from typing import Deque, Optional, Sequence, Tuple
+from typing import Deque, Optional, Sequence, Tuple, TypedDict
 
 from napari._version import version as _napari_version
 from napari._version import version_tuple as _napari_version_tuple
@@ -44,6 +44,13 @@ class InstallerActions(StringEnum):
     CANCEL = auto()
     CANCEL_ALL = auto()
     UPGRADE = auto()
+
+
+class ProcessFinishedData(TypedDict):
+    exit_code: int
+    exit_status: int
+    action: InstallerActions
+    pkgs: Tuple[str, ...]
 
 
 class InstallerTools(StringEnum):
@@ -242,12 +249,12 @@ class InstallerQueue(QProcess):
 
     # emitted when all jobs are finished. Not to be confused with finished,
     # which is emitted when each individual job is finished.
-    # Tuple of exit codes for each job
+    # Tuple of exit codes for each individual job
     allFinished = Signal(tuple)
 
     # emitted when each job finishes
-    # exit_code, status_code, action, pkgs
-    processFinished = Signal(int, int, object, object)
+    # dict: ProcessFinishedData
+    processFinished = Signal(dict)
 
     def __init__(
         self, parent: Optional[QObject] = None, prefix: Optional[str] = None
@@ -392,7 +399,12 @@ class InstallerQueue(QProcess):
             self._queue.clear()
             self._end_process()
             self.processFinished.emit(
-                1, 0, InstallerActions.CANCEL_ALL, all_pkgs
+                {
+                    'exit_code': 1,
+                    'exit_status': 0,
+                    'action': InstallerActions.CANCEL_ALL,
+                    'pkgs': all_pkgs,
+                }
             )
             return
 
@@ -405,7 +417,12 @@ class InstallerQueue(QProcess):
                     self._queue.remove(item)
 
                 self.processFinished.emit(
-                    1, 0, InstallerActions.CANCEL, item.pkgs
+                    {
+                        'exit_code': 1,
+                        'exit_status': 0,
+                        'action': InstallerActions.CANCEL,
+                        'pkgs': item.pkgs,
+                    }
                 )
                 return
 
@@ -416,7 +433,14 @@ class InstallerQueue(QProcess):
                 for item in self._queue
             ]
         )
-        self.processFinished.emit(1, 0, InstallerActions.CANCEL, [])
+        self.processFinished.emit(
+            {
+                'exit_code': 1,
+                'exit_status': 0,
+                'action': InstallerActions.CANCEL,
+                'pkgs': [],
+            }
+        )
         raise ValueError(msg)
 
     def cancel_all(self):
@@ -567,7 +591,12 @@ class InstallerQueue(QProcess):
 
         if item is not None:
             self.processFinished.emit(
-                exit_code, exit_status, item.action, item.pkgs
+                {
+                    'exit_code': exit_code,
+                    'exit_status': exit_status,
+                    'action': item.action,
+                    'pkgs': item.pkgs,
+                }
             )
             self._exit_codes.append(exit_code)
 

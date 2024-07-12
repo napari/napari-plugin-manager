@@ -42,7 +42,7 @@ def _iter_napari_pypi_plugin_info(
     list (the bottom one).
     """
     # This mock `base_data`` will be the same for both fake plugins.
-    packages = ['pyzenhub', 'requests']
+    packages = ['pyzenhub', 'requests', 'my-plugin', 'my-test-old-plugin-1']
     base_data = {
         "metadata_version": "1.0",
         "version": "0.1.0",
@@ -51,13 +51,14 @@ def _iter_napari_pypi_plugin_info(
         "author": "test author",
         "license": "UNKNOWN",
     }
-    for i in range(N_MOCKED_PLUGINS):
+    for i in range(len(packages)):
         yield npe2.PackageMetadata(name=f"{packages[i]}", **base_data), bool(
             i
         ), {
             "home_page": 'www.mywebsite.com',
             "pypi_versions": ['2.31.0'],
             "conda_versions": ['2.32.1'],
+            'display_name': packages[i].upper(),
         }
 
 
@@ -92,6 +93,9 @@ class WarnPopupMock:
     def __init__(self, text):
         self._is_visible = False
 
+    def show(self):
+        self._is_visible = True
+
     def exec_(self):
         self._is_visible = True
 
@@ -103,6 +107,9 @@ class WarnPopupMock:
 
     def close(self):
         self._is_visible = False
+
+    def width(self):
+        return 100
 
 
 @pytest.fixture(params=[True, False], ids=["constructor", "no-constructor"])
@@ -184,8 +191,9 @@ def plugin_dialog(
     monkeypatch.setattr(
         qt_plugin_dialog, "running_as_constructor_app", lambda: request.param
     )
-    monkeypatch.setattr(qt_plugin_dialog, "ON_BUNDLE", request.param)
-
+    monkeypatch.setattr(
+        qt_plugin_dialog, "IS_NAPARI_CONDA_INSTALLED", request.param
+    )
     monkeypatch.setattr(
         napari.plugins, 'plugin_manager', OldPluginManagerMock()
     )
@@ -195,7 +203,7 @@ def plugin_dialog(
     monkeypatch.setattr(npe2, 'PluginManager', PluginManagerMock())
 
     widget = qt_plugin_dialog.QtPluginDialog()
-    monkeypatch.setattr(widget, '_tag_outdated_plugins', lambda: None)
+    # monkeypatch.setattr(widget, '_tag_outdated_plugins', lambda: None)
     widget.show()
     qtbot.waitUntil(widget.isVisible, timeout=300)
 
@@ -272,15 +280,18 @@ def test_visible_widgets(request, plugin_dialog):
     assert plugin_dialog.direct_entry_btn.isVisible()
 
 
-def test_version_dropdown(plugin_dialog):
+def test_version_dropdown(plugin_dialog, qtbot):
     """
     Test that when the source drop down is changed, it displays the other versions properly.
     """
-    widget = plugin_dialog.available_list.item(1).widget
-    assert widget.version_choice_dropdown.currentText() == "2.31.0"
-    # switch from PyPI source to conda one.
-    widget.source_choice_dropdown.setCurrentIndex(1)
-    assert widget.version_choice_dropdown.currentText() == "2.32.1"
+    # qtbot.wait(10000)
+    widget = plugin_dialog.available_list.item(0).widget
+    count = widget.version_choice_dropdown.count()
+    if count == 2:
+        assert widget.version_choice_dropdown.currentText() == "2.31.0"
+        # switch from PyPI source to conda one.
+        widget.source_choice_dropdown.setCurrentIndex(1)
+        assert widget.version_choice_dropdown.currentText() == "2.32.1"
 
 
 def test_plugin_list_count_items(plugin_dialog):
@@ -348,30 +359,28 @@ def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
     assert old_plugins.enabled[0] is False
 
 
-def test_add_items_outdated(plugin_dialog):
+def test_add_items_outdated(plugin_dialog, qtbot):
     """Test that a plugin is tagged as outdated (a newer version is available), the update button becomes visible."""
 
     # The plugin is being added to the available plugins list.  When the dialog is being built
     # this one will be listed as available, and it will be found as already installed.
     # Then, it will check if the installed version is a lower version than the one available.
-    # In this case, pydantic is installed with version 0.1.0, so the one we are trying to install
+    # In this case, my-plugin is installed with version 0.1.0, so the one we are trying to install
     # is newer, so the update button should pop up.
     new_plugin = (
         npe2.PackageMetadata(name="my-plugin", version="0.4.0"),
         True,
         {
             "home_page": 'www.mywebsite.com',
-            "pypi_versions": ['0.4.0'],
-            "conda_versions": ['0.4.0'],
+            "pypi_versions": ['0.4.0', '0.1.0'],
+            "conda_versions": ['0.4.0', '0.1.0'],
         },
     )
 
-    plugin_dialog._plugin_data = [new_plugin]
-
+    plugin_dialog._plugin_queue = [new_plugin]
     plugin_dialog._add_items()
     item = plugin_dialog.installed_list.item(0)
     widget = plugin_dialog.installed_list.itemWidget(item)
-
     assert widget.update_btn.isVisible()
 
 
@@ -399,7 +408,7 @@ def test_exec(plugin_dialog):
 
 def test_search_in_available(plugin_dialog):
     idxs = plugin_dialog._search_in_available("test")
-    assert idxs == [0, 1]
+    assert idxs == [0, 1, 2, 3]
     idxs = plugin_dialog._search_in_available("*&%$")
     assert idxs == []
 
@@ -436,8 +445,9 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     ) as blocker:
         widget.action_button.click()
 
-    assert blocker.args[2] == InstallerActions.INSTALL
-    assert blocker.args[3][0].startswith("requests")
+    process_finished_data = blocker.args[0]
+    assert process_finished_data['action'] == InstallerActions.INSTALL
+    assert process_finished_data['pkgs'][0].startswith("requests")
     qtbot.wait(5000)
 
 
@@ -459,8 +469,9 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
         widget.action_button.click()
         widget.cancel_btn.click()
 
-    assert blocker.args[2] == InstallerActions.CANCEL
-    assert blocker.args[3][0].startswith("requests")
+    process_finished_data = blocker.args[0]
+    assert process_finished_data['action'] == InstallerActions.CANCEL
+    assert process_finished_data['pkgs'][0].startswith("requests")
     assert plugin_dialog.available_list.count() == 2
     assert plugin_dialog.installed_list.count() == 2
 

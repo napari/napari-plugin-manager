@@ -50,6 +50,7 @@ from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
     InstallerQueue,
     InstallerTools,
+    ProcessFinishedData,
 )
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
@@ -600,9 +601,7 @@ class QPluginList(QListWidget):
             if item.widget.name == name:
                 item.widget.set_busy('', InstallerActions.CANCEL)
                 if item.text().startswith('0-'):
-                    item.setText(
-                        item.text().replace('0-', '')
-                    )  # Remove the '0-' from the text
+                    item.setText(item.text()[2:])
                 break
 
     def _resize_pluginlistitem(self, item):
@@ -796,18 +795,20 @@ class QtPluginDialog(QDialog):
         self.available_set = set()
         self._prefix = prefix
 
-        self._plugin_data = []  # Store plugin data while populating lists
-        self._all_plugin_data = []  # Store all plugin data
+        self._plugin_queue = []  # Store plugin data to be added
+        self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
         self.worker = None
+
         # timer to avoid triggering a filter for every keystroke
         self._filter_timer.setInterval(140)  # ms
         self._filter_timer.timeout.connect(self.filter)
         self._filter_timer.setSingleShot(True)
-        self._all_plugin_data_map = {}
+        self._plugin_data_map = {}
         self._add_items_timer = QTimer(self)
+
         # Add items in batches with a pause to avoid blocking the UI
         self._add_items_timer.setInterval(61)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
@@ -829,7 +830,7 @@ class QtPluginDialog(QDialog):
         get_settings().appearance.events.theme.connect(self._update_theme)
         self._first_open = True
 
-    # Private methods
+    # region - Private methods
     # ------------------------------------------------------------------------
     def _update_theme(self, event):
         stylesheet = get_current_stylesheet([STYLES_PATH])
@@ -844,8 +845,12 @@ class QtPluginDialog(QDialog):
         self.process_error_indicator.hide()
         self.refresh_button.setDisabled(True)
 
-    def _on_process_finished(self, exit_code, exit_status, action, pkgs):
-        pkg_names = [pkg.split('==')[0] for pkg in pkgs]
+    def _on_process_finished(self, process_finished_data: ProcessFinishedData):
+        action = process_finished_data['action']
+        exit_code = process_finished_data['exit_code']
+        pkg_names = [
+            pkg.split('==')[0] for pkg in process_finished_data['pkgs']
+        ]
         if action == 'install':
             if exit_code == 0:
                 for pkg_name in pkg_names:
@@ -904,7 +909,7 @@ class QtPluginDialog(QDialog):
 
     def _add_to_available(self, pkg_name):
         self._add_items_timer.stop()
-        self._plugin_data.insert(0, self._all_plugin_data_map[pkg_name])
+        self._plugin_queue.insert(0, self._plugin_data_map[pkg_name])
         self._add_items_timer.start()
         self._update_plugin_count()
 
@@ -1143,9 +1148,7 @@ class QtPluginDialog(QDialog):
                 )
             )
 
-        available_count = (
-            len(self._all_plugin_data) - self.installed_list.count()
-        )
+        available_count = len(self._plugin_data) - self.installed_list.count()
         available_count = available_count if available_count >= 0 else 0
         available_count_visible = self.available_list.count_visible()
         if available_count == available_count_visible:
@@ -1182,7 +1185,7 @@ class QtPluginDialog(QDialog):
     def _tag_outdated_plugins(self):
         """Tag installed plugins that might be outdated."""
         for pkg_name in self.installed_list.packages():
-            metadata, is_available_in_conda, _ = self._all_plugin_data_map.get(
+            metadata, is_available_in_conda, _ = self._plugin_data_map.get(
                 pkg_name
             )
             self.installed_list.tag_outdated(metadata, is_available_in_conda)
@@ -1192,10 +1195,10 @@ class QtPluginDialog(QDialog):
         Add items to the lists by `batch_size` using a timer to add a pause
         and prevent freezing the UI.
         """
-        if len(self._plugin_data) == 0:
+        if len(self._plugin_queue) == 0:
             if (
                 self.installed_list.count() + self.available_list.count()
-                == len(self._all_plugin_data)
+                == len(self._plugin_data)
                 and self.available_list.count() != 0
             ):
                 self._add_items_timer.stop()
@@ -1210,7 +1213,7 @@ class QtPluginDialog(QDialog):
 
         batch_size = 2
         for _ in range(batch_size):
-            data = self._plugin_data.pop(0)
+            data = self._plugin_queue.pop(0)
             metadata, is_available_in_conda, extra_info = data
             display_name = extra_info.get('display_name', metadata.name)
             if metadata.name in self.already_installed:
@@ -1231,7 +1234,7 @@ class QtPluginDialog(QDialog):
                 if ON_BUNDLE and not is_available_in_conda:
                     self.available_list.tag_unavailable(metadata)
 
-            if len(self._plugin_data) == 0:
+            if len(self._plugin_queue) == 0:
                 self._tag_outdated_plugins()
                 break
 
@@ -1246,15 +1249,15 @@ class QtPluginDialog(QDialog):
         The data is stored but the actual items are added via a timer in the `_add_items`
         method to prevent the UI from freezing by adding all items at once.
         """
-        self._all_plugin_data.append(data)
         self._plugin_data.append(data)
+        self._plugin_queue.append(data)
         self._filter_texts = [
             f"{i[0].name} {i[-1].get('display_name', '')} {i[0].summary}".lower()
-            for i in self._all_plugin_data
+            for i in self._plugin_data
         ]
         metadata, _, _ = data
-        self._all_plugin_data_map[metadata.name] = data
-        self.available_list.set_data(self._all_plugin_data)
+        self._plugin_data_map[metadata.name] = data
+        self.available_list.set_data(self._plugin_data)
 
     def _search_in_available(self, text):
         idxs = []
@@ -1268,7 +1271,9 @@ class QtPluginDialog(QDialog):
     def _refresh_and_clear_cache(self):
         self.refresh(clear_cache=True)
 
-    # Qt overrides
+    # endregion - Private methods
+
+    # region - Qt overrides
     # ------------------------------------------------------------------------
     def closeEvent(self, event):
         if self._parent is not None:
@@ -1311,7 +1316,9 @@ class QtPluginDialog(QDialog):
         self.toggle_status(False)
         super().hideEvent(event)
 
-    # Public methods
+    # endregion - Qt overrides
+
+    # region - Public methods
     # ------------------------------------------------------------------------
     def filter(self, text: Optional[str] = None, skip=False) -> None:
         """Filter by text or set current text as filter."""
@@ -1322,15 +1329,15 @@ class QtPluginDialog(QDialog):
 
         if not skip and self.available_list.is_running() and len(text) >= 1:
             items = [
-                self._all_plugin_data[idx]
+                self._plugin_data[idx]
                 for idx in self._search_in_available(text)
             ]
             if items:
                 for item in items:
-                    if item in self._plugin_data:
-                        self._plugin_data.remove(item)
+                    if item in self._plugin_queue:
+                        self._plugin_queue.remove(item)
 
-                self._plugin_data = items + self._plugin_data
+                self._plugin_queue = items + self._plugin_queue
 
         self.installed_list.filter(text)
         self.available_list.filter(text)
@@ -1341,9 +1348,9 @@ class QtPluginDialog(QDialog):
             self._add_items_timer.stop()
 
         self._filter_texts = []
+        self._plugin_queue = []
         self._plugin_data = []
-        self._all_plugin_data = []
-        self._all_plugin_data_map = {}
+        self._plugin_data_map = {}
 
         self.installed_list.clear()
         self.available_list.clear()
@@ -1372,6 +1379,8 @@ class QtPluginDialog(QDialog):
         for idx in range(self.installed_list.count()):
             item = self.installed_list.item(idx)
             item.widget.prefix = prefix
+
+    # endregion - Public methods
 
 
 if __name__ == "__main__":

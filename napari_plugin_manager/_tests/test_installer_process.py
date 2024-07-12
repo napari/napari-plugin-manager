@@ -107,7 +107,9 @@ def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
             tool=InstallerTools.PIP,
             pkgs=['pydantic'],
         )
-    assert blocker.args[2:] == [InstallerActions.INSTALL, ["pydantic"]]
+    process_finished_data = blocker.args[0]
+    assert process_finished_data['action'] == InstallerActions.INSTALL
+    assert process_finished_data['pkgs'] == ["pydantic"]
 
     # Test upgrade
     with qtbot.waitSignal(installer.allFinished, timeout=20000):
