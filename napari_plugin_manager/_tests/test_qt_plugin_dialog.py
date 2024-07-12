@@ -194,9 +194,7 @@ def plugin_dialog(
     monkeypatch.setattr(
         qt_plugin_dialog, "IS_NAPARI_CONDA_INSTALLED", request.param
     )
-    monkeypatch.setattr(
-        qt_plugin_dialog, "ON_BUNDLE", request.param
-    )
+    monkeypatch.setattr(qt_plugin_dialog, "ON_BUNDLE", request.param)
     monkeypatch.setattr(
         napari.plugins, 'plugin_manager', OldPluginManagerMock()
     )
