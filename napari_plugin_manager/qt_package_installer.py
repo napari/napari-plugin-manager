@@ -241,7 +241,7 @@ class InstallerQueue(QProcess):
     """Queue for installation and uninstallation tasks in the plugin manager."""
 
     # emitted when all jobs are finished. Not to be confused with finished,
-    # which is emitted when each job is finished.
+    # which is emitted when each individual job is finished.
     # Tuple of exit codes for each job
     allFinished = Signal(tuple)
 

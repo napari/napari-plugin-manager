@@ -65,6 +65,23 @@ IS_NAPARI_CONDA_INSTALLED = is_conda_package('napari')
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
 
 
+def _show_message(widget):
+    message = trans._(
+        'When installing/uninstalling npe2 plugins, '
+        'you must restart napari for UI changes to take effect.'
+    )
+    warn_dialog = WarnPopup(text=message)
+    warn_dialog.show()
+    global_point = widget.action_button.mapToGlobal(
+        widget.action_button.rect().topRight()
+    )
+    global_point = QPoint(
+        global_point.x() - warn_dialog.width(), global_point.y()
+    )
+    warn_dialog.move(global_point)
+    warn_dialog.exec_()
+
+
 class ProjectInfoVersions(NamedTuple):
     metadata: npe2.PackageMetadata
     display_name: str
@@ -121,6 +138,7 @@ class PluginListItem(QFrame):
         else:
             self._populate_version_dropdown(CONDA)
 
+        self.npe_version = npe_version
         self.package_name.setText(version)
         if summary:
             self.summary.setText(summary + '<br />')
@@ -613,20 +631,11 @@ class QPluginList(QListWidget):
         self._warn_dialog = None
 
         # TODO: NPE version unknown before installing
-        if item.npe_version != 1 and action_name == InstallerActions.UNINSTALL:
-            # show warning pop up dialog
-            message = trans._(
-                'When installing/uninstalling npe2 plugins, you must '
-                'restart napari for UI changes to take effect.'
-            )
-            self._warn_dialog = WarnPopup(text=message)
-
-            delta_x = 75
-            global_point = widget.action_button.mapToGlobal(
-                widget.action_button.rect().topLeft()
-            )
-            global_point = QPoint(global_point.x() - delta_x, global_point.y())
-            self._warn_dialog.move(global_point)
+        if (
+            widget.npe_version != 1
+            and action_name == InstallerActions.UNINSTALL
+        ):
+            _show_message(widget)
 
         if action_name == InstallerActions.INSTALL:
             if version:
@@ -965,8 +974,15 @@ class QtPluginDialog(QDialog):
                 )
         self._update_plugin_count()
 
+        for i in range(self.installed_list.count()):
+            item = self.installed_list.item(i)
+            widget = item.widget
+            self.installed_list.scrollToItem(item)
+            if widget.name == pkg_name and widget.npe_version != 1:
+                _show_message(widget)
+                break
+
     def _fetch_available_plugins(self, clear_cache: bool = False):
-        # fetch available plugins
         get_settings()
 
         if clear_cache:
@@ -980,19 +996,7 @@ class QtPluginDialog(QDialog):
         self.worker.start()
 
         pm2 = npe2.PluginManager.instance()
-        discovered = pm2.discover()
-        if discovered:
-            message = trans._(
-                'When installing/uninstalling npe2 plugins, '
-                'you must restart napari for UI changes to take effect.'
-            )
-            self._warn_dialog = WarnPopup(text=message)
-            global_point = self.process_error_indicator.mapToGlobal(
-                self.process_error_indicator.rect().topLeft()
-            )
-            global_point = QPoint(global_point.x(), global_point.y() - 75)
-            self._warn_dialog.move(global_point)
-            self._warn_dialog.exec_()
+        pm2.discover()
 
     def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
