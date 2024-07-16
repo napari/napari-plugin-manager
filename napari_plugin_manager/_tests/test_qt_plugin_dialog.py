@@ -385,6 +385,12 @@ def test_add_items_outdated(plugin_dialog, qtbot):
     assert widget.update_btn.isVisible()
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside')
+    and sys.version_info[:2] > (3, 10)
+    and platform.system() == "Darwin",
+    reason='pyside specific bug',
+)
 def test_refresh(qtbot, plugin_dialog):
     with qtbot.waitSignal(plugin_dialog._add_items_timer.timeout, timeout=500):
         plugin_dialog.refresh(clear_cache=False)
@@ -407,6 +413,12 @@ def test_exec(plugin_dialog):
     plugin_dialog.exec_()
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside')
+    and sys.version_info[:2] > (3, 10)
+    and platform.system() == "Darwin",
+    reason='pyside specific bug',
+)
 def test_search_in_available(plugin_dialog):
     idxs = plugin_dialog._search_in_available("test")
     assert idxs == [0, 1, 2, 3]
