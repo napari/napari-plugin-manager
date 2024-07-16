@@ -1,3 +1,4 @@
+import contextlib
 import importlib.metadata
 import os
 import webbrowser
@@ -21,7 +22,7 @@ from napari.utils.misc import (
 from napari.utils.notifications import show_info, show_warning
 from napari.utils.translations import trans
 from qtpy.QtCore import QPoint, QSize, Qt, QTimer, Signal, Slot
-from qtpy.QtGui import QFont, QMovie
+from qtpy.QtGui import QAction, QFont, QKeySequence, QMovie, QShortcut
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -822,6 +823,24 @@ class QtPluginDialog(QDialog):
             parent is not None and parent._plugin_dialog is self
         ) or parent is None:
             self.refresh()
+            self._setup_shortcuts()
+
+    def _quit(self):
+        self.close()
+        with contextlib.suppress(AttributeError):
+            self._parent.close(quit_app=True, confirm_need=True)
+
+    def _setup_shortcuts(self):
+        self._quit_action = QAction(trans._('Exit'), self)
+        self._quit_action.setShortcut('Ctrl+Q')
+        self._quit_action.setMenuRole(QAction.QuitRole)
+        self._quit_action.triggered.connect(self._quit)
+        self.addAction(self._quit_action)
+
+        self._close_shortcut = QShortcut(
+            QKeySequence(Qt.CTRL | Qt.Key_W), self
+        )
+        self._close_shortcut.activated.connect(self.close)
 
         get_settings().appearance.events.theme.connect(self._update_theme)
         self._first_open = True

@@ -11,8 +11,12 @@ import pytest
 import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
+<<<<<<< HEAD
 from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
 from qtpy.QtGui import QDropEvent
+=======
+from qtpy.QtCore import Qt
+>>>>>>> main
 
 if (qtpy.API_NAME == 'PySide2') or (
     sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
@@ -522,3 +526,17 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
 
     assert plugin_dialog.available_list.count() == 2
     assert plugin_dialog.installed_list.count() == 2
+def test_shortcut_close(plugin_dialog, qtbot):
+    qtbot.keyClicks(
+        plugin_dialog, 'W', modifier=Qt.KeyboardModifier.ControlModifier
+    )
+    qtbot.wait(200)
+    assert not plugin_dialog.isVisible()
+
+
+def test_shortcut_quit(plugin_dialog, qtbot):
+    qtbot.keyClicks(
+        plugin_dialog, 'Q', modifier=Qt.KeyboardModifier.ControlModifier
+    )
+    qtbot.wait(200)
+    assert not plugin_dialog.isVisible()
