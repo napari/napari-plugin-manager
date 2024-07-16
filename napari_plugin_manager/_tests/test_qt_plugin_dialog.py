@@ -402,6 +402,12 @@ def test_refresh(qtbot, plugin_dialog):
         plugin_dialog._refresh_and_clear_cache()
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside')
+    and sys.version_info[:2] > (3, 10)
+    and platform.system() == "Darwin",
+    reason='pyside specific bug',
+)
 def test_toggle_status(plugin_dialog):
     plugin_dialog.toggle_status(True)
     assert plugin_dialog.stdout_text.isVisible()
@@ -409,6 +415,12 @@ def test_toggle_status(plugin_dialog):
     assert not plugin_dialog.stdout_text.isVisible()
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside')
+    and sys.version_info[:2] > (3, 10)
+    and platform.system() == "Darwin",
+    reason='pyside specific bug',
+)
 def test_exec(plugin_dialog):
     plugin_dialog.exec_()
 
