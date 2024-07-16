@@ -66,12 +66,12 @@ IS_NAPARI_CONDA_INSTALLED = is_conda_package('napari')
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
 
 
-def _show_message(widget):
+def _show_message(widget, parent=None):
     message = trans._(
         'When installing/uninstalling npe2 plugins, '
         'you must restart napari for UI changes to take effect.'
     )
-    warn_dialog = WarnPopup(text=message)
+    warn_dialog = WarnPopup(parent=parent, text=message)
     warn_dialog.show()
     global_point = widget.action_button.mapToGlobal(
         widget.action_button.rect().topRight()
@@ -79,7 +79,10 @@ def _show_message(widget):
     global_point = QPoint(
         global_point.x() - warn_dialog.width(), global_point.y()
     )
+
     warn_dialog.move(global_point)
+    warn_dialog.activateWindow()
+    warn_dialog.raise_()
     warn_dialog.exec_()
 
 
@@ -634,7 +637,7 @@ class QPluginList(QListWidget):
             widget.npe_version != 1
             and action_name == InstallerActions.UNINSTALL
         ):
-            _show_message(widget)
+            _show_message(widget, parent=self)
 
         if action_name == InstallerActions.INSTALL:
             if version:
@@ -984,7 +987,7 @@ class QtPluginDialog(QDialog):
             widget = item.widget
             self.installed_list.scrollToItem(item)
             if widget.name == pkg_name and widget.npe_version != 1:
-                _show_message(widget)
+                _show_message(widget, parent=self)
                 break
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
