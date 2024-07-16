@@ -44,7 +44,8 @@ dependencies = [
   "npe2",
   "qtpy",
   "superqt",
-  "pip"
+  "pip",
+  "numpy<2"  # Temporal fix to prevent segfaults with pyside6 and py311 on macos
 ]
 dynamic = [
   "version"
