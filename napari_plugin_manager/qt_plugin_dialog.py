@@ -72,12 +72,17 @@ def _show_message(widget):
         'When installing/uninstalling npe2 plugins, '
         'you must restart napari for UI changes to take effect.'
     )
-    button = widget.action_button
-    warn_dialog = WarnPopup(text=message)
-    global_point = widget.action_button.mapToGlobal(button.rect().topRight())
-    global_point = QPoint(global_point.x() - button.width(), global_point.y())
-    warn_dialog.move(global_point)
-    warn_dialog.exec_()
+    if widget.isVisible():
+        button = widget.action_button
+        warn_dialog = WarnPopup(text=message)
+        global_point = widget.action_button.mapToGlobal(
+            button.rect().topRight()
+        )
+        global_point = QPoint(
+            global_point.x() - button.width(), global_point.y()
+        )
+        warn_dialog.move(global_point)
+        warn_dialog.exec_()
 
 
 class ProjectInfoVersions(NamedTuple):
@@ -791,7 +796,7 @@ class QtPluginDialog(QDialog):
         self.already_installed = set()
         self.available_set = set()
         self._prefix = prefix
-
+        self._first_open = True
         self._plugin_queue = []  # Store plugin data to be added
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
@@ -841,16 +846,13 @@ class QtPluginDialog(QDialog):
             QKeySequence(Qt.CTRL | Qt.Key_W), self
         )
         self._close_shortcut.activated.connect(self.close)
-
         get_settings().appearance.events.theme.connect(self._update_theme)
-        self._first_open = True
 
     # region - Private methods
     # ------------------------------------------------------------------------
     def _update_theme(self, event):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
-        self._first_open = True
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -1324,8 +1326,7 @@ class QtPluginDialog(QDialog):
         plugin_dialog.show()
 
         if self._first_open:
-            stylesheet = get_current_stylesheet([STYLES_PATH])
-            self.setStyleSheet(stylesheet)
+            self._update_theme(None)
             self._first_open = False
 
     def hideEvent(self, event):
