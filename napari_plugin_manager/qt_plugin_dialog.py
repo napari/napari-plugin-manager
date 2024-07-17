@@ -126,6 +126,7 @@ class PluginListItem(QFrame):
         self.url = url
         self.name = package_name
         self.npe_version = npe_version
+        self._version = version
         self._versions_conda = versions_conda
         self._versions_pypi = versions_pypi
         self.setup_ui(enabled)
@@ -141,9 +142,11 @@ class PluginListItem(QFrame):
             self._populate_version_dropdown(PYPI)
         else:
             self._populate_version_dropdown(CONDA)
-        
-        self.version.setText(version)
+
+        mod_version = version.replace('.', '․')  # noqa: RUF001
         self.version.setWordWrap(True)
+        self.version.setText(mod_version)
+        self.version.setToolTip(version)
 
         if summary:
             self.summary.setText(summary)
