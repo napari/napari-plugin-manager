@@ -143,6 +143,7 @@ class PluginListItem(QFrame):
             self._populate_version_dropdown(CONDA)
         
         self.version.setText(version)
+        self.version.setWordWrap(True)
 
         if summary:
             self.summary.setText(summary)
@@ -654,7 +655,8 @@ class QPluginList(QListWidget):
             item.widget.setFixedHeight(self._initial_height + 35)
         else:
             item.widget.setFixedHeight(self._initial_height)
-        item.setSizeHint(item.widget.size())
+
+        item.setSizeHint(QSize(0, item.widget.height()))
 
     def handle_action(
         self,
