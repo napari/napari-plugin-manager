@@ -55,8 +55,7 @@ QWidget#install_choice_widget {
 }
 
 QPluginList {
-  background: {{ console }};
-  background: black;
+  background-color: {{ console }};
 }
 
 PluginListItem {
@@ -126,6 +125,9 @@ QPushButton#close_button:disabled {
   background-color: {{ lighten(secondary, 10) }}
 }
 
+QPushButton#refresh_button:disabled {
+  background-color: {{ lighten(secondary, 10) }}
+}
 
 #small_text {
   color: {{ opacity(text, 150) }};

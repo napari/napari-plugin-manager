@@ -93,7 +93,7 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         data_set = data.result()
     except (HTTPError, URLError):
         show_warning(
-            'There seems to be an issue with network connectivity. '
+            'Plugin manager: There seems to be an issue with network connectivity. '
             'Remote plugins cannot be installed, only local ones.\n'
         )
         return
@@ -122,3 +122,10 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         meta = PackageMetadata(**info_)  # type:ignore[call-arg]
 
         yield meta, (info_['name'] in conda_set), extra_info
+
+
+def cache_clear():
+    """Clear the cache for all cached functions in this module."""
+    plugin_summaries.cache_clear()
+    conda_map.cache_clear()
+    _user_agent.cache_clear()
