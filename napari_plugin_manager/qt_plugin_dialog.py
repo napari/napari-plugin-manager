@@ -1,6 +1,7 @@
 import contextlib
 import importlib.metadata
 import os
+import sys
 import webbrowser
 from functools import partial
 from pathlib import Path
@@ -326,18 +327,21 @@ class PluginListItem(QFrame):
         sizePolicy.setRetainSizeWhenHidden(True)
         sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.update_btn.setSizePolicy(sizePolicy)
+        self.update_btn.clicked.connect(self._update_requested)
 
         # Action Button
         self.action_button = QPushButton(self)
         self.action_button.setFixedWidth(70)
         sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.action_button.setSizePolicy(sizePolicy1)
+        self.action_button.clicked.connect(self._action_requested)
 
         # Cancel
         self.cancel_btn = QPushButton("Cancel", self)
         self.cancel_btn.setObjectName("remove_button")
         self.cancel_btn.setSizePolicy(sizePolicy)
         self.cancel_btn.setFixedWidth(70)
+        self.cancel_btn.clicked.connect(self._cancel_requested)
 
         # Collapsible button
         coll_icon = QColoredSVGIcon.from_resources('right_arrow').colored(
@@ -876,6 +880,8 @@ class QtPluginDialog(QDialog):
             self.refresh()
             self._setup_shortcuts()
 
+    # region - Private methods
+    # ------------------------------------------------------------------------
     def _quit(self):
         self.close()
         with contextlib.suppress(AttributeError):
@@ -894,8 +900,6 @@ class QtPluginDialog(QDialog):
         self._close_shortcut.activated.connect(self.close)
         get_settings().appearance.events.theme.connect(self._update_theme)
 
-    # region - Private methods
-    # ------------------------------------------------------------------------
     def _update_theme(self, event):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
@@ -1235,7 +1239,6 @@ class QtPluginDialog(QDialog):
     def _install_packages(
         self,
         packages: Sequence[str] = (),
-        versions: Optional[Sequence[str]] = None,
     ):
         if not packages:
             _packages = self.direct_entry_edit.text()
@@ -1255,7 +1258,7 @@ class QtPluginDialog(QDialog):
             )
             self.installed_list.tag_outdated(metadata, is_available_in_conda)
 
-    def _add_items(self, items=None):
+    def _add_items(self):
         """
         Add items to the lists by `batch_size` using a timer to add a pause
         and prevent freezing the UI.
@@ -1451,6 +1454,6 @@ if __name__ == "__main__":
     from qtpy.QtWidgets import QApplication
 
     app = QApplication([])
-    w = QtPluginDialog()
-    w.show()
-    app.exec_()
+    widget = QtPluginDialog()
+    widget.exec_()
+    sys.exit(app.exec_())
