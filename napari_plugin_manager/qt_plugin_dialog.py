@@ -1,6 +1,7 @@
 import contextlib
 import importlib.metadata
 import os
+import sys
 import webbrowser
 from functools import partial
 from pathlib import Path
@@ -59,7 +60,6 @@ from napari_plugin_manager.utils import is_conda_package
 # TODO: add error icon and handle pip install errors
 
 # Scaling factor for each list widget item when expanding.
-SCALE = 1.6
 CONDA = 'Conda'
 PYPI = 'PyPI'
 ON_BUNDLE = running_as_constructor_app()
@@ -126,9 +126,12 @@ class PluginListItem(QFrame):
         self.item = item
         self.url = url
         self.name = package_name
+        self.npe_version = npe_version
+        self._version = version
         self._versions_conda = versions_conda
         self._versions_pypi = versions_pypi
         self.setup_ui(enabled)
+
         if package_name == display_name:
             name = package_name
         else:
@@ -141,20 +144,29 @@ class PluginListItem(QFrame):
         else:
             self._populate_version_dropdown(CONDA)
 
-        self.npe_version = npe_version
-        self.package_name.setText(version)
+        mod_version = version.replace('.', '․')  # noqa: RUF001
+        self.version.setWordWrap(True)
+        self.version.setText(mod_version)
+        self.version.setToolTip(version)
+
         if summary:
-            self.summary.setText(summary + '<br />')
+            self.summary.setText(summary)
+
         if author:
             self.package_author.setText(author)
+
         self.package_author.setWordWrap(True)
         self.cancel_btn.setVisible(False)
 
         self._handle_npe2_plugin(npe_version)
+        self._set_installed(installed, package_name)
+        self._populate_version_dropdown(self.get_installer_source())
 
+    def _set_installed(self, installed: bool, package_name):
         if installed:
             if is_conda_package(package_name):
                 self.source.setText(CONDA)
+
             self.enabled_checkbox.show()
             self.action_button.setText(trans._("Uninstall"))
             self.action_button.setObjectName("remove_button")
@@ -167,23 +179,29 @@ class PluginListItem(QFrame):
             self.action_button.setObjectName("install_button")
             self.info_widget.hide()
             self.install_info_button.addWidget(self.info_choice_wdg)
-            self.install_info_button.setFixedWidth(170)
             self.info_choice_wdg.show()
-
-        self._populate_version_dropdown(self.get_installer_source())
 
     def _handle_npe2_plugin(self, npe_version):
         if npe_version in (None, 1):
             return
+
         opacity = 0.4 if npe_version == 'shim' else 1
-        lbl = trans._('npe1 (adapted)') if npe_version == 'shim' else 'npe2'
-        npe2_icon = QLabel(self)
+        text = trans._('npe1 (adapted)') if npe_version == 'shim' else 'npe2'
         icon = QColoredSVGIcon.from_resources('logo_silhouette')
-        npe2_icon.setPixmap(
-            icon.colored(color='#33F0FF', opacity=opacity).pixmap(20, 20)
+        self.set_status(
+            icon.colored(color='#33F0FF', opacity=opacity).pixmap(20, 20), text
         )
-        self.row1.insertWidget(2, QLabel(lbl))
-        self.row1.insertWidget(2, npe2_icon)
+
+    def set_status(self, icon=None, text=''):
+        """Set the status icon and text. next to the package name."""
+        if icon:
+            self.status_icon.setPixmap(icon)
+
+        if text:
+            self.status_label.setText(text)
+
+        self.status_icon.setVisible(bool(icon))
+        self.status_label.setVisible(bool(text))
 
     def set_busy(
         self,
@@ -218,16 +236,13 @@ class PluginListItem(QFrame):
 
     def setup_ui(self, enabled=True):
         """Define the layout of the PluginListItem"""
-
-        self.v_lay = QVBoxLayout(self)
-        self.v_lay.setContentsMargins(-1, 6, -1, 6)
-        self.v_lay.setSpacing(0)
-        self.row1 = QHBoxLayout()
-        self.row1.setSpacing(6)
+        # Enabled checkbox
         self.enabled_checkbox = QCheckBox(self)
         self.enabled_checkbox.setChecked(enabled)
-        self.enabled_checkbox.stateChanged.connect(self._on_enabled_checkbox)
         self.enabled_checkbox.setToolTip(trans._("enable/disable"))
+        self.enabled_checkbox.setText("")
+        self.enabled_checkbox.stateChanged.connect(self._on_enabled_checkbox)
+
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -236,11 +251,22 @@ class PluginListItem(QFrame):
         )
         self.enabled_checkbox.setSizePolicy(sizePolicy)
         self.enabled_checkbox.setMinimumSize(QSize(20, 0))
-        self.enabled_checkbox.setText("")
-        self.row1.addWidget(self.enabled_checkbox)
+
+        # Plugin name
         self.plugin_name = ClickableLabel(self)  # To style content
-        # Do not want to highlight on hover unless there is a website.
+        font_plugin_name = QFont()
+        font_plugin_name.setPointSize(15)
+        font_plugin_name.setUnderline(True)
+        self.plugin_name.setFont(font_plugin_name)
+
+        # Status
+        self.status_icon = QLabel(self)
+        self.status_icon.setVisible(False)
+        self.status_label = QLabel(self)
+        self.status_label.setVisible(False)
+
         if self.url and self.url != 'UNKNOWN':
+            # Do not want to highlight on hover unless there is a website.
             self.plugin_name.setObjectName('plugin_name_web')
         else:
             self.plugin_name.setObjectName('plugin_name')
@@ -252,14 +278,11 @@ class PluginListItem(QFrame):
             self.plugin_name.sizePolicy().hasHeightForWidth()
         )
         self.plugin_name.setSizePolicy(sizePolicy)
-        font15 = QFont()
-        font15.setPointSize(15)
-        font15.setUnderline(True)
-        self.plugin_name.setFont(font15)
-        self.row1.addWidget(self.plugin_name)
 
+        # Warning icon
         icon = QColoredSVGIcon.from_resources("warning")
         self.warning_tooltip = QtToolTipLabel(self)
+
         # TODO: This color should come from the theme but the theme needs
         # to provide the right color. Default warning should be orange, not
         # red. Code example:
@@ -269,68 +292,58 @@ class PluginListItem(QFrame):
             icon.colored(color="#E3B617").pixmap(15, 15)
         )
         self.warning_tooltip.setVisible(False)
-        self.row1.addWidget(self.warning_tooltip)
 
+        # Item status
         self.item_status = QLabel(self)
         self.item_status.setObjectName("small_italic_text")
         self.item_status.setSizePolicy(sizePolicy)
-        self.row1.addWidget(self.item_status)
-        self.row1.addStretch()
-        self.v_lay.addLayout(self.row1)
 
-        self.row2 = QGridLayout()
-        self.error_indicator = QPushButton()
-        self.error_indicator.setObjectName("warning_icon")
-        self.error_indicator.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.error_indicator.hide()
-        self.row2.addWidget(
-            self.error_indicator,
-            0,
-            0,
-            1,
-            1,
-            alignment=Qt.AlignmentFlag.AlignTop,
-        )
-        self.row2.setSpacing(4)
+        # Summary
         self.summary = QElidingLabel(parent=self)
         self.summary.setObjectName('summary_text')
         self.summary.setWordWrap(True)
 
-        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        font_summary = QFont()
+        font_summary.setPointSize(10)
+        self.summary.setFont(font_summary)
 
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
         self.summary.setSizePolicy(sizePolicy)
-        self.row2.addWidget(
-            self.summary, 0, 1, 1, 3, alignment=Qt.AlignmentFlag.AlignTop
-        )
+        self.summary.setContentsMargins(0, -2, 0, -2)
 
+        # Package author
         self.package_author = QElidingLabel(self)
         self.package_author.setObjectName('author_text')
         self.package_author.setWordWrap(True)
         self.package_author.setSizePolicy(sizePolicy)
-        self.row2.addWidget(
-            self.package_author,
-            0,
-            4,
-            1,
-            2,
-            alignment=Qt.AlignmentFlag.AlignTop,
-        )
 
+        # Update button
         self.update_btn = QPushButton('Update', self)
-        sizePolicy.setRetainSizeWhenHidden(True)
-        self.update_btn.setSizePolicy(sizePolicy)
         self.update_btn.setObjectName("install_button")
         self.update_btn.setVisible(False)
         self.update_btn.clicked.connect(self._update_requested)
+        sizePolicy.setRetainSizeWhenHidden(True)
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.update_btn.setSizePolicy(sizePolicy)
+        self.update_btn.clicked.connect(self._update_requested)
 
-        self.row2.addWidget(
-            self.update_btn, 0, 6, 1, 1, alignment=Qt.AlignmentFlag.AlignTop
-        )
+        # Action Button
+        self.action_button = QPushButton(self)
+        self.action_button.setFixedWidth(70)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.action_button.setSizePolicy(sizePolicy1)
+        self.action_button.clicked.connect(self._action_requested)
 
-        self.info_choice_wdg = QWidget(self)
-        self.info_choice_wdg.setObjectName('install_choice')
+        # Cancel
+        self.cancel_btn = QPushButton("Cancel", self)
+        self.cancel_btn.setObjectName("remove_button")
+        self.cancel_btn.setSizePolicy(sizePolicy)
+        self.cancel_btn.setFixedWidth(70)
+        self.cancel_btn.clicked.connect(self._cancel_requested)
+
+        # Collapsible button
         coll_icon = QColoredSVGIcon.from_resources('right_arrow').colored(
             color='white',
         )
@@ -340,12 +353,11 @@ class PluginListItem(QFrame):
         self.install_info_button = QCollapsible(
             "Installation Info", collapsedIcon=coll_icon, expandedIcon=exp_icon
         )
+        self.install_info_button.setLayoutDirection(
+            Qt.RightToLeft
+        )  # Make icon appear on the right
         self.install_info_button.setObjectName("install_info_button")
-
-        # To make the icon appear on the right
-        self.install_info_button.setLayoutDirection(Qt.RightToLeft)
-
-        # Remove any extra margins
+        self.install_info_button.setFixedWidth(180)
         self.install_info_button.content().layout().setContentsMargins(
             0, 0, 0, 0
         )
@@ -354,6 +366,10 @@ class PluginListItem(QFrame):
         self.install_info_button.layout().setContentsMargins(0, 0, 0, 0)
         self.install_info_button.layout().setSpacing(2)
         self.install_info_button.setSizePolicy(sizePolicy)
+
+        # Information widget for available packages
+        self.info_choice_wdg = QWidget(self)
+        self.info_choice_wdg.setObjectName('install_choice')
 
         self.source_choice_text = QLabel('Source:')
         self.version_choice_text = QLabel('Version:')
@@ -372,13 +388,79 @@ class PluginListItem(QFrame):
         self.source_choice_dropdown.currentTextChanged.connect(
             self._populate_version_dropdown
         )
-        self.row2.addWidget(
-            self.install_info_button,
-            0,
-            7,
-            1,
-            1,
-            alignment=Qt.AlignmentFlag.AlignTop,
+
+        # Information widget for installed packages
+        self.info_widget = QWidget(self)
+        self.info_widget.setLayoutDirection(Qt.LeftToRight)
+        self.info_widget.setObjectName("info_widget")
+        self.info_widget.setFixedWidth(180)
+
+        self.source_text = QLabel('Source:')
+        self.source = QLabel(PYPI)
+        self.version_text = QLabel('Version:')
+        self.version = QElidingLabel()
+        self.version.setWordWrap(True)
+
+        info_layout = QGridLayout()
+        info_layout.setContentsMargins(0, 0, 0, 0)
+        info_layout.setVerticalSpacing(0)
+        info_layout.addWidget(self.source_text, 0, 0)
+        info_layout.addWidget(self.source, 1, 0)
+        info_layout.addWidget(self.version_text, 0, 1)
+        info_layout.addWidget(self.version, 1, 1)
+        self.info_widget.setLayout(info_layout)
+
+        # Error indicator
+        self.error_indicator = QPushButton()
+        self.error_indicator.setObjectName("warning_icon")
+        self.error_indicator.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.error_indicator.hide()
+
+        # region - Layout
+        # -----------------------------------------------------------------
+        layout = QHBoxLayout()
+        layout.setSpacing(2)
+        layout_left = QVBoxLayout()
+        layout_right = QVBoxLayout()
+        layout_top = QHBoxLayout()
+        layout_bottom = QHBoxLayout()
+        layout_bottom.setSpacing(4)
+
+        layout_left.addWidget(
+            self.enabled_checkbox, alignment=Qt.AlignmentFlag.AlignTop
+        )
+
+        layout_right.addLayout(layout_top, 1)
+        layout_right.addLayout(layout_bottom, 100)
+
+        layout.addLayout(layout_left)
+        layout.addLayout(layout_right)
+
+        self.setLayout(layout)
+
+        layout_top.addWidget(self.plugin_name)
+        layout_top.addWidget(self.status_icon)
+        layout_top.addWidget(self.status_label)
+        layout_top.addWidget(self.item_status)
+        layout_top.addStretch()
+
+        layout_bottom.addWidget(
+            self.summary, alignment=Qt.AlignmentFlag.AlignTop, stretch=3
+        )
+        layout_bottom.addWidget(
+            self.package_author, alignment=Qt.AlignmentFlag.AlignTop, stretch=1
+        )
+        layout_bottom.addWidget(
+            self.update_btn, alignment=Qt.AlignmentFlag.AlignTop
+        )
+        layout_bottom.addWidget(
+            self.install_info_button, alignment=Qt.AlignmentFlag.AlignTop
+        )
+        layout_bottom.addWidget(
+            self.action_button, alignment=Qt.AlignmentFlag.AlignTop
+        )
+        layout_bottom.addWidget(
+            self.cancel_btn, alignment=Qt.AlignmentFlag.AlignTop
         )
 
         info_layout = QGridLayout()
@@ -388,49 +470,13 @@ class PluginListItem(QFrame):
         info_layout.addWidget(self.source_choice_dropdown, 1, 0, 1, 1)
         info_layout.addWidget(self.version_choice_text, 0, 1, 1, 1)
         info_layout.addWidget(self.version_choice_dropdown, 1, 1, 1, 1)
+
+        # endregion - Layout
+
         self.info_choice_wdg.setLayout(info_layout)
         self.info_choice_wdg.setLayoutDirection(Qt.LeftToRight)
         self.info_choice_wdg.setObjectName("install_choice_widget")
         self.info_choice_wdg.hide()
-
-        self.cancel_btn = QPushButton("Cancel", self)
-        self.cancel_btn.setSizePolicy(sizePolicy)
-        self.cancel_btn.setObjectName("remove_button")
-        self.row2.addWidget(
-            self.cancel_btn, 0, 8, 1, 1, alignment=Qt.AlignmentFlag.AlignTop
-        )
-        self.cancel_btn.clicked.connect(self._cancel_requested)
-
-        self.action_button = QPushButton(self)
-        self.action_button.setFixedWidth(70)
-        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        self.action_button.setSizePolicy(sizePolicy1)
-        self.row2.addWidget(
-            self.action_button, 0, 8, 1, 1, alignment=Qt.AlignmentFlag.AlignTop
-        )
-        self.action_button.clicked.connect(self._action_requested)
-
-        self.v_lay.addLayout(self.row2)
-
-        self.info_widget = QWidget(self)
-        self.info_widget.setLayoutDirection(Qt.LeftToRight)
-        self.info_widget.setObjectName("info_widget")
-        info_layout = QGridLayout()
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setVerticalSpacing(0)
-        self.version_text = QLabel('Version:')
-        self.package_name = QLabel()
-        self.source_text = QLabel('Source:')
-        self.source = QLabel(PYPI)
-
-        info_layout.addWidget(self.source_text, 0, 0)
-        info_layout.addWidget(self.source, 1, 0)
-        info_layout.addWidget(self.version_text, 0, 1)
-        info_layout.addWidget(self.package_name, 1, 1)
-
-        self.install_info_button.setFixedWidth(150)
-        self.install_info_button.layout().setContentsMargins(0, 0, 0, 0)
-        self.info_widget.setLayout(info_layout)
 
     def _populate_version_dropdown(self, source: Literal["PyPI", "Conda"]):
         """Display the versions available after selecting a source: pypi or conda."""
@@ -515,6 +561,7 @@ class QPluginList(QListWidget):
         self.installer = installer
         self._remove_list = []
         self._data = []
+        self._initial_height = None
 
         self.setSortingEnabled(True)
 
@@ -583,6 +630,9 @@ class QPluginList(QListWidget):
 
         widg.actionRequested.connect(self.handle_action)
         item.setSizeHint(item.widget.size())
+        if self._initial_height is None:
+            self._initial_height = item.widget.size().height()
+
         widg.install_info_button.setDuration(0)
         widg.install_info_button.toggled.connect(
             lambda: self._resize_pluginlistitem(item)
@@ -608,12 +658,12 @@ class QPluginList(QListWidget):
 
     def _resize_pluginlistitem(self, item):
         """Resize the plugin list item, especially after toggling QCollapsible."""
-        height = item.widget.height()
         if item.widget.install_info_button.isExpanded():
-            item.widget.setFixedHeight(int(height * SCALE))
+            item.widget.setFixedHeight(self._initial_height + 35)
         else:
-            item.widget.setFixedHeight(int(height / SCALE))
-        item.setSizeHint(item.widget.size())
+            item.widget.setFixedHeight(self._initial_height)
+
+        item.setSizeHint(QSize(0, item.widget.height()))
 
     def handle_action(
         self,
@@ -830,6 +880,8 @@ class QtPluginDialog(QDialog):
             self.refresh()
             self._setup_shortcuts()
 
+    # region - Private methods
+    # ------------------------------------------------------------------------
     def _quit(self):
         self.close()
         with contextlib.suppress(AttributeError):
@@ -848,8 +900,6 @@ class QtPluginDialog(QDialog):
         self._close_shortcut.activated.connect(self.close)
         get_settings().appearance.events.theme.connect(self._update_theme)
 
-    # region - Private methods
-    # ------------------------------------------------------------------------
     def _update_theme(self, event):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
@@ -1189,7 +1239,6 @@ class QtPluginDialog(QDialog):
     def _install_packages(
         self,
         packages: Sequence[str] = (),
-        versions: Optional[Sequence[str]] = None,
     ):
         if not packages:
             _packages = self.direct_entry_edit.text()
@@ -1209,7 +1258,7 @@ class QtPluginDialog(QDialog):
             )
             self.installed_list.tag_outdated(metadata, is_available_in_conda)
 
-    def _add_items(self, items=None):
+    def _add_items(self):
         """
         Add items to the lists by `batch_size` using a timer to add a pause
         and prevent freezing the UI.
@@ -1405,6 +1454,6 @@ if __name__ == "__main__":
     from qtpy.QtWidgets import QApplication
 
     app = QApplication([])
-    w = QtPluginDialog()
-    w.show()
-    app.exec_()
+    widget = QtPluginDialog()
+    widget.exec_()
+    sys.exit(app.exec_())

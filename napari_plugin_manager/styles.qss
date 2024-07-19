@@ -26,6 +26,11 @@ QLabel#author_text {
   color: {{ darken(text, 35) }};
 }
 
+QElidingLabel#summary_text {
+  color: {{ darken(text, 35) }};
+}
+
+
 QLabel#install_choice {
   background-color: {{ current }};
   color: {{ darken(text, 35) }};
