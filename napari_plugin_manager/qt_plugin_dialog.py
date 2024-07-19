@@ -1251,10 +1251,12 @@ class QtPluginDialog(QDialog):
     def _tag_outdated_plugins(self):
         """Tag installed plugins that might be outdated."""
         for pkg_name in self.installed_list.packages():
-            metadata, is_available_in_conda, _ = self._plugin_data_map.get(
-                pkg_name
-            )
-            self.installed_list.tag_outdated(metadata, is_available_in_conda)
+            _data = self._plugin_data_map.get(pkg_name)
+            if _data is not None:
+                metadata, is_available_in_conda, _ = _data
+                self.installed_list.tag_outdated(
+                    metadata, is_available_in_conda
+                )
 
     def _add_items(self):
         """
@@ -1409,6 +1411,9 @@ class QtPluginDialog(QDialog):
         self._update_plugin_count()
 
     def refresh(self, clear_cache: bool = False):
+        if self.worker is not None:
+            self.worker.quit()
+
         if self._add_items_timer.isActive():
             self._add_items_timer.stop()
 
