@@ -58,6 +58,16 @@ testing = [
   "pytest-qt",
 ]
 
+docs = [
+  "sphinx>6",
+  "sphinx-autobuild",
+  "sphinx-external-toc",
+  "sphinx-copybutton",
+  "sphinx-favicon",
+  "myst-nb",
+  "napari-sphinx-theme>=0.3.0",
+]
+
 [project.urls]
 homepage = "https://github.com/napari/napari-plugin-manager"
 

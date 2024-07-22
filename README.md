@@ -17,7 +17,29 @@
 
 You can install `napari-plugin-manager` via [pip]:
 
+```bash
     pip install napari-plugin-manager
+```
+
+## Rationale behind the conda/pypi opinionated design
+
+TODO:
+
+## Intended use cases
+
+TODO:
+
+## How to install a plugin
+
+TODO:
+
+## How to remove it
+
+TODO:
+
+## Troubleshooting
+
+TODO:
 
 ## License
 
