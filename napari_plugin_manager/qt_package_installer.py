@@ -65,6 +65,7 @@ class AbstractInstallerTool:
     pkgs: Tuple[str, ...]
     origins: Tuple[str, ...] = ()
     prefix: Optional[str] = None
+    process: QProcess = None
 
     @property
     def ident(self):
@@ -245,7 +246,7 @@ class CondaInstallerTool(AbstractInstallerTool):
         raise ValueError("Prefix has not been specified!")
 
 
-class InstallerQueue(QProcess):
+class InstallerQueue(QObject):
     """Queue for installation and uninstallation tasks in the plugin manager."""
 
     # emitted when all jobs are finished. Not to be confused with finished,
@@ -257,21 +258,17 @@ class InstallerQueue(QProcess):
     # dict: ProcessFinishedData
     processFinished = Signal(dict)
 
+    started = Signal()
+
     def __init__(
         self, parent: Optional[QObject] = None, prefix: Optional[str] = None
     ) -> None:
         super().__init__(parent)
         self._queue: Deque[AbstractInstallerTool] = deque()
+        self._current_process = None
         self._prefix = prefix
         self._output_widget = None
         self._exit_codes = []
-
-        self.setProcessChannelMode(QProcess.MergedChannels)
-        self.readyReadStandardOutput.connect(self._on_stdout_ready)
-        self.readyReadStandardError.connect(self._on_stderr_ready)
-
-        self.finished.connect(self._on_process_finished)
-        self.errorOccurred.connect(self._on_error_occurred)
 
     # -------------------------- Public API ------------------------------
     def install(
@@ -308,6 +305,7 @@ class InstallerQueue(QProcess):
             pkgs=pkgs,
             prefix=prefix,
             origins=origins,
+            process=self._prepare_process(QProcess(self)),
             **kwargs,
         )
         return self._queue_item(item)
@@ -346,6 +344,7 @@ class InstallerQueue(QProcess):
             pkgs=pkgs,
             prefix=prefix,
             origins=origins,
+            process=self._prepare_process(QProcess(self)),
             **kwargs,
         )
         return self._queue_item(item)
@@ -379,6 +378,7 @@ class InstallerQueue(QProcess):
             action=InstallerActions.UNINSTALL,
             pkgs=pkgs,
             prefix=prefix,
+            process=self._prepare_process(QProcess(self)),
             **kwargs,
         )
         return self._queue_item(item)
@@ -395,10 +395,11 @@ class InstallerQueue(QProcess):
             all_pkgs = []
             for item in deque(self._queue):
                 all_pkgs.extend(item.pkgs)
+                self._end_process(item.process)
 
             # cancel all jobs
             self._queue.clear()
-            self._end_process()
+            self._current_process = None
             self.processFinished.emit(
                 {
                     'exit_code': 1,
@@ -413,7 +414,7 @@ class InstallerQueue(QProcess):
             if item.ident == job_id:
                 if i == 0:  # first in queue, currently running
                     self._queue.remove(item)
-                    self._end_process()
+                    self._end_process(item.process)
                 else:  # still pending, just remove from queue
                     self._queue.remove(item)
 
@@ -456,7 +457,8 @@ class InstallerQueue(QProcess):
             Time to wait, by default 10000
         """
         while self.hasJobs():
-            super().waitForFinished(msecs)
+            if self._current_process is not None:
+                self._current_process.waitForFinished(msecs)
         return True
 
     def hasJobs(self) -> bool:
@@ -472,6 +474,14 @@ class InstallerQueue(QProcess):
             self._output_widget = output_widget
 
     # -------------------------- Private methods ------------------------------
+    def _prepare_process(self, process: QProcess) -> QProcess:
+        process.setProcessChannelMode(QProcess.MergedChannels)
+        process.readyReadStandardOutput.connect(self._on_stdout_ready)
+        process.readyReadStandardError.connect(self._on_stderr_ready)
+        process.finished.connect(self._on_process_finished)
+        process.errorOccurred.connect(self._on_error_occurred)
+        return process
+
     def _log(self, msg: str):
         log.debug(msg)
         if self._output_widget:
@@ -503,6 +513,7 @@ class InstallerQueue(QProcess):
 
     def _queue_item(self, item: AbstractInstallerTool) -> JobId:
         self._queue.append(item)
+        print(item.action, item.pkgs)
         self._process_queue()
         return item.ident
 
@@ -513,27 +524,33 @@ class InstallerQueue(QProcess):
             return
 
         tool = self._queue[0]
-        self.setProgram(str(tool.executable()))
-        self.setProcessEnvironment(tool.environment())
-        self.setArguments([str(arg) for arg in tool.arguments()])
-        # this might throw a warning because the same process
-        # was already running but it's ok
-        self._log(
-            trans._(
-                "Starting '{program}' with args {args}",
-                program=self.program(),
-                args=self.arguments(),
-            )
-        )
-        self.start()
+        process = tool.process
 
-    def _end_process(self):
+        if process.state() != QProcess.Running:
+            process.setProgram(str(tool.executable()))
+            process.setProcessEnvironment(tool.environment())
+            process.setArguments([str(arg) for arg in tool.arguments()])
+
+            # this might throw a warning because the same process
+            # was already running but it's ok
+            self._log(
+                trans._(
+                    "Starting '{program}' with args {args}",
+                    program=process.program(),
+                    args=process.arguments(),
+                )
+            )
+            process.started.connect(self.started)
+            process.start()
+            self._current_process = process
+
+    def _end_process(self, process: QProcess):
         if os.name == 'nt':
             # TODO: this might be too agressive and won't allow rollbacks!
             # investigate whether we can also do .terminate()
-            self.kill()
+            process.kill()
         else:
-            self.terminate()
+            process.terminate()
 
         if self._output_widget:
             self._output_widget.append(
@@ -605,14 +622,18 @@ class InstallerQueue(QProcess):
         self._process_queue()
 
     def _on_stdout_ready(self):
-        text = self.readAllStandardOutput().data().decode()
-        if text:
-            self._log(text)
+        if self._current_process is not None:
+            text = (
+                self._current_process.readAllStandardOutput().data().decode()
+            )
+            if text:
+                self._log(text)
 
     def _on_stderr_ready(self):
-        text = self.readAllStandardError().data().decode()
-        if text:
-            self._log(text)
+        if self._current_process is not None:
+            text = self._current_process.readAllStandardError().data().decode()
+            if text:
+                self._log(text)
 
 
 def _get_python_exe():
