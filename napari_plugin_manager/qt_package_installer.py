@@ -258,6 +258,7 @@ class InstallerQueue(QObject):
     # dict: ProcessFinishedData
     processFinished = Signal(dict)
 
+    # emitted when each job starts
     started = Signal()
 
     def __init__(
@@ -265,7 +266,7 @@ class InstallerQueue(QObject):
     ) -> None:
         super().__init__(parent)
         self._queue: Deque[AbstractInstallerTool] = deque()
-        self._current_process = None
+        self._current_process: QProcess = None
         self._prefix = prefix
         self._output_widget = None
         self._exit_codes = []
@@ -513,7 +514,6 @@ class InstallerQueue(QObject):
 
     def _queue_item(self, item: AbstractInstallerTool) -> JobId:
         self._queue.append(item)
-        print(item.action, item.pkgs)
         self._process_queue()
         return item.ident
 
@@ -527,12 +527,6 @@ class InstallerQueue(QObject):
         process = tool.process
 
         if process.state() != QProcess.Running:
-            process.setProgram(str(tool.executable()))
-            process.setProcessEnvironment(tool.environment())
-            process.setArguments([str(arg) for arg in tool.arguments()])
-
-            # this might throw a warning because the same process
-            # was already running but it's ok
             self._log(
                 trans._(
                     "Starting '{program}' with args {args}",
@@ -540,6 +534,9 @@ class InstallerQueue(QObject):
                     args=process.arguments(),
                 )
             )
+            process.setProgram(str(tool.executable()))
+            process.setProcessEnvironment(tool.environment())
+            process.setArguments([str(arg) for arg in tool.arguments()])
             process.started.connect(self.started)
             process.start()
             self._current_process = process
