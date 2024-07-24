@@ -1,0 +1,9 @@
+# run this with:
+# export CHANGELOG_GITHUB_TOKEN=......
+# github_changelog_generator --future-release vX.Y.Z
+user=napari
+project=napari-plugin-manager
+issues=false
+since-tag=v0.1.0a0
+exclude-labels=duplicate,question,invalid,wontfix,hide,dependencies
+add-sections={"task":{"prefix":"**Tasks:**","labels":["task"]},"enhancement":{"prefix":"**Enhancements:**","labels":["enhancement"]},"fixes":{"prefix":"**Bug fixes:**","labels":["bug"]},"documentation":{"prefix":"**Documentation:**","labels":["documentation"]}}
