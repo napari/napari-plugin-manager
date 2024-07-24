@@ -57,8 +57,6 @@ from napari_plugin_manager.qt_package_installer import (
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
 
-# TODO: add error icon and handle pip install errors
-
 # Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'
 PYPI = 'PyPI'

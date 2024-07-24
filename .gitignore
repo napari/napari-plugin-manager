@@ -87,3 +87,4 @@ target/
 # spyder stuff
 .spyproject/
 
+.env
