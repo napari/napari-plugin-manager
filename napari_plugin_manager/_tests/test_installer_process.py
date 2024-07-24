@@ -250,17 +250,15 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
     assert not installer.hasJobs()
 
 
-@pytest.mark.skipif(
-    not CondaInstallerTool.available(), reason="Conda is not available."
-)
-def test_conda_installer_error(qtbot, tmp_conda_env: Path):
+def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     installer = InstallerQueue()
-
+    monkeypatch.setattr(
+        PipInstallerTool, "executable", lambda *a: 'not-a-real-executable'
+    )
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
-            tool=InstallerTools.CONDA,
+            tool=InstallerTools.PIP,
             pkgs=['some-package-that-does-not-exist'],
-            prefix=tmp_conda_env,
         )
 
 
