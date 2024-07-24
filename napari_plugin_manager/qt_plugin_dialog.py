@@ -644,11 +644,14 @@ class QPluginList(QListWidget):
                 self.takeItem(i)
                 break
 
-    def refreshItem(self, name):
+    def refreshItem(self, name, version=None):
         count = self.count()
         for i in range(count):
             item = self.item(i)
             if item.widget.name == name:
+                if version is not None:
+                    item.version = version
+                    item.widget.version.setText(version)
                 item.widget.set_busy('', InstallerActions.CANCEL)
                 if item.text().startswith('0-'):
                     item.setText(item.text()[2:])
@@ -708,6 +711,7 @@ class QPluginList(QListWidget):
                 pkg_name += f"=={item.latest_version}"
 
             widget.set_busy(trans._("updating..."), action_name)
+            widget.update_btn.setDisabled(True)
             widget.action_button.setDisabled(True)
 
             job_id = self.installer.upgrade(
@@ -763,9 +767,17 @@ class QPluginList(QListWidget):
         ):
             current = item.version
             latest = metadata.version
+            is_marked_outdated = getattr(item, 'outdated', False)
             if parse_version(current) >= parse_version(latest):
+                # currently is up to date
+                if is_marked_outdated:
+                    # previously marked as outdated, need to update item
+                    # `outdated` state and hide item widget `update_btn`
+                    item.outdated = False
+                    widg = self.itemWidget(item)
+                    widg.update_btn.setVisible(False)
                 continue
-            if hasattr(item, 'outdated'):
+            if is_marked_outdated:
                 # already tagged it
                 continue
 
@@ -940,8 +952,12 @@ class QtPluginDialog(QDialog):
                 for pkg_name in pkg_names:
                     self.installed_list.refreshItem(pkg_name)
         elif action == 'upgrade':
-            for pkg_name in pkg_names:
-                self.installed_list.refreshItem(pkg_name)
+            pkg_info = [
+                (pkg.split('==')[0], pkg.split('==')[1])
+                for pkg in process_finished_data['pkgs']
+            ]
+            for pkg_name, pkg_version in pkg_info:
+                self.installed_list.refreshItem(pkg_name, version=pkg_version)
                 self._tag_outdated_plugins()
         elif action in ['cancel', 'cancel_all']:
             for pkg_name in pkg_names:
