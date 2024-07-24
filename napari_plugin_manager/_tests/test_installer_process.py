@@ -55,6 +55,21 @@ class _NonExistingTool(AbstractInstallerTool):
         return QProcessEnvironment.systemEnvironment()
 
 
+def test_not_implemented_methods():
+    tool = AbstractInstallerTool('install', ['requests'])
+    with pytest.raises(NotImplementedError):
+        tool.executable()
+
+    with pytest.raises(NotImplementedError):
+        tool.arguments()
+
+    with pytest.raises(NotImplementedError):
+        tool.environment()
+
+    with pytest.raises(NotImplementedError):
+        tool.available()
+
+
 def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     installer = InstallerQueue()
     monkeypatch.setattr(
@@ -163,6 +178,17 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
             tool=_NonExistingTool,
             pkgs=[f'this-package-does-not-exist-{hash(time.time())}'],
         )
+
+
+def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
+    installer = InstallerQueue()
+    with qtbot.waitSignal(installer.allFinished, timeout=20000):
+        job_id = installer.install(
+            tool=InstallerTools.PIP,
+            pkgs=['requests'],
+        )
+        with pytest.raises(ValueError):
+            installer.cancel(job_id + 1)
 
 
 @pytest.mark.skipif(
