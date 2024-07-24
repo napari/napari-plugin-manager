@@ -250,6 +250,9 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
     assert not installer.hasJobs()
 
 
+@pytest.mark.skipif(
+    not CondaInstallerTool.available(), reason="Conda is not available."
+)
 def test_conda_installer_error(qtbot, tmp_conda_env: Path):
     installer = InstallerQueue()
 
@@ -261,6 +264,9 @@ def test_conda_installer_error(qtbot, tmp_conda_env: Path):
         )
 
 
+@pytest.mark.skipif(
+    not CondaInstallerTool.available(), reason="Conda is not available."
+)
 def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
     installer = InstallerQueue()
 
