@@ -250,6 +250,34 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
     assert not installer.hasJobs()
 
 
+def test_conda_installer_error(qtbot, tmp_conda_env: Path):
+    installer = InstallerQueue()
+
+    with qtbot.waitSignal(installer.allFinished, timeout=600_000):
+        installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['some-package-that-does-not-exist'],
+            prefix=tmp_conda_env,
+        )
+
+
+def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
+    installer = InstallerQueue()
+
+    with qtbot.waitSignal(installer.allFinished, timeout=600_000):
+        installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['requests'],
+            prefix=tmp_conda_env,
+        )
+        installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['pyzenhub'],
+            prefix=tmp_conda_env,
+        )
+        installer.waitForFinished(20000)
+
+
 def test_constraints_are_in_sync():
     conda_constraints = sorted(CondaInstallerTool.constraints())
     pip_constraints = sorted(PipInstallerTool.constraints())
@@ -273,3 +301,8 @@ def test_executables():
 def test_available():
     assert str(CondaInstallerTool.available())
     assert PipInstallerTool.available()
+
+
+def test_unrecognized_tool():
+    with pytest.raises(ValueError):
+        InstallerQueue().install(tool='shrug', pkgs=[])

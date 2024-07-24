@@ -306,7 +306,7 @@ class InstallerQueue(QObject):
             pkgs=pkgs,
             prefix=prefix,
             origins=origins,
-            process=self._prepare_process(QProcess(self)),
+            process=self._create_process(),
             **kwargs,
         )
         return self._queue_item(item)
@@ -345,7 +345,7 @@ class InstallerQueue(QObject):
             pkgs=pkgs,
             prefix=prefix,
             origins=origins,
-            process=self._prepare_process(QProcess(self)),
+            process=self._create_process(),
             **kwargs,
         )
         return self._queue_item(item)
@@ -379,7 +379,7 @@ class InstallerQueue(QObject):
             action=InstallerActions.UNINSTALL,
             pkgs=pkgs,
             prefix=prefix,
-            process=self._prepare_process(QProcess(self)),
+            process=self._create_process(),
             **kwargs,
         )
         return self._queue_item(item)
@@ -475,7 +475,8 @@ class InstallerQueue(QObject):
             self._output_widget = output_widget
 
     # -------------------------- Private methods ------------------------------
-    def _prepare_process(self, process: QProcess) -> QProcess:
+    def _create_process(self) -> QProcess:
+        process = QProcess(self)
         process.setProcessChannelMode(QProcess.MergedChannels)
         process.readyReadStandardOutput.connect(self._on_stdout_ready)
         process.readyReadStandardError.connect(self._on_stderr_ready)
