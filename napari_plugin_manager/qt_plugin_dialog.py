@@ -831,6 +831,8 @@ class QPluginList(QListWidget):
 
 
 class QtPluginDialog(QDialog):
+    MAX_PLUGIN_SEARCH_ITEMS = 20
+
     def __init__(self, parent=None, prefix=None) -> None:
         super().__init__(parent)
 
@@ -841,6 +843,7 @@ class QtPluginDialog(QDialog):
         ):
             self._parent._plugin_dialog = self
 
+        self._plugins_found = 0
         self.already_installed = set()
         self.available_set = set()
         self._max_search_items = 20
@@ -1219,14 +1222,23 @@ class QtPluginDialog(QDialog):
 
         available_count = len(self._plugin_data) - self.installed_list.count()
         available_count = available_count if available_count >= 0 else 0
-        available_count_filtered = self.available_list.count()
-        self.avail_label.setText(
-            trans._(
-                "Found ({count}) out of {amount} in the napari Hub",
-                count=available_count_filtered,
-                amount=available_count,
+        if self._plugins_found > self.MAX_PLUGIN_SEARCH_ITEMS:
+            self.avail_label.setText(
+                trans._(
+                    "Found ({found}) out of {amount} in the napari Hub. Displaying the first {max_count} plugins.",
+                    found=self._plugins_found,
+                    amount=available_count,
+                    max_count=self.MAX_PLUGIN_SEARCH_ITEMS,
+                )
             )
-        )
+        else:
+            self.avail_label.setText(
+                trans._(
+                    "Found ({found}) out of {amount} in the napari Hub",
+                    found=self._plugins_found,
+                    amount=available_count,
+                )
+            )
 
         # if available_count == available_count_visible:
         #     self.avail_label.setText(
@@ -1271,7 +1283,10 @@ class QtPluginDialog(QDialog):
         Add items to the lists by `batch_size` using a timer to add a pause
         and prevent freezing the UI.
         """
-        if len(self._plugin_queue) == 0:
+        if (
+            len(self._plugin_queue) == 0
+            or self.available_list.count() == self.MAX_PLUGIN_SEARCH_ITEMS
+        ):
             if (
                 self.installed_list.count() + self.available_list.count()
                 == len(self._plugin_data)
@@ -1409,6 +1424,7 @@ class QtPluginDialog(QDialog):
             self.available_set = set()
             self._plugin_queue = None
             self._add_items_timer.stop()
+            self._plugins_found = 0
             self._update_plugin_count()
             return
 
@@ -1428,9 +1444,17 @@ class QtPluginDialog(QDialog):
 
                 # self._plugin_queue = items + self._plugin_queue
                 self._plugin_queue = items
+                self._plugins_found = len(items)
                 self._add_items_timer.start()
                 # for i in items:
                 #     print(i)
+            else:
+                self.available_list.clear()
+                self.available_set = set()
+                self._plugin_queue = None
+                self._add_items_timer.stop()
+                self._plugins_found = 0
+                self._update_plugin_count()
 
         # self.installed_list.filter(text)
         # self.available_list.filter(text)
