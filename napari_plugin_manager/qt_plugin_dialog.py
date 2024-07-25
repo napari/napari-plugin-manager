@@ -239,6 +239,9 @@ class PluginListItem(QFrame):
         else:  # pragma: no cover
             raise ValueError(f"Not supported {action_name}")
 
+    def is_busy(self):
+        return bool(self.item_status.text())
+
     def setup_ui(self, enabled=True):
         """Define the layout of the PluginListItem"""
         # Enabled checkbox
@@ -847,11 +850,18 @@ class QPluginList(QListWidget):
             }
             for i in range(self.count()):
                 item = self.item(i)
-                item.setHidden(id(item) not in shown)
+                item.setHidden(
+                    id(item) not in shown and not item.widget.is_busy()
+                )
         else:
             for i in range(self.count()):
                 item = self.item(i)
                 item.setHidden(False)
+
+    def hideAll(self):
+        for i in range(self.count()):
+            item = self.item(i)
+            item.setHidden(not item.widget.is_busy())
 
 
 class QtPluginDialog(QDialog):
@@ -1017,9 +1027,13 @@ class QtPluginDialog(QDialog):
             else:
                 show_info(trans._('Plugin Manager: process completed\n'))
 
+        self.search()
+
     def _add_to_available(self, pkg_name):
         self._add_items_timer.stop()
-        self._plugin_queue.insert(0, self._plugin_data_map[pkg_name])
+        if self._plugin_queue is not None:
+            self._plugin_queue.insert(0, self._plugin_data_map[pkg_name])
+
         self._add_items_timer.start()
         self._update_plugin_count()
 
@@ -1371,7 +1385,8 @@ class QtPluginDialog(QDialog):
         """
         if (
             len(self._plugin_queue) == 0
-            or self.available_list.count() == self.MAX_PLUGIN_SEARCH_ITEMS
+            or self.available_list.count_visible()
+            == self.MAX_PLUGIN_SEARCH_ITEMS
         ):
             if (
                 self.installed_list.count() + self.available_list.count()
@@ -1506,44 +1521,30 @@ class QtPluginDialog(QDialog):
             self.packages_search.setText(text)
 
         if len(text.strip()) == 0:
-            self.available_list.clear()
-            self.available_set = set()
+            self.available_list.hideAll()
             self._plugin_queue = None
             self._add_items_timer.stop()
             self._plugins_found = 0
-            self._update_plugin_count()
-            return
-
-        if len(text.strip()) >= 1:
+        else:
             items = [
                 self._plugin_data[idx]
                 for idx in self._search_in_available(text)
             ]
             print(text, len(items))
+
+            # Go over list and remove any not found
+            self.available_list.filter(text.strip().lower())
+
             if items:
                 self._add_items_timer.stop()
-                self.available_list.clear()
-                self.available_set = set()
-                # for item in items:
-                #     if item in self._plugin_queue:
-                #         self._plugin_queue.remove(item)
-
-                # self._plugin_queue = items + self._plugin_queue
                 self._plugin_queue = items
                 self._plugins_found = len(items)
                 self._add_items_timer.start()
-                # for i in items:
-                #     print(i)
             else:
-                self.available_list.clear()
-                self.available_set = set()
                 self._plugin_queue = None
                 self._add_items_timer.stop()
                 self._plugins_found = 0
-                self._update_plugin_count()
 
-        # self.installed_list.filter(text)
-        # self.available_list.filter(text)
         self._update_plugin_count()
 
     def refresh(self, clear_cache: bool = False):
