@@ -397,10 +397,15 @@ class InstallerQueue(QObject):
                 if i == 0:
                     # first in queue, currently running
                     self._queue.remove(item)
-                    item.process.finished.disconnect(self._on_process_finished)
-                    item.process.errorOccurred.disconnect(
-                        self._on_error_occurred
-                    )
+
+                    with contextlib.suppress(RuntimeError):
+                        item.process.finished.disconnect(
+                            self._on_process_finished
+                        )
+                        item.process.errorOccurred.disconnect(
+                            self._on_error_occurred
+                        )
+
                     self._end_process(item.process)
                 else:
                     # still pending, just remove from queue
@@ -439,8 +444,11 @@ class InstallerQueue(QObject):
         for item in deque(self._queue):
             all_pkgs.extend(item.pkgs)
             process = item.process
-            process.finished.disconnect(self._on_process_finished)
-            process.errorOccurred.disconnect(self._on_error_occurred)
+
+            with contextlib.suppress(RuntimeError):
+                process.finished.disconnect(self._on_process_finished)
+                process.errorOccurred.disconnect(self._on_error_occurred)
+
             self._end_process(process)
 
         # cancel all jobs

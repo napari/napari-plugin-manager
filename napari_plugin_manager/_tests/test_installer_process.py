@@ -233,7 +233,7 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
-        installer.cancel()
+        installer.cancel_all()
 
     assert not installer.hasJobs()
     assert not list(conda_meta.glob(glob_pat))
