@@ -554,6 +554,8 @@ class PluginListItem(QFrame):
 
 class QPluginList(QListWidget):
 
+    _SORT_ORDER_PREFIX = '0-'
+
     def __init__(self, parent: QWidget, installer: InstallerQueue) -> None:
         super().__init__(parent)
         self.installer = installer
@@ -650,8 +652,8 @@ class QPluginList(QListWidget):
             item = self.item(i)
             if item.widget.name == name:
                 item.widget.set_busy('', InstallerActions.CANCEL)
-                if item.text().startswith('0-'):
-                    item.setText(item.text()[2:])
+                if item.text().startswith(self._SORT_ORDER_PREFIX):
+                    item.setText(item.text()[len(self._SORT_ORDER_PREFIX):])
                 break
 
     def _resize_pluginlistitem(self, item):
@@ -675,9 +677,10 @@ class QPluginList(QListWidget):
         Update buttons appropriately and run the action."""
         widget = item.widget
         tool = installer_choice or widget.get_installer_tool()
-        item.setText(f"0-{item.text()}")
         self._remove_list.append((pkg_name, item))
         self._warn_dialog = None
+        if not item.text().startswith(self._SORT_ORDER_PREFIX):
+            item.setText(f"{self._SORT_ORDER_PREFIX}{item.text()}")
 
         # TODO: NPE version unknown before installing
         if (
@@ -916,7 +919,7 @@ class QtPluginDialog(QDialog):
         pkg_names = [
             pkg.split('==')[0] for pkg in process_finished_data['pkgs']
         ]
-        if action == 'install':
+        if action == InstallerActions.INSTALL:
             if exit_code == 0:
                 for pkg_name in pkg_names:
                     if pkg_name in self.available_set:
@@ -928,7 +931,7 @@ class QtPluginDialog(QDialog):
             else:
                 for pkg_name in pkg_names:
                     self.available_list.refreshItem(pkg_name)
-        elif action == 'uninstall':
+        elif action == InstallerActions.UNINSTALL:
             if exit_code == 0:
                 for pkg_name in pkg_names:
                     if pkg_name in self.already_installed:
@@ -939,11 +942,11 @@ class QtPluginDialog(QDialog):
             else:
                 for pkg_name in pkg_names:
                     self.installed_list.refreshItem(pkg_name)
-        elif action == 'upgrade':
+        elif action == InstallerActions.UPGRADE:
             for pkg_name in pkg_names:
                 self.installed_list.refreshItem(pkg_name)
                 self._tag_outdated_plugins()
-        elif action in ['cancel', 'cancel_all']:
+        elif action in [InstallerActions.CANCEL, InstallerActions.CANCEL_ALL]:
             for pkg_name in pkg_names:
                 self.installed_list.refreshItem(pkg_name)
                 self.available_list.refreshItem(pkg_name)
@@ -954,9 +957,6 @@ class QtPluginDialog(QDialog):
             self.process_error_indicator.show()
         else:
             self.process_success_indicator.show()
-
-        self.cancel_all_btn.setVisible(False)
-        self.refresh_button.setDisabled(False)
 
     def _on_installer_all_finished(self, exit_codes):
         self.working_indicator.hide()

@@ -396,7 +396,10 @@ class InstallerQueue(QObject):
             all_pkgs = []
             for item in deque(self._queue):
                 all_pkgs.extend(item.pkgs)
-                self._end_process(item.process)
+                process = item.process
+                process.finished.disconnect(self._on_process_finished)
+                process.errorOccurred.disconnect(self._on_error_occurred)
+                self._end_process(process)
 
             # cancel all jobs
             self._queue.clear()
@@ -409,14 +412,21 @@ class InstallerQueue(QObject):
                     'pkgs': all_pkgs,
                 }
             )
+            self._process_queue()
             return
 
         for i, item in enumerate(deque(self._queue)):
             if item.ident == job_id:
-                if i == 0:  # first in queue, currently running
+                if i == 0:
+                    # first in queue, currently running
                     self._queue.remove(item)
+                    item.process.finished.disconnect(self._on_process_finished)
+                    item.process.errorOccurred.disconnect(
+                        self._on_error_occurred
+                    )
                     self._end_process(item.process)
-                else:  # still pending, just remove from queue
+                else:
+                    # still pending, just remove from queue
                     self._queue.remove(item)
 
                 self.processFinished.emit(
@@ -427,6 +437,7 @@ class InstallerQueue(QObject):
                         'pkgs': item.pkgs,
                     }
                 )
+                self._process_queue()
                 return
 
         msg = f"No job with id {job_id}. Current queue:\n - "
@@ -528,6 +539,11 @@ class InstallerQueue(QObject):
         process = tool.process
 
         if process.state() != QProcess.Running:
+            process.setProgram(str(tool.executable()))
+            process.setProcessEnvironment(tool.environment())
+            process.setArguments([str(arg) for arg in tool.arguments()])
+            process.started.connect(self.started)
+
             self._log(
                 trans._(
                     "Starting '{program}' with args {args}",
@@ -535,10 +551,7 @@ class InstallerQueue(QObject):
                     args=process.arguments(),
                 )
             )
-            process.setProgram(str(tool.executable()))
-            process.setProcessEnvironment(tool.environment())
-            process.setArguments([str(arg) for arg in tool.arguments()])
-            process.started.connect(self.started)
+
             process.start()
             self._current_process = process
 
