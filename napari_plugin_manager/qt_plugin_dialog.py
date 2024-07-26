@@ -867,6 +867,8 @@ class QPluginList(QListWidget):
 class QtPluginDialog(QDialog):
     MAX_PLUGIN_SEARCH_ITEMS = 20
 
+    finished = Signal()
+
     def __init__(self, parent=None, prefix=None) -> None:
         super().__init__(parent)
 
@@ -887,13 +889,8 @@ class QtPluginDialog(QDialog):
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
         self._filter_idxs_cache = set()
-        self._filter_timer = QTimer(self)
         self.worker = None
 
-        # timer to avoid triggering a filter for every keystroke
-        self._filter_timer.setInterval(200)  # ms
-        self._filter_timer.timeout.connect(self.search)
-        self._filter_timer.setSingleShot(True)
         self._plugin_data_map = {}
         self._add_items_timer = QTimer(self)
 
@@ -946,9 +943,7 @@ class QtPluginDialog(QDialog):
         self._quit_action.triggered.connect(self._quit)
         self.addAction(self._quit_action)
 
-        self._close_shortcut = QShortcut(
-            QKeySequence(Qt.CTRL | Qt.Key_W), self
-        )
+        self._close_shortcut = QShortcut(QKeySequence('Ctrl+W'), self)
         self._close_shortcut.activated.connect(self.close)
         get_settings().appearance.events.theme.connect(self._update_theme)
 
@@ -994,12 +989,17 @@ class QtPluginDialog(QDialog):
                 for pkg_name in pkg_names:
                     self.installed_list.refreshItem(pkg_name)
         elif action == InstallerActions.UPGRADE:
-            pkg_info = [
-                (pkg.split('==')[0], pkg.split('==')[1])
-                for pkg in process_finished_data['pkgs']
-            ]
-            for pkg_name, pkg_version in pkg_info:
-                self.installed_list.refreshItem(pkg_name, version=pkg_version)
+            for pkg in process_finished_data['pkgs']:
+                if '==' in pkg:
+                    pkg_name, pkg_version = (
+                        pkg.split('==')[0],
+                        pkg.split('==')[1],
+                    )
+                    self.installed_list.refreshItem(
+                        pkg_name, version=pkg_version
+                    )
+                else:
+                    self.installed_list.refreshItem(pkg)
                 self._tag_outdated_plugins()
         elif action in [InstallerActions.CANCEL, InstallerActions.CANCEL_ALL]:
             for pkg_name in pkg_names:
@@ -1126,7 +1126,7 @@ class QtPluginDialog(QDialog):
         self.worker.yielded.connect(self._handle_yield)
         self.worker.started.connect(self.working_indicator.show)
         self.worker.finished.connect(self.working_indicator.hide)
-        # self.worker.finished.connect(self._add_items_timer.start)
+        self.worker.finished.connect(self.finished)
         self.worker.start()
 
         pm2 = npe2.PluginManager.instance()
@@ -1148,10 +1148,9 @@ class QtPluginDialog(QDialog):
         lay.setContentsMargins(0, 2, 0, 2)
         self.installed_label = QLabel(trans._("Installed Plugins"))
         self.packages_search = QLineEdit()
-        self.packages_search.setPlaceholderText(trans._("search the hub..."))
+        self.packages_search.setPlaceholderText(trans._("search..."))
         self.packages_search.setMaximumWidth(350)
         self.packages_search.setClearButtonEnabled(True)
-        # self.packages_search.textChanged.connect(self._filter_timer.start)
         self.packages_search.textChanged.connect(self.search)
 
         self.refresh_button = QPushButton(trans._('Refresh'), self)
@@ -1169,7 +1168,6 @@ class QtPluginDialog(QDialog):
         horizontal_mid_layout.addStretch()
         horizontal_mid_layout.addWidget(self.refresh_button)
         mid_layout.addLayout(horizontal_mid_layout)
-        # mid_layout.addWidget(self.packages_search)
         mid_layout.addWidget(self.installed_label)
         lay.addLayout(mid_layout)
 
@@ -1275,7 +1273,6 @@ class QtPluginDialog(QDialog):
         self.v_splitter.setStretchFactor(1, 2)
         self.h_splitter.setStretchFactor(0, 2)
 
-        # self.packages_filter.setFocus()
         self.packages_search.setFocus()
         self._update_direct_entry_text()
 
@@ -1315,10 +1312,19 @@ class QtPluginDialog(QDialog):
 
         available_count = len(self._plugin_data) - self.installed_list.count()
         available_count = available_count if available_count >= 0 else 0
-        if self._plugins_found > self.MAX_PLUGIN_SEARCH_ITEMS:
+
+        if self._plugins_found == 0:
             self.avail_label.setText(
                 trans._(
-                    "Found ({found}) out of {amount} in the napari Hub. Displaying the first {max_count} plugins.",
+                    "{amount} plugins available in the napari Hub",
+                    found=self._plugins_found,
+                    amount=available_count,
+                )
+            )
+        elif self._plugins_found > self.MAX_PLUGIN_SEARCH_ITEMS:
+            self.avail_label.setText(
+                trans._(
+                    "Found ({found}) out of {amount} in the napari Hub. Displaying the first {max_count} plugins...",
                     found=self._plugins_found,
                     amount=available_count,
                     max_count=self.MAX_PLUGIN_SEARCH_ITEMS,
@@ -1332,22 +1338,6 @@ class QtPluginDialog(QDialog):
                     amount=available_count,
                 )
             )
-
-        # if available_count == available_count_visible:
-        #     self.avail_label.setText(
-        #         trans._(
-        #             "Available Plugins ({amount})",
-        #             amount=available_count,
-        #         )
-        #     )
-        # else:
-        #     self.avail_label.setText(
-        #         trans._(
-        #             "Available Plugins ({count}/{amount})",
-        #             count=available_count_visible,
-        #             amount=available_count,
-        #         )
-        #     )
 
     def _install_packages(
         self,
@@ -1386,7 +1376,7 @@ class QtPluginDialog(QDialog):
         if (
             len(self._plugin_queue) == 0
             or self.available_list.count_visible()
-            == self.MAX_PLUGIN_SEARCH_ITEMS
+            >= self.MAX_PLUGIN_SEARCH_ITEMS
         ):
             if (
                 self.installed_list.count() + self.available_list.count()
@@ -1431,8 +1421,6 @@ class QtPluginDialog(QDialog):
                 break
 
         self._update_plugin_count()
-        # if not self._filter_timer.isActive():
-        #     self.search(None, skip=True)
 
     def _handle_yield(self, data: Tuple[npe2.PackageMetadata, bool, Dict]):
         """Output from a worker process.
@@ -1443,7 +1431,6 @@ class QtPluginDialog(QDialog):
         method to prevent the UI from freezing by adding all items at once.
         """
         self._plugin_data.append(data)
-        # self._plugin_queue.append(data)
         self._filter_texts = [
             f"{i[0].name} {i[-1].get('display_name', '')} {i[0].summary}".lower()
             for i in self._plugin_data
@@ -1451,11 +1438,11 @@ class QtPluginDialog(QDialog):
         metadata, _, _ = data
         self._plugin_data_map[metadata.name] = data
         self.available_list.set_data(self._plugin_data)
+        self._update_plugin_count()
 
     def _search_in_available(self, text):
         idxs = []
         for idx, item in enumerate(self._filter_texts):
-            # if text.lower().strip() in item and idx not in self._filter_idxs_cache:
             if text.lower().strip() in item:
                 idxs.append(idx)
                 self._filter_idxs_cache.add(idx)
@@ -1521,6 +1508,7 @@ class QtPluginDialog(QDialog):
             self.packages_search.setText(text)
 
         if len(text.strip()) == 0:
+            self.installed_list.filter('')
             self.available_list.hideAll()
             self._plugin_queue = None
             self._add_items_timer.stop()
@@ -1530,9 +1518,9 @@ class QtPluginDialog(QDialog):
                 self._plugin_data[idx]
                 for idx in self._search_in_available(text)
             ]
-            print(text, len(items))
 
             # Go over list and remove any not found
+            self.installed_list.filter(text.strip().lower())
             self.available_list.filter(text.strip().lower())
 
             if items:
