@@ -384,37 +384,14 @@ class InstallerQueue(QObject):
         )
         return self._queue_item(item)
 
-    def cancel(self, job_id: Optional[JobId] = None):
+    def cancel(self, job_id: JobId):
         """Cancel `job_id` if it is running.
 
         Parameters
         ----------
-        job_id : Optional[JobId], optional
-            Job ID to cancel.  If not provided, cancel all jobs.
+        job_id : JobId
+            Job ID to cancel.
         """
-        if job_id is None:
-            all_pkgs = []
-            for item in deque(self._queue):
-                all_pkgs.extend(item.pkgs)
-                process = item.process
-                process.finished.disconnect(self._on_process_finished)
-                process.errorOccurred.disconnect(self._on_error_occurred)
-                self._end_process(process)
-
-            # cancel all jobs
-            self._queue.clear()
-            self._current_process = None
-            self.processFinished.emit(
-                {
-                    'exit_code': 1,
-                    'exit_status': 0,
-                    'action': InstallerActions.CANCEL_ALL,
-                    'pkgs': all_pkgs,
-                }
-            )
-            self._process_queue()
-            return
-
         for i, item in enumerate(deque(self._queue)):
             if item.ident == job_id:
                 if i == 0:
@@ -458,7 +435,27 @@ class InstallerQueue(QObject):
         raise ValueError(msg)
 
     def cancel_all(self):
-        self.cancel()
+        all_pkgs = []
+        for item in deque(self._queue):
+            all_pkgs.extend(item.pkgs)
+            process = item.process
+            process.finished.disconnect(self._on_process_finished)
+            process.errorOccurred.disconnect(self._on_error_occurred)
+            self._end_process(process)
+
+        # cancel all jobs
+        self._queue.clear()
+        self._current_process = None
+        self.processFinished.emit(
+            {
+                'exit_code': 1,
+                'exit_status': 0,
+                'action': InstallerActions.CANCEL_ALL,
+                'pkgs': all_pkgs,
+            }
+        )
+        self._process_queue()
+        return
 
     def waitForFinished(self, msecs: int = 10000) -> bool:
         """Block and wait for all jobs to finish.

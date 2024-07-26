@@ -653,7 +653,7 @@ class QPluginList(QListWidget):
             if item.widget.name == name:
                 item.widget.set_busy('', InstallerActions.CANCEL)
                 if item.text().startswith(self._SORT_ORDER_PREFIX):
-                    item.setText(item.text()[len(self._SORT_ORDER_PREFIX):])
+                    item.setText(item.text()[len(self._SORT_ORDER_PREFIX) :])
                 break
 
     def _resize_pluginlistitem(self, item):
