@@ -840,6 +840,7 @@ class QPluginList(QListWidget):
             item.setHidden(not item.widget.is_busy())
 
 
+
 class QtPluginDialog(QDialog):
     MAX_PLUGIN_SEARCH_ITEMS = 20
 
@@ -1300,7 +1301,7 @@ class QtPluginDialog(QDialog):
         if (
             len(self._plugin_queue) == 0
             or self.available_list.count_visible()
-            == self.MAX_PLUGIN_SEARCH_ITEMS
+            >= self.MAX_PLUGIN_SEARCH_ITEMS
         ):
             if (
                 self.installed_list.count() + self.available_list.count()
