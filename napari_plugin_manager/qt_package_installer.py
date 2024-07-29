@@ -385,7 +385,8 @@ class InstallerQueue(QObject):
         return self._queue_item(item)
 
     def cancel(self, job_id: JobId):
-        """Cancel `job_id` if it is running.
+        """Cancel `job_id` if it is running. If `job_id` does not exist int the queue,
+        a ValueError is raised.
 
         Parameters
         ----------
@@ -420,26 +421,18 @@ class InstallerQueue(QObject):
                     }
                 )
                 self._process_queue()
-                return
-
-        msg = f"No job with id {job_id}. Current queue:\n - "
-        msg += "\n - ".join(
-            [
-                f"{item.ident} -> {item.executable()} {item.arguments()}"
-                for item in self._queue
-            ]
-        )
-        self.processFinished.emit(
-            {
-                'exit_code': 1,
-                'exit_status': 0,
-                'action': InstallerActions.CANCEL,
-                'pkgs': [],
-            }
-        )
-        raise ValueError(msg)
+            else:
+                msg = f"No job with id {job_id}. Current queue:\n - "
+                msg += "\n - ".join(
+                    [
+                        f"{item.ident} -> {item.executable()} {item.arguments()}"
+                        for item in self._queue
+                    ]
+                )
+                raise ValueError(msg)
 
     def cancel_all(self):
+        """Terminate all process in the queue and emit the `processFinished` signal."""
         all_pkgs = []
         for item in deque(self._queue):
             all_pkgs.extend(item.pkgs)
@@ -451,7 +444,6 @@ class InstallerQueue(QObject):
 
             self._end_process(process)
 
-        # cancel all jobs
         self._queue.clear()
         self._current_process = None
         self.processFinished.emit(
