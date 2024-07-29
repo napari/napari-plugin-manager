@@ -62,7 +62,13 @@ from napari_plugin_manager.utils import is_conda_package
 
 try:
     from napari.plugins.utils import PluginStatus
+    from napari.utils.status import register_process, unregister_process
 except ImportError:
+    def register_process(status):
+        pass
+
+    def unregister_process(status):
+        pass
 
     class PluginStatus(Enum):
         BUSY = auto()
@@ -864,6 +870,7 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
+        self._latest_status = None
         self.worker = None
 
         # timer to avoid triggering a filter for every keystroke
@@ -916,6 +923,21 @@ class QtPluginDialog(QDialog):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
 
+    def _register_process(self):
+        if self._latest_status is not None:
+            self._unregister_process(self._latest_status)
+
+        status = self.query_status()
+        self._latest_status = status
+        register_process(status)
+
+    def _unregister_process(self):
+        if isinstance(self._latest_status, dict):
+            status_id = self._latest_status.get('id', None)
+            unregister_process(status_id)
+
+        self._latest_status = None
+
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
         self.cancel_all_btn.setVisible(True)
@@ -923,6 +945,9 @@ class QtPluginDialog(QDialog):
         self.process_success_indicator.hide()
         self.process_error_indicator.hide()
         self.refresh_button.setDisabled(True)
+
+        if self._latest_status is None:
+            self._register_process()
 
     def _on_process_finished(self, process_finished_data: ProcessFinishedData):
         action = process_finished_data['action']
@@ -977,6 +1002,7 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn.setVisible(False)
         self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
+        self._unregister_process()
 
         if not self.isVisible():
             if sum(exit_codes) > 0:
@@ -1474,12 +1500,13 @@ class QtPluginDialog(QDialog):
             status = PluginStatus.IDLE
             description = ''
 
-        return {
+        status = {
             "id": uuid.uuid4(),
             "timestamp": datetime.datetime.now().isoformat(),
             "status": status,
             "description": description,
         }
+        return status
 
 
 if __name__ == "__main__":
