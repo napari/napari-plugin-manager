@@ -1456,6 +1456,7 @@ class QtPluginDialog(QDialog):
         self._plugin_queue = []
         self._plugin_data = []
         self._plugin_data_map = {}
+        self._latest_status = None
 
         self.installed_list.clear()
         self.available_list.clear()
