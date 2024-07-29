@@ -385,7 +385,6 @@ def test_add_items_outdated(plugin_dialog, qtbot):
     assert widget.update_btn.isVisible()
 
 
-<<<<<<< HEAD
 @pytest.mark.skipif(
     qtpy.API_NAME.lower().startswith('pyside')
     and sys.version_info[:2] > (3, 10)
@@ -539,7 +538,8 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     )
     qtbot.wait(200)
     assert not plugin_dialog.isVisible()
-=======
+
+
 def test_query_status(plugin_dialog, monkeypatch):
     res = plugin_dialog.query_status()
     assert res['status'] == PluginStatus.IDLE
@@ -561,4 +561,3 @@ def test_query_status(plugin_dialog, monkeypatch):
     )
     assert res['status'] == PluginStatus.BUSY
     assert res['description']
->>>>>>> 04b4f8c (Add utility function to query the plugin status from napari side and prevent closing if busy)

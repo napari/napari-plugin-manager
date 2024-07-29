@@ -1,12 +1,10 @@
 import contextlib
-import importlib.metadata
-import os
-import sys
-import webbrowser
 import datetime
 import importlib.metadata
 import os
+import sys
 import uuid
+import webbrowser
 from enum import Enum, auto
 from functools import partial
 from pathlib import Path
