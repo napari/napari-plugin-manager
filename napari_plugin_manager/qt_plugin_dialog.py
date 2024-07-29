@@ -1489,7 +1489,7 @@ class QtPluginDialog(QDialog):
 
     # endregion - Public methods
 
-    def query_status(self) -> dict:
+    def query_status(self) -> Tuple[ProcessStatus, str]:
         """Return the current status of the plugin."""
         if self.installer.hasJobs():
             process_status = ProcessStatus.BUSY
