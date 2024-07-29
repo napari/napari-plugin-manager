@@ -9,6 +9,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "napari_plugin_manager/_version.py"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["napari_plugin_manager"]
+exclude = []
+namespaces = false  
+
 [project]
 name = "napari-plugin-manager"
 description = "Install plugins for napari, in napari."
@@ -26,9 +32,9 @@ classifiers = [
     "Programming Language :: C",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: Scientific/Engineering :: Information Analysis",
@@ -72,7 +78,7 @@ docs = [
 homepage = "https://github.com/napari/napari-plugin-manager"
 
 [tool.black]
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py39', 'py310', 'py311']
 skip-string-normalization = true
 line-length = 79
 

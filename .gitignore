@@ -113,3 +113,7 @@ target/
 
 # vscode
 .vscode
+
+# Images
+docs/images/
+

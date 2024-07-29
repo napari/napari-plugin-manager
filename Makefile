@@ -10,6 +10,9 @@ clean:
 	echo clean
 	echo $(current_dir)
 	rm -rf $(docs_dir)/_build/
+	rm -rf $(docs_dir)/images/
+	mkdir $(docs_dir)/images/
+	cp images/*.png $(docs_dir)/images/
 
 docs-build:
 	NAPARI_CONFIG="" NAPARI_APPLICATION_IPY_INTERACTIVE=0 sphinx-build -b html docs/ docs/_build $(SPHINXOPTS)
