@@ -69,7 +69,9 @@ class AbstractInstallerTool:
 
     @property
     def ident(self):
-        return hash((self.action, *self.pkgs, *self.origins, self.prefix))
+        return hash(
+            (self.action, *self.pkgs, *self.origins, self.prefix, self.process)
+        )
 
     # abstract method
     @classmethod
@@ -421,15 +423,16 @@ class InstallerQueue(QObject):
                     }
                 )
                 self._process_queue()
-            else:
-                msg = f"No job with id {job_id}. Current queue:\n - "
-                msg += "\n - ".join(
-                    [
-                        f"{item.ident} -> {item.executable()} {item.arguments()}"
-                        for item in self._queue
-                    ]
-                )
-                raise ValueError(msg)
+                return
+
+        msg = f"No job with id {job_id}. Current queue:\n - "
+        msg += "\n - ".join(
+            [
+                f"{item.ident} -> {item.executable()} {item.arguments()}"
+                for item in self._queue
+            ]
+        )
+        raise ValueError(msg)
 
     def cancel_all(self):
         """Terminate all process in the queue and emit the `processFinished` signal."""
