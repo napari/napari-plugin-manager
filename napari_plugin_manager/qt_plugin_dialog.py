@@ -5,7 +5,7 @@ import os
 import sys
 import uuid
 import webbrowser
-from enum import Enum, auto
+from enum import auto
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
@@ -20,6 +20,7 @@ from napari._qt.widgets.qt_tooltip import QtToolTipLabel
 from napari.plugins.utils import normalized_name
 from napari.settings import get_settings
 from napari.utils.misc import (
+    StringEnum,
     parse_version,
     running_as_constructor_app,
 )
@@ -64,13 +65,14 @@ try:
     from napari.plugins.utils import PluginStatus
     from napari.utils.status import register_process, unregister_process
 except ImportError:
+
     def register_process(status):
         pass
 
     def unregister_process(status):
         pass
 
-    class PluginStatus(Enum):
+    class PluginStatus(StringEnum):
         BUSY = auto()
         IDLE = auto()
 
