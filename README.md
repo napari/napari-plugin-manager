@@ -50,7 +50,7 @@ pip install napari-plugin-manager
 
 ### Conda
 
-`napari-animation` is also available for install using [conda] through the [conda-forge channel](https://conda-forge.org/docs/#what-is-conda-forge).
+`napari-plugin-manager` is also available for install using [conda] through the [conda-forge channel](https://conda-forge.org/docs/#what-is-conda-forge).
 
 
 ```bash
@@ -80,7 +80,7 @@ the package name to the right in parenthesis.
 ### Refreshing
 
 If a new plugin has been released but it is not available on the list, you can click
-on the `refresh` button to the top roght corner to clear the cache and load all
+on the `refresh` button to the top right corner to clear the cache and load all
 new available plugins.
 
 ### Installing a plugin
@@ -95,7 +95,7 @@ specific plugin to install.
 
 You can cancel the process at any time by clicking the `Cancel` button of each plugin.
 
-**Note**: Not all napari plugins are currently avaible on conda via the
+**Note**: Not all napari plugins are currently available on conda via the
 [conda-forge channel](https://anaconda.org/conda-forge/). Some plugins will require
 a restart to be properly configured.
 
