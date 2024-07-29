@@ -857,7 +857,6 @@ class QPluginList(QListWidget):
             item.setHidden(not item.widget.is_busy())
 
 
-
 class QtPluginDialog(QDialog):
     MAX_PLUGIN_SEARCH_ITEMS = 20
 
