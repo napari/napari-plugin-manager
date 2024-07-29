@@ -165,11 +165,9 @@ software.
 If you encounter any problems, please [file an issue] along with a detailed description.
 
 [napari]: https://github.com/napari/napari
-[Cookiecutter]: https://github.com/audreyr/cookiecutter
 [@napari]: https://github.com/napari
 [BSD-3]: http://opensource.org/licenses/BSD-3-Clause
 [file an issue]: https://github.com/napari/napari-plugin-manager/issues
-[tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/
 [conda]: https://conda.org
 [PyPI]: https://pypi.org/

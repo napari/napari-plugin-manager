@@ -22,35 +22,27 @@ Set the `upstream` remote to the base `napari` repository:
 git remote add upstream https://github.com/napari/napari-plugin-manager.git
 ```
 
-TODO: Install the package in editable mode, along with all of the developer tools
+Install the package in editable mode, along with all of the developer tools:
 ```sh
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 We use [`pre-commit`](https://pre-commit.com) to sort imports with
 [`isort`](https://github.com/timothycrosley/isort), format code with
 [`black`](https://github.com/psf/black), and lint with
-[`flake8`](https://github.com/PyCQA/flake8) automatically prior to each commit.
-To minmize test errors when submitting pull requests, please install `pre-commit`
+[`flake8`](https://github.com/PyCQA/flake8) automatically prior to each commit
+as implemented in `ruff`.
+To minimize test errors when submitting pull requests, please install `pre-commit`
 in your environment as follows:
 
 ```sh
 pre-commit install
 ```
 
-Upon committing, your code will be formatted according to our [`black`
-configuration](https://github.com/napari/napari-plugin-manager/blob/main/pyproject.toml). To learn more,
-see [`black`'s documentation](https://black.readthedocs.io/en/stable/).
+Upon committing, your code will be formatted and linted according to our [`ruff`
+configuration](https://github.com/napari/napari-plugin-manager/blob/main/pyproject.toml). To learn
+more, see [`ruff`'s documentation](https://docs.astral.sh/ruff/).
 
-Code will also be linted to enforce the stylistic and logistical rules specified
-in our [`flake8` configuration](https://github.com/napari/napari/blob/master/setup.cfg), which currently ignores
-[E203](https://lintlyci.github.io/Flake8Rules/rules/E203.html),
-[E501](https://lintlyci.github.io/Flake8Rules/rules/E501.html),
-[W503](https://lintlyci.github.io/Flake8Rules/rules/W503.html) and
-[C901](https://lintlyci.github.io/Flake8Rules/rules/C901.html).  For information
-on any specific flake8 error code, see the [Flake8
-Rules](https://lintlyci.github.io/Flake8Rules/).  You may also wish to refer to
-the [PEP 8 style guide](https://www.python.org/dev/peps/pep-0008/).
 
 If you wish to tell the linter to ignore a specific line use the `# noqa`
 comment along with the specific error code (e.g. `import sys  # noqa: E402`) but
@@ -64,7 +56,7 @@ provide localization (l10n) enabling the user interface to be displayed in
 different languages.
 
 To learn more about the current languages that are in the process of
-translation, visit the [language packs repository](https://github.com/napari/napari-language-packs)
+translation, visit the [language packs repository](https://github.com/napari/napari-language-packs).
 
 To make your code translatable (localizable), please use the `trans` helper
 provided by the napari utilities.
@@ -80,12 +72,14 @@ To learn more, please see the [translations guide](https://napari.org/guides/sta
 ## Making changes
 
 Create a new feature branch:
+
 ```sh
-git checkout master -b your-branch-name
+git checkout main -b your-branch-name
 ```
 
 `git` will automatically detect changes to a repository.
 You can view them with:
+
 ```sh
 git status
 ```
@@ -104,6 +98,12 @@ keeping napari-plugin-manager maintainable as it grows.
 
 Check out the dedicated documentation on testing over at [napari.org](https://napari.org/dev/developers/testing.html) that we recommend you
 read as you're working on your first contribution.
+
+Run this command to ensure the testing dependencies are available:
+
+```sh
+pip install -e ".[testing]"
+```
 
 ### Help us make sure it's you
 
@@ -147,14 +147,26 @@ You can then make a [pull-request](https://guides.github.com/activities/forking/
 
 ## Building the docs
 
-From the project root:
+First, make sure the documentation dependencies are up-to-date:
+
+```sh
+pip install -e ".[docs]"
+```
+
+Then, from the project root
 ```sh
 make docs
 ```
 
-The docs will be built at `docs/_build/html`.
+The docs will be built at `docs/_build/html`. You can see them in your browser by running
 
-Most web browsers will allow you to preview HTML pages.
+```sh
+make serve
+```
+
+and opening a new tab for `http://localhost:8000`.
+
+Most web browsers will also allow you to preview HTML pages directly.
 Try entering `file:///absolute/path/to/napari-plugin-manager/docs/_build/html/index.html` in your address bar.
 
 ## Code of conduct

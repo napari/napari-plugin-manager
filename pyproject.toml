@@ -57,6 +57,11 @@ dynamic = [
 ]
 
 [project.optional-dependencies]
+dev = [
+  "PyQt5",
+  "pre-commit",
+]
+
 testing = [
   "pytest",
   "virtualenv",
