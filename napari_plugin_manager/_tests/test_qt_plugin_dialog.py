@@ -541,23 +541,23 @@ def test_shortcut_quit(plugin_dialog, qtbot):
 
 
 def test_query_status(plugin_dialog, monkeypatch):
-    res = plugin_dialog.query_status()
-    assert res['status'] == ProcessStatus.IDLE
-    assert not res['description']
+    status, description = plugin_dialog.query_status()
+    assert status == ProcessStatus.IDLE
+    assert not description
 
     monkeypatch.setattr(
         plugin_dialog.installer,
         "_queue",
         ['mock'],
     )
-    res = plugin_dialog.query_status()
-    assert res['status'] == ProcessStatus.BUSY
-    assert res['description']
+    status, description = plugin_dialog.query_status()
+    assert status == ProcessStatus.BUSY
+    assert description
 
     monkeypatch.setattr(
         plugin_dialog.installer,
         "_queue",
         ['mock', 'other-mock'],
     )
-    assert res['status'] == ProcessStatus.BUSY
-    assert res['description']
+    assert status == ProcessStatus.BUSY
+    assert description

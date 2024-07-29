@@ -1,5 +1,4 @@
 import contextlib
-import datetime
 import importlib.metadata
 import os
 import sys
@@ -62,25 +61,23 @@ from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
 
 try:
-    from napari.utils.status import (
+    from napari.utils.processes import (
         ProcessStatus,
         register_process_status,
         unregister_process_status,
     )
 except ImportError:
 
-    def register_process_status(status):
-        pass
-
-    def unregister_process_status(status):
-        pass
-
     class ProcessStatus(StringEnum):
         BUSY = auto()
         IDLE = auto()
 
+    def register_process_status(status: ProcessStatus, description: str):
+        pass
 
-# TODO: add error icon and handle pip install errors
+    def unregister_process_status(process_status_id: uuid.UUID) -> bool:
+        pass
+
 
 # Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'
@@ -875,7 +872,7 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
-        self._latest_process_status = None
+        self._process_status_id = None
         self.worker = None
 
         # timer to avoid triggering a filter for every keystroke
@@ -929,19 +926,17 @@ class QtPluginDialog(QDialog):
         self.setStyleSheet(stylesheet)
 
     def _register_process_status(self):
-        if self._latest_process_status is not None:
-            self._unregister_process_status(self._latest_process_status)
+        if self._process_status_id is not None:
+            self._unregister_process_status(self._process_status_id)
 
-        status = self.query_status()
-        self._latest_process_status = status
-        register_process_status(status)
+        status, description = self.query_status()
+        self._process_status_id = register_process_status(status, description)
 
     def _unregister_process_status(self):
-        if isinstance(self._latest_process_status, dict):
-            status_id = self._latest_process_status.get('id', None)
-            unregister_process_status(status_id)
+        if self._process_status_id is not None:
+            unregister_process_status(self._process_status_id)
 
-        self._latest_process_status = None
+        self._process_status_id = None
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -951,8 +946,8 @@ class QtPluginDialog(QDialog):
         self.process_error_indicator.hide()
         self.refresh_button.setDisabled(True)
 
-        if self._latest_status is None:
-            self._register_process()
+        if self._process_status_id is None:
+            self._register_process_status()
 
     def _on_process_finished(self, process_finished_data: ProcessFinishedData):
         action = process_finished_data['action']
@@ -1007,7 +1002,6 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn.setVisible(False)
         self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
-        self._unregister_process()
 
         if not self.isVisible():
             if sum(exit_codes) > 0:
@@ -1016,6 +1010,8 @@ class QtPluginDialog(QDialog):
                 )
             else:
                 show_info(trans._('Plugin Manager: process completed\n'))
+
+        self._unregister_process_status()
 
     def _add_to_available(self, pkg_name):
         self._add_items_timer.stop()
@@ -1496,23 +1492,17 @@ class QtPluginDialog(QDialog):
     def query_status(self) -> dict:
         """Return the current status of the plugin."""
         if self.installer.hasJobs():
-            status = ProcessStatus.BUSY
+            process_status = ProcessStatus.BUSY
             description = trans._n(
                 'The plugin manager is currently busy with {n} task.',
                 'The plugin manager is currently busy with {n} tasks.',
                 n=self.installer.currentJobs(),
             )
         else:
-            status = ProcessStatus.IDLE
+            process_status = ProcessStatus.IDLE
             description = ''
 
-        status = {
-            "id": uuid.uuid4(),
-            "timestamp": datetime.datetime.now().isoformat(),
-            "status": status,
-            "description": description,
-        }
-        return status
+        return process_status, description
 
 
 if __name__ == "__main__":
