@@ -62,17 +62,20 @@ from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
 
 try:
-    from napari.plugins.utils import PluginStatus
-    from napari.utils.status import register_process, unregister_process
+    from napari.utils.status import (
+        ProcessStatus,
+        register_process_status,
+        unregister_process_status,
+    )
 except ImportError:
 
-    def register_process(status):
+    def register_process_status(status):
         pass
 
-    def unregister_process(status):
+    def unregister_process_status(status):
         pass
 
-    class PluginStatus(StringEnum):
+    class ProcessStatus(StringEnum):
         BUSY = auto()
         IDLE = auto()
 
@@ -872,7 +875,7 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
-        self._latest_status = None
+        self._latest_process_status = None
         self.worker = None
 
         # timer to avoid triggering a filter for every keystroke
@@ -925,20 +928,20 @@ class QtPluginDialog(QDialog):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
 
-    def _register_process(self):
-        if self._latest_status is not None:
-            self._unregister_process(self._latest_status)
+    def _register_process_status(self):
+        if self._latest_process_status is not None:
+            self._unregister_process_status(self._latest_process_status)
 
         status = self.query_status()
-        self._latest_status = status
-        register_process(status)
+        self._latest_process_status = status
+        register_process_status(status)
 
-    def _unregister_process(self):
-        if isinstance(self._latest_status, dict):
-            status_id = self._latest_status.get('id', None)
-            unregister_process(status_id)
+    def _unregister_process_status(self):
+        if isinstance(self._latest_process_status, dict):
+            status_id = self._latest_process_status.get('id', None)
+            unregister_process_status(status_id)
 
-        self._latest_status = None
+        self._latest_process_status = None
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -1493,14 +1496,14 @@ class QtPluginDialog(QDialog):
     def query_status(self) -> dict:
         """Return the current status of the plugin."""
         if self.installer.hasJobs():
-            status = PluginStatus.BUSY
+            status = ProcessStatus.BUSY
             description = trans._n(
                 'The plugin manager is currently busy with {n} task.',
                 'The plugin manager is currently busy with {n} tasks.',
                 n=self.installer.currentJobs(),
             )
         else:
-            status = PluginStatus.IDLE
+            status = ProcessStatus.IDLE
             description = ''
 
         status = {

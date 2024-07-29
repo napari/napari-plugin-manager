@@ -25,7 +25,7 @@ if (qtpy.API_NAME == 'PySide2') or (
 
 from napari_plugin_manager import qt_plugin_dialog
 from napari_plugin_manager.qt_package_installer import InstallerActions
-from napari_plugin_manager.qt_plugin_dialog import PluginStatus
+from napari_plugin_manager.qt_plugin_dialog import ProcessStatus
 
 N_MOCKED_PLUGINS = 2
 
@@ -542,7 +542,7 @@ def test_shortcut_quit(plugin_dialog, qtbot):
 
 def test_query_status(plugin_dialog, monkeypatch):
     res = plugin_dialog.query_status()
-    assert res['status'] == PluginStatus.IDLE
+    assert res['status'] == ProcessStatus.IDLE
     assert not res['description']
 
     monkeypatch.setattr(
@@ -551,7 +551,7 @@ def test_query_status(plugin_dialog, monkeypatch):
         ['mock'],
     )
     res = plugin_dialog.query_status()
-    assert res['status'] == PluginStatus.BUSY
+    assert res['status'] == ProcessStatus.BUSY
     assert res['description']
 
     monkeypatch.setattr(
@@ -559,5 +559,5 @@ def test_query_status(plugin_dialog, monkeypatch):
         "_queue",
         ['mock', 'other-mock'],
     )
-    assert res['status'] == PluginStatus.BUSY
+    assert res['status'] == ProcessStatus.BUSY
     assert res['description']
