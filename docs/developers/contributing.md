@@ -43,6 +43,11 @@ Upon committing, your code will be formatted and linted according to our [`ruff`
 configuration](https://github.com/napari/napari-plugin-manager/blob/main/pyproject.toml). To learn
 more, see [`ruff`'s documentation](https://docs.astral.sh/ruff/).
 
+You can also execute `pre-commit` at any moment by running the following:
+
+```sh
+pre-commit run -a
+```
 
 If you wish to tell the linter to ignore a specific line use the `# noqa`
 comment along with the specific error code (e.g. `import sys  # noqa: E402`) but

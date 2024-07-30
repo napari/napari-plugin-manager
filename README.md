@@ -19,7 +19,7 @@ of the `napari` release cycle.
 
 Future work will allow other applications with a plugin ecosytem to customize and 
 use the `plugin-manager`. This package remains under active development and contributions
-are very welcome. Please open an issue to discuss potential improvements.
+are very welcome. Please [open an issue] to discuss potential improvements.
 
 This package currently provides:
 
@@ -84,7 +84,8 @@ the package name to the right in parenthesis.
 ### Refreshing
 
 If a new plugin has been released but it is not available on the list, you can click on the
-`Refresh` button (top right corner) to clear the cache and load all newly available plugins.
+`Refresh` button located at the top right corner, to clear the cache and load all newly
+available plugins.
 
 ### Installing a plugin
 
@@ -119,14 +120,14 @@ You can cancel the process at any time by clicking the `Cancel` button of each p
 
 ### Updating a plugin
 
-When a new version of an installed plugin is available, an `Update to vX.Y.Z`
+When a new version of an installed plugin is available, an `Update (vX.Y.Z)`
 button will appear to the left of the `Installation Info` dropdown.
 
 To update a plugin:
 
 1. Select it by scrolling the install plugins list on the top, or by directly
 filtering by name or description.
-2. Start the update process by clicking on the `Update to vX.Y.Z` button.
+2. Start the update process by clicking on the `Update (vX.Y.Z)` button.
 
 You can cancel the process at any time by clicking the `Cancel` button of each plugin.
 
@@ -168,6 +169,7 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [@napari]: https://github.com/napari
 [BSD-3]: http://opensource.org/licenses/BSD-3-Clause
 [file an issue]: https://github.com/napari/napari-plugin-manager/issues
+[open an issue]: https://github.com/napari/napari-plugin-manager/issues
 [pip]: https://pypi.org/project/pip/
 [conda]: https://conda.org
 [PyPI]: https://pypi.org/
