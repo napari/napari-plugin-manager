@@ -360,8 +360,12 @@ def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
     assert old_plugins.enabled[0] is False
 
 
-def test_add_items_outdated(plugin_dialog, qtbot):
-    """Test that a plugin is tagged as outdated (a newer version is available), the update button becomes visible."""
+def test_add_items_outdated_and_update(plugin_dialog, qtbot):
+    """
+    Test that a plugin is tagged as outdated (a newer version is available), the update button becomes visible.
+
+    Also check that after doing an update the update button gets hidden.
+    """
 
     # The plugin is being added to the available plugins list.  When the dialog is being built
     # this one will be listed as available, and it will be found as already installed.
@@ -384,6 +388,17 @@ def test_add_items_outdated(plugin_dialog, qtbot):
     item = plugin_dialog.installed_list.item(0)
     widget = plugin_dialog.installed_list.itemWidget(item)
     assert widget.update_btn.isVisible()
+
+    # Trigger process finished handler to simulated that an update was done
+    plugin_dialog._on_process_finished(
+        {
+            'exit_code': 1,
+            'exit_status': 0,
+            'action': InstallerActions.UPGRADE,
+            'pkgs': ['my-plugin==0.4.0'],
+        }
+    )
+    assert not widget.update_btn.isVisible()
 
 
 @pytest.mark.skipif(
