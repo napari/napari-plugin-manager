@@ -858,6 +858,10 @@ class QtPluginDialog(QDialog):
         self._filter_timer.setSingleShot(True)
         self._plugin_data_map = {}
         self._add_items_timer = QTimer(self)
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setInterval(3000)
+        self._refresh_timer.setSingleShot(True)
+        self._refresh_timer.timeout.connect(self._enable_refresh_button)
 
         # Add items in batches with a pause to avoid blocking the UI
         self._add_items_timer.setInterval(61)  # ms
@@ -880,6 +884,9 @@ class QtPluginDialog(QDialog):
 
     # region - Private methods
     # ------------------------------------------------------------------------
+    def _enable_refresh_button(self):
+        self.refresh_button.setEnabled(True)
+
     def _quit(self):
         self.close()
         with contextlib.suppress(AttributeError):
@@ -1411,6 +1418,7 @@ class QtPluginDialog(QDialog):
         self._update_plugin_count()
 
     def refresh(self, clear_cache: bool = False):
+        self.refresh_button.setDisabled(True)
         if self.worker is not None:
             self.worker.quit()
 
@@ -1429,6 +1437,8 @@ class QtPluginDialog(QDialog):
 
         self._add_installed()
         self._fetch_available_plugins(clear_cache=clear_cache)
+
+        self._refresh_timer.start()
 
     def toggle_status(self, show=None):
         show = not self.stdout_text.isVisible() if show is None else show
