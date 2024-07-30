@@ -378,6 +378,7 @@ def test_add_items_outdated(plugin_dialog, qtbot):
         },
     )
 
+    plugin_dialog._plugin_data_map["my-plugin"] = new_plugin
     plugin_dialog._plugin_queue = [new_plugin]
     plugin_dialog._add_items()
     item = plugin_dialog.installed_list.item(0)
