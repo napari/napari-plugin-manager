@@ -55,6 +55,21 @@ class _NonExistingTool(AbstractInstallerTool):
         return QProcessEnvironment.systemEnvironment()
 
 
+def test_not_implemented_methods():
+    tool = AbstractInstallerTool('install', ['requests'])
+    with pytest.raises(NotImplementedError):
+        tool.executable()
+
+    with pytest.raises(NotImplementedError):
+        tool.arguments()
+
+    with pytest.raises(NotImplementedError):
+        tool.environment()
+
+    with pytest.raises(NotImplementedError):
+        tool.available()
+
+
 def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     installer = InstallerQueue()
     monkeypatch.setattr(
@@ -165,6 +180,17 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
         )
 
 
+def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
+    installer = InstallerQueue()
+    with qtbot.waitSignal(installer.allFinished, timeout=20000):
+        job_id = installer.install(
+            tool=InstallerTools.PIP,
+            pkgs=['requests'],
+        )
+        with pytest.raises(ValueError):
+            installer.cancel(job_id + 1)
+
+
 @pytest.mark.skipif(
     not CondaInstallerTool.available(), reason="Conda is not available."
 )
@@ -207,7 +233,7 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
-        installer.cancel()
+        installer.cancel_all()
 
     assert not installer.hasJobs()
     assert not list(conda_meta.glob(glob_pat))
@@ -250,6 +276,38 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
     assert not installer.hasJobs()
 
 
+def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
+    installer = InstallerQueue()
+    monkeypatch.setattr(
+        PipInstallerTool, "executable", lambda *a: 'not-a-real-executable'
+    )
+    with qtbot.waitSignal(installer.allFinished, timeout=600_000):
+        installer.install(
+            tool=InstallerTools.PIP,
+            pkgs=['some-package-that-does-not-exist'],
+        )
+
+
+@pytest.mark.skipif(
+    not CondaInstallerTool.available(), reason="Conda is not available."
+)
+def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
+    installer = InstallerQueue()
+
+    with qtbot.waitSignal(installer.allFinished, timeout=600_000):
+        installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['requests'],
+            prefix=tmp_conda_env,
+        )
+        installer.install(
+            tool=InstallerTools.CONDA,
+            pkgs=['pyzenhub'],
+            prefix=tmp_conda_env,
+        )
+        installer.waitForFinished(20000)
+
+
 def test_constraints_are_in_sync():
     conda_constraints = sorted(CondaInstallerTool.constraints())
     pip_constraints = sorted(PipInstallerTool.constraints())
@@ -273,3 +331,8 @@ def test_executables():
 def test_available():
     assert str(CondaInstallerTool.available())
     assert PipInstallerTool.available()
+
+
+def test_unrecognized_tool():
+    with pytest.raises(ValueError):
+        InstallerQueue().install(tool='shrug', pkgs=[])
