@@ -858,8 +858,12 @@ class QtPluginDialog(QDialog):
         self._filter_timer.setSingleShot(True)
         self._plugin_data_map = {}
         self._add_items_timer = QTimer(self)
+
+        # Timer to avoid race conditions and incorrect count of plugins when
+        # refreshing multiple times in a row. After click we disable the
+        # `Refresh` button and re-enable it after 3 seconds.
         self._refresh_timer = QTimer(self)
-        self._refresh_timer.setInterval(3000)
+        self._refresh_timer.setInterval(3000)  # ms
         self._refresh_timer.setSingleShot(True)
         self._refresh_timer.timeout.connect(self._enable_refresh_button)
 
@@ -1419,6 +1423,7 @@ class QtPluginDialog(QDialog):
 
     def refresh(self, clear_cache: bool = False):
         self.refresh_button.setDisabled(True)
+
         if self.worker is not None:
             self.worker.quit()
 
