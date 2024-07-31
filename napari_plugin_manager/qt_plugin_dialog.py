@@ -876,6 +876,14 @@ class QtPluginDialog(QDialog):
         self._plugin_data_map = {}
         self._add_items_timer = QTimer(self)
 
+        # Timer to avoid race conditions and incorrect count of plugins when
+        # refreshing multiple times in a row. After click we disable the
+        # `Refresh` button and re-enable it after 3 seconds.
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setInterval(3000)  # ms
+        self._refresh_timer.setSingleShot(True)
+        self._refresh_timer.timeout.connect(self._enable_refresh_button)
+
         # Add items in batches with a pause to avoid blocking the UI
         self._add_items_timer.setInterval(61)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
@@ -897,6 +905,9 @@ class QtPluginDialog(QDialog):
 
     # region - Private methods
     # ------------------------------------------------------------------------
+    def _enable_refresh_button(self):
+        self.refresh_button.setEnabled(True)
+
     def _quit(self):
         self.close()
         with contextlib.suppress(AttributeError):
@@ -1269,10 +1280,12 @@ class QtPluginDialog(QDialog):
     def _tag_outdated_plugins(self):
         """Tag installed plugins that might be outdated."""
         for pkg_name in self.installed_list.packages():
-            metadata, is_available_in_conda, _ = self._plugin_data_map.get(
-                pkg_name
-            )
-            self.installed_list.tag_outdated(metadata, is_available_in_conda)
+            _data = self._plugin_data_map.get(pkg_name)
+            if _data is not None:
+                metadata, is_available_in_conda, _ = _data
+                self.installed_list.tag_outdated(
+                    metadata, is_available_in_conda
+                )
 
     def _add_items(self):
         """
@@ -1427,6 +1440,11 @@ class QtPluginDialog(QDialog):
         self._update_plugin_count()
 
     def refresh(self, clear_cache: bool = False):
+        self.refresh_button.setDisabled(True)
+
+        if self.worker is not None:
+            self.worker.quit()
+
         if self._add_items_timer.isActive():
             self._add_items_timer.stop()
 
@@ -1442,6 +1460,8 @@ class QtPluginDialog(QDialog):
 
         self._add_installed()
         self._fetch_available_plugins(clear_cache=clear_cache)
+
+        self._refresh_timer.start()
 
     def toggle_status(self, show=None):
         show = not self.stdout_text.isVisible() if show is None else show
