@@ -653,7 +653,9 @@ class QPluginList(QListWidget):
             if item.widget.name == name:
                 if version is not None:
                     item.version = version
-                    item.widget.version.setText(version)
+                    mod_version = version.replace('.', '․')  # noqa: RUF001
+                    item.widget.version.setText(mod_version)
+                    item.widget.version.setToolTip(version)
                 item.widget.set_busy('', InstallerActions.CANCEL)
                 if item.text().startswith(self._SORT_ORDER_PREFIX):
                     item.setText(item.text()[len(self._SORT_ORDER_PREFIX) :])

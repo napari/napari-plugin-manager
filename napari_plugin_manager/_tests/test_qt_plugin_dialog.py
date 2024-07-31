@@ -381,13 +381,16 @@ def test_add_items_outdated_and_update(plugin_dialog, qtbot):
             "conda_versions": ['0.4.0', '0.1.0'],
         },
     )
-
     plugin_dialog._plugin_data_map["my-plugin"] = new_plugin
     plugin_dialog._plugin_queue = [new_plugin]
     plugin_dialog._add_items()
     item = plugin_dialog.installed_list.item(0)
     widget = plugin_dialog.installed_list.itemWidget(item)
+    initial_version = "0.1.0"
+    mod_initial_version = initial_version.replace('.', '․')  # noqa: RUF001
     assert widget.update_btn.isVisible()
+    assert widget.version.text() == mod_initial_version
+    assert widget.version.toolTip() == initial_version
 
     # Trigger process finished handler to simulated that an update was done
     plugin_dialog._on_process_finished(
@@ -398,7 +401,11 @@ def test_add_items_outdated_and_update(plugin_dialog, qtbot):
             'pkgs': ['my-plugin==0.4.0'],
         }
     )
+    updated_version = "0.4.0"
+    mod_updated_version = updated_version.replace('.', '․')  # noqa: RUF001
     assert not widget.update_btn.isVisible()
+    assert widget.version.text() == mod_updated_version
+    assert widget.version.toolTip() == updated_version
 
 
 @pytest.mark.skipif(
