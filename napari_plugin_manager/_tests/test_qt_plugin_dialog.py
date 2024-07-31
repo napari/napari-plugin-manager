@@ -360,8 +360,12 @@ def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
     assert old_plugins.enabled[0] is False
 
 
-def test_add_items_outdated(plugin_dialog, qtbot):
-    """Test that a plugin is tagged as outdated (a newer version is available), the update button becomes visible."""
+def test_add_items_outdated_and_update(plugin_dialog, qtbot):
+    """
+    Test that a plugin is tagged as outdated (a newer version is available), the update button becomes visible.
+
+    Also check that after doing an update the update button gets hidden.
+    """
 
     # The plugin is being added to the available plugins list.  When the dialog is being built
     # this one will be listed as available, and it will be found as already installed.
@@ -377,12 +381,31 @@ def test_add_items_outdated(plugin_dialog, qtbot):
             "conda_versions": ['0.4.0', '0.1.0'],
         },
     )
-
+    plugin_dialog._plugin_data_map["my-plugin"] = new_plugin
     plugin_dialog._plugin_queue = [new_plugin]
     plugin_dialog._add_items()
     item = plugin_dialog.installed_list.item(0)
     widget = plugin_dialog.installed_list.itemWidget(item)
+    initial_version = "0.1.0"
+    mod_initial_version = initial_version.replace('.', '․')  # noqa: RUF001
     assert widget.update_btn.isVisible()
+    assert widget.version.text() == mod_initial_version
+    assert widget.version.toolTip() == initial_version
+
+    # Trigger process finished handler to simulated that an update was done
+    plugin_dialog._on_process_finished(
+        {
+            'exit_code': 1,
+            'exit_status': 0,
+            'action': InstallerActions.UPGRADE,
+            'pkgs': ['my-plugin==0.4.0'],
+        }
+    )
+    updated_version = "0.4.0"
+    mod_updated_version = updated_version.replace('.', '․')  # noqa: RUF001
+    assert not widget.update_btn.isVisible()
+    assert widget.version.text() == mod_updated_version
+    assert widget.version.toolTip() == updated_version
 
 
 @pytest.mark.skipif(
