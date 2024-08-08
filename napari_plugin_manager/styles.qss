@@ -145,6 +145,12 @@ QPushButton#refresh_button:disabled {
   font-style: italic;
 }
 
+#small_bold_text {
+  color: {{ opacity(text, 150) }};
+  font-size: {{ font_size }};
+  font-weight: bold;
+}
+
 #plugin_manager_process_status{
   background: {{ background }};
   color: {{ opacity(text, 200) }};
