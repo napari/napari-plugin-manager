@@ -848,7 +848,9 @@ class QPluginList(QListWidget):
 
 
 class QtPluginDialog(QDialog):
-    def __init__(self, parent=None, prefix=None) -> None:
+    def __init__(
+        self, parent=None, prefix=None, show_disclaimer=False
+    ) -> None:
         super().__init__(parent)
 
         self._parent = parent
@@ -862,6 +864,7 @@ class QtPluginDialog(QDialog):
         self.available_set = set()
         self._prefix = prefix
         self._first_open = True
+        self._show_disclaimer = show_disclaimer
         self._plugin_queue = []  # Store plugin data to be added
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
@@ -1113,6 +1116,13 @@ class QtPluginDialog(QDialog):
         installed = QWidget(self.v_splitter)
         lay = QVBoxLayout(installed)
         lay.setContentsMargins(0, 2, 0, 2)
+        self.disclaimer_label = QLabel(
+            trans._(
+                "DISCLAIMER: Available plugin packages are user produced content. Any use of the provided files is at your own risk."
+            )
+        )
+        self.disclaimer_label.setObjectName("small_bold_text")
+        self.disclaimer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.installed_label = QLabel(trans._("Installed Plugins"))
         self.packages_filter = QLineEdit()
         self.packages_filter.setPlaceholderText(trans._("filter..."))
@@ -1134,6 +1144,7 @@ class QtPluginDialog(QDialog):
         horizontal_mid_layout.addWidget(self.packages_filter)
         horizontal_mid_layout.addStretch()
         horizontal_mid_layout.addWidget(self.refresh_button)
+        mid_layout.addWidget(self.disclaimer_label)
         mid_layout.addLayout(horizontal_mid_layout)
         # mid_layout.addWidget(self.packages_filter)
         mid_layout.addWidget(self.installed_label)
@@ -1216,6 +1227,8 @@ class QtPluginDialog(QDialog):
         self.show_status_btn.setCheckable(True)
         self.show_status_btn.setChecked(False)
         self.show_status_btn.toggled.connect(self.toggle_status)
+
+        self.disclaimer_label.setVisible(self._show_disclaimer)
 
         self.v_splitter.setStretchFactor(1, 2)
         self.h_splitter.setStretchFactor(0, 2)
@@ -1400,6 +1413,7 @@ class QtPluginDialog(QDialog):
         if plugin_dialog != self:
             self.close()
 
+        plugin_dialog.disclaimer_label.setVisible(self._show_disclaimer)
         plugin_dialog.setModal(True)
         plugin_dialog.show()
 
