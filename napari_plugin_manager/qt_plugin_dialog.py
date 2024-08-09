@@ -1101,17 +1101,9 @@ class QtPluginDialog(QDialog):
 
     def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
-        self.resize(900, 600)
-
         # Widgets
-
-        self.h_splitter = QSplitter(self)
-        self.h_splitter.setOrientation(Qt.Orientation.Horizontal)
-        self.h_splitter.setStretchFactor(0, 2)
-
-        self.v_splitter = QSplitter(self.h_splitter)
+        self.v_splitter = QSplitter(self)
         self.v_splitter.setOrientation(Qt.Orientation.Vertical)
-        self.v_splitter.setMinimumWidth(500)
         self.v_splitter.setStretchFactor(1, 2)
 
         installed = QWidget(self.v_splitter)
@@ -1183,53 +1175,48 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn.setObjectName("remove_button")
         self.cancel_all_btn.setVisible(False)
         self.cancel_all_btn.clicked.connect(self.installer.cancel_all)
+
         self.status_bar = QStatusBar(self)
 
         # Layout
-        horizontal_mid_layout = QHBoxLayout()
-        horizontal_mid_layout.addWidget(self.packages_filter)
-        horizontal_mid_layout.addStretch()
-        horizontal_mid_layout.addWidget(self.refresh_button)
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.packages_filter)
+        top_layout.addStretch()
+        top_layout.addWidget(self.refresh_button)
 
-        mid_layout = QVBoxLayout()
-        mid_layout.addLayout(horizontal_mid_layout)
-        mid_layout.addWidget(self.installed_label)
+        layout_installed = QVBoxLayout(installed)
+        layout_installed.setContentsMargins(0, 2, 0, 2)
+        layout_installed.addWidget(self.installed_label)
+        layout_installed.addWidget(self.installed_list)
 
-        mid_layout = QHBoxLayout()
-        mid_layout.addWidget(self.avail_label)
-        mid_layout.addStretch()
+        layout_uninstalled = QVBoxLayout(uninstalled)
+        layout_uninstalled.setContentsMargins(0, 2, 0, 2)
+        layout_uninstalled.addWidget(self.avail_label)
+        layout_uninstalled.addWidget(self.available_list)
 
-        lay = QVBoxLayout(installed)
-        lay.setContentsMargins(0, 2, 0, 2)
-        lay.addLayout(mid_layout)
-        lay.addWidget(self.installed_list)
-        lay = QVBoxLayout(uninstalled)
-        lay.setContentsMargins(0, 2, 0, 2)
-        lay.addLayout(mid_layout)
-        lay.addWidget(self.available_list)
+        layout_bottom = QHBoxLayout()
+        layout_bottom.addWidget(self.direct_entry_edit)
+        layout_bottom.addWidget(self.direct_entry_btn)
 
-        buttonBox = QHBoxLayout()
-
-        # buttonBox.addWidget(self.show_status_btn)
-        buttonBox.addWidget(self.direct_entry_edit)
-        buttonBox.addWidget(self.direct_entry_btn)
         if not visibility_direct_entry:
-            buttonBox.addStretch()
+            layout_bottom.addStretch()
 
-        buttonBox.addWidget(self.working_indicator)
-        buttonBox.addWidget(self.process_success_indicator)
-        buttonBox.addWidget(self.process_error_indicator)
-        buttonBox.addSpacing(20)
-        buttonBox.addWidget(self.cancel_all_btn)
-        # buttonBox.addSpacing(20)
-        buttonBox.setContentsMargins(0, 0, 4, 0)
-        # vlay_1.addWidget(self.stdout_text)
+        layout_bottom.addWidget(self.working_indicator)
+        layout_bottom.addWidget(self.process_success_indicator)
+        layout_bottom.addWidget(self.process_error_indicator)
+        layout_bottom.addSpacing(20)
+        layout_bottom.addWidget(self.cancel_all_btn)
+        layout_bottom.setContentsMargins(0, 0, 4, 0)
 
-        main_vertical_layout = QVBoxLayout(self)
-        main_vertical_layout.addWidget(self.h_splitter)
-        main_vertical_layout.addWidget(self.stdout_text)
-        main_vertical_layout.addLayout(buttonBox)
-        main_vertical_layout.addWidget(self.show_status_btn)
+        main_layout = QVBoxLayout(self)
+        main_layout.addLayout(top_layout)
+        main_layout.addWidget(self.v_splitter)
+        main_layout.addLayout(layout_bottom)
+        main_layout.addWidget(self.stdout_text)
+        main_layout.addWidget(self.show_status_btn)
+        main_layout.addWidget(self.status_bar)
+
+        self.resize(900, 600)
 
     def _update_plugin_count(self):
         """Update count labels for both installed and available plugin lists.
