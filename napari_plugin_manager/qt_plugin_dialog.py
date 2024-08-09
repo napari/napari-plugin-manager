@@ -990,7 +990,6 @@ class QtPluginDialog(QDialog):
     def _on_installer_all_finished(self, exit_codes):
         self.working_indicator.hide()
         self.cancel_all_btn.setVisible(False)
-        self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
 
         if not self.isVisible():
@@ -1135,7 +1134,6 @@ class QtPluginDialog(QDialog):
         horizontal_mid_layout.addStretch()
         horizontal_mid_layout.addWidget(self.refresh_button)
         mid_layout.addLayout(horizontal_mid_layout)
-        # mid_layout.addWidget(self.packages_filter)
         mid_layout.addWidget(self.installed_label)
         lay.addLayout(mid_layout)
 
@@ -1153,7 +1151,7 @@ class QtPluginDialog(QDialog):
         self.available_list = QPluginList(uninstalled, self.installer)
         lay.addWidget(self.available_list)
 
-        self.stdout_text = QTextEdit(self.v_splitter)
+        self.stdout_text = QTextEdit(self)
         self.stdout_text.setReadOnly(True)
         self.stdout_text.setObjectName("plugin_manager_process_status")
         self.stdout_text.hide()
@@ -1194,24 +1192,23 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn.setVisible(False)
         self.cancel_all_btn.clicked.connect(self.installer.cancel_all)
 
-        self.close_btn = QPushButton(trans._("Close"), self)
-        self.close_btn.clicked.connect(self.accept)
-        self.close_btn.setObjectName("close_button")
-
-        buttonBox.addWidget(self.show_status_btn)
-        buttonBox.addWidget(self.working_indicator)
+        # buttonBox.addWidget(self.show_status_btn)
         buttonBox.addWidget(self.direct_entry_edit)
         buttonBox.addWidget(self.direct_entry_btn)
         if not visibility_direct_entry:
             buttonBox.addStretch()
+
+        buttonBox.addWidget(self.working_indicator)
         buttonBox.addWidget(self.process_success_indicator)
         buttonBox.addWidget(self.process_error_indicator)
         buttonBox.addSpacing(20)
         buttonBox.addWidget(self.cancel_all_btn)
-        buttonBox.addSpacing(20)
-        buttonBox.addWidget(self.close_btn)
+        # buttonBox.addSpacing(20)
         buttonBox.setContentsMargins(0, 0, 4, 0)
+        # vlay_1.addWidget(self.stdout_text)
+        lay.addWidget(self.stdout_text)
         vlay_1.addLayout(buttonBox)
+        vlay_1.addWidget(self.show_status_btn)
 
         self.show_status_btn.setCheckable(True)
         self.show_status_btn.setChecked(False)
