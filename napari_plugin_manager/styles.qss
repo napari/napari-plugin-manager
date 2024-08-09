@@ -350,3 +350,14 @@ QtLayerList::indicator:checked {
   min-height: 36px;
   min-width: 36px;
 }
+
+QToolButton {
+  background-color: {{ darken(foreground, 20) }};
+  color: {{ darken(text, 15) }};
+  padding: 4 15px;
+  font: 12px;
+}
+
+QToolButton:hover {
+  background-color: {{ lighten(foreground, 10) }}
+}
