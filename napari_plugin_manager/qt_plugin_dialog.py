@@ -1187,9 +1187,6 @@ class QtPluginDialog(QDialog):
         visibility_direct_entry = not running_as_constructor_app()
         self.direct_entry_edit = QLineEdit(self)
         self.direct_entry_edit.installEventFilter(self)
-        self.direct_entry_edit.setPlaceholderText(
-            trans._('install by name/url, or drop file...')
-        )
         self.direct_entry_edit.returnPressed.connect(self._install_packages)
         self.direct_entry_edit.setVisible(visibility_direct_entry)
         self.direct_entry_btn = QToolButton(self)
@@ -1198,23 +1195,25 @@ class QtPluginDialog(QDialog):
         self.direct_entry_btn.setText(trans._("Install"))
         self.direct_entry_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
+        self._action_conda = QAction(trans._('Conda'), self)
+        self._action_conda.setCheckable(True)
+        self._action_conda.triggered.connect(self._update_direct_entry_text)
+
+        self._action_pypi = QAction(trans._('PyPI'), self)
+        self._action_pypi.setCheckable(True)
+        self._action_pypi.triggered.connect(self._update_direct_entry_text)
+
+        self._action_group = QActionGroup(self)
+        self._action_group.addAction(self._action_pypi)
+        self._action_group.addAction(self._action_conda)
+        self._action_group.setExclusive(True)
+
+        self._menu = QMenu(self)
+        self._menu.addAction(self._action_conda)
+        self._menu.addAction(self._action_pypi)
+
         if IS_NAPARI_CONDA_INSTALLED:
-            self._action_conda = QAction(trans._('Conda'), self)
-            self._action_conda.setCheckable(True)
             self._action_conda.setChecked(True)
-
-            self._action_pypi = QAction(trans._('PyPI'), self)
-            self._action_pypi.setCheckable(True)
-
-            self._action_group = QActionGroup(self)
-            self._action_group.addAction(self._action_pypi)
-            self._action_group.addAction(self._action_conda)
-            self._action_group.setExclusive(True)
-
-            self._menu = QMenu(self)
-            self._menu.addAction(self._action_conda)
-            self._menu.addAction(self._action_pypi)
-
             self.direct_entry_btn.setMenu(self._menu)
 
         self.show_status_btn = QPushButton(trans._("Show Status"), self)
@@ -1252,6 +1251,19 @@ class QtPluginDialog(QDialog):
         self.h_splitter.setStretchFactor(0, 2)
 
         self.packages_filter.setFocus()
+        self._update_direct_entry_text()
+
+    def _update_direct_entry_text(self):
+        tool = (
+            str(InstallerTools.CONDA)
+            if self._action_conda.isChecked()
+            else str(InstallerTools.PIP)
+        )
+        self.direct_entry_edit.setPlaceholderText(
+            trans._(
+                'install with {tool} by name/url, or drop file...', tool=tool
+            )
+        )
 
     def _update_plugin_count(self):
         """Update count labels for both installed and available plugin lists.
