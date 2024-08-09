@@ -23,7 +23,14 @@ from napari.utils.misc import (
 from napari.utils.notifications import show_info, show_warning
 from napari.utils.translations import trans
 from qtpy.QtCore import QPoint, QSize, Qt, QTimer, Signal, Slot
-from qtpy.QtGui import QAction, QFont, QKeySequence, QMovie, QShortcut
+from qtpy.QtGui import (
+    QAction,
+    QActionGroup,
+    QFont,
+    QKeySequence,
+    QMovie,
+    QShortcut,
+)
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -35,10 +42,12 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMenu,
     QPushButton,
     QSizePolicy,
     QSplitter,
     QTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -1181,10 +1190,35 @@ class QtPluginDialog(QDialog):
         self.direct_entry_edit.setPlaceholderText(
             trans._('install by name/url, or drop file...')
         )
+        self.direct_entry_edit.returnPressed.connect(self._install_packages)
         self.direct_entry_edit.setVisible(visibility_direct_entry)
-        self.direct_entry_btn = QPushButton(trans._("Install"), self)
+        self.direct_entry_btn = QToolButton(self)
+        self.direct_entry_btn.setIcon(
+            QColoredSVGIcon.from_resources('logo_silhouette')
+        )
+        # self.direct_entry_btn = QPushButton(trans._("Install"), self)
         self.direct_entry_btn.setVisible(visibility_direct_entry)
         self.direct_entry_btn.clicked.connect(self._install_packages)
+        self.direct_entry_btn.setText(trans._("Install"))
+        self.direct_entry_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+        if True:
+            # if IS_NAPARI_CONDA_INSTALLED:
+            self._menu = QMenu(self)
+            self._action_conda = QAction(trans._('Conda'), self)
+            self._action_conda.setCheckable(True)
+            self._action_pypi = QAction(trans._('PyPI'), self)
+            self._action_pypi.setCheckable(True)
+            self._action_conda.setChecked(True)
+            self._menu.addAction(self._action_conda)
+            self._menu.addAction(self._action_pypi)
+
+            self._action_group = QActionGroup(self)
+            self._action_group.addAction(self._action_pypi)
+            self._action_group.addAction(self._action_conda)
+            self._action_group.setExclusive(True)
+
+            self.direct_entry_btn.setMenu(self._menu)
 
         self.show_status_btn = QPushButton(trans._("Show Status"), self)
         self.show_status_btn.setFixedWidth(100)
@@ -1275,7 +1309,12 @@ class QtPluginDialog(QDialog):
             self.direct_entry_edit.clear()
 
         if packages:
-            self.installer.install(InstallerTools.PIP, packages)
+            tool = (
+                InstallerTools.CONDA
+                if self._action_conda.isChecked()
+                else InstallerTools.PIP
+            )
+            self.installer.install(tool, packages)
 
     def _tag_outdated_plugins(self):
         """Tag installed plugins that might be outdated."""
