@@ -38,6 +38,7 @@ from qtpy.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSplitter,
+    QStatusBar,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -1101,22 +1102,27 @@ class QtPluginDialog(QDialog):
     def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
         self.resize(900, 600)
-        vlay_1 = QVBoxLayout(self)
+
+        # Widgets
+
         self.h_splitter = QSplitter(self)
-        vlay_1.addWidget(self.h_splitter)
         self.h_splitter.setOrientation(Qt.Orientation.Horizontal)
+        self.h_splitter.setStretchFactor(0, 2)
+
         self.v_splitter = QSplitter(self.h_splitter)
         self.v_splitter.setOrientation(Qt.Orientation.Vertical)
         self.v_splitter.setMinimumWidth(500)
+        self.v_splitter.setStretchFactor(1, 2)
 
         installed = QWidget(self.v_splitter)
-        lay = QVBoxLayout(installed)
-        lay.setContentsMargins(0, 2, 0, 2)
+
         self.installed_label = QLabel(trans._("Installed Plugins"))
+
         self.packages_filter = QLineEdit()
         self.packages_filter.setPlaceholderText(trans._("filter..."))
         self.packages_filter.setMaximumWidth(350)
         self.packages_filter.setClearButtonEnabled(True)
+        self.packages_filter.setFocus()
         self.packages_filter.textChanged.connect(self._filter_timer.start)
 
         self.refresh_button = QPushButton(trans._('Refresh'), self)
@@ -1128,39 +1134,22 @@ class QtPluginDialog(QDialog):
         )
         self.refresh_button.clicked.connect(self._refresh_and_clear_cache)
 
-        mid_layout = QVBoxLayout()
-        horizontal_mid_layout = QHBoxLayout()
-        horizontal_mid_layout.addWidget(self.packages_filter)
-        horizontal_mid_layout.addStretch()
-        horizontal_mid_layout.addWidget(self.refresh_button)
-        mid_layout.addLayout(horizontal_mid_layout)
-        mid_layout.addWidget(self.installed_label)
-        lay.addLayout(mid_layout)
+        uninstalled = QWidget(self.v_splitter)
 
         self.installed_list = QPluginList(installed, self.installer)
-        lay.addWidget(self.installed_list)
-
-        uninstalled = QWidget(self.v_splitter)
-        lay = QVBoxLayout(uninstalled)
-        lay.setContentsMargins(0, 2, 0, 2)
         self.avail_label = QLabel(trans._("Available Plugins"))
-        mid_layout = QHBoxLayout()
-        mid_layout.addWidget(self.avail_label)
-        mid_layout.addStretch()
-        lay.addLayout(mid_layout)
         self.available_list = QPluginList(uninstalled, self.installer)
-        lay.addWidget(self.available_list)
 
         self.stdout_text = QTextEdit(self)
         self.stdout_text.setReadOnly(True)
         self.stdout_text.setObjectName("plugin_manager_process_status")
         self.stdout_text.hide()
 
-        buttonBox = QHBoxLayout()
         self.working_indicator = QLabel(trans._("loading ..."), self)
         sp = self.working_indicator.sizePolicy()
         sp.setRetainSizeWhenHidden(True)
         self.working_indicator.setSizePolicy(sp)
+
         self.process_error_indicator = QLabel(self)
         self.process_error_indicator.setObjectName("error_label")
         self.process_error_indicator.hide()
@@ -1186,11 +1175,40 @@ class QtPluginDialog(QDialog):
 
         self.show_status_btn = QPushButton(trans._("Show Status"), self)
         self.show_status_btn.setFixedWidth(100)
+        self.show_status_btn.setCheckable(True)
+        self.show_status_btn.setChecked(False)
+        self.show_status_btn.toggled.connect(self.toggle_status)
 
         self.cancel_all_btn = QPushButton(trans._("cancel all actions"), self)
         self.cancel_all_btn.setObjectName("remove_button")
         self.cancel_all_btn.setVisible(False)
         self.cancel_all_btn.clicked.connect(self.installer.cancel_all)
+        self.status_bar = QStatusBar(self)
+
+        # Layout
+        horizontal_mid_layout = QHBoxLayout()
+        horizontal_mid_layout.addWidget(self.packages_filter)
+        horizontal_mid_layout.addStretch()
+        horizontal_mid_layout.addWidget(self.refresh_button)
+
+        mid_layout = QVBoxLayout()
+        mid_layout.addLayout(horizontal_mid_layout)
+        mid_layout.addWidget(self.installed_label)
+
+        mid_layout = QHBoxLayout()
+        mid_layout.addWidget(self.avail_label)
+        mid_layout.addStretch()
+
+        lay = QVBoxLayout(installed)
+        lay.setContentsMargins(0, 2, 0, 2)
+        lay.addLayout(mid_layout)
+        lay.addWidget(self.installed_list)
+        lay = QVBoxLayout(uninstalled)
+        lay.setContentsMargins(0, 2, 0, 2)
+        lay.addLayout(mid_layout)
+        lay.addWidget(self.available_list)
+
+        buttonBox = QHBoxLayout()
 
         # buttonBox.addWidget(self.show_status_btn)
         buttonBox.addWidget(self.direct_entry_edit)
@@ -1206,18 +1224,12 @@ class QtPluginDialog(QDialog):
         # buttonBox.addSpacing(20)
         buttonBox.setContentsMargins(0, 0, 4, 0)
         # vlay_1.addWidget(self.stdout_text)
-        lay.addWidget(self.stdout_text)
-        vlay_1.addLayout(buttonBox)
-        vlay_1.addWidget(self.show_status_btn)
 
-        self.show_status_btn.setCheckable(True)
-        self.show_status_btn.setChecked(False)
-        self.show_status_btn.toggled.connect(self.toggle_status)
-
-        self.v_splitter.setStretchFactor(1, 2)
-        self.h_splitter.setStretchFactor(0, 2)
-
-        self.packages_filter.setFocus()
+        main_vertical_layout = QVBoxLayout(self)
+        main_vertical_layout.addWidget(self.h_splitter)
+        main_vertical_layout.addWidget(self.stdout_text)
+        main_vertical_layout.addLayout(buttonBox)
+        main_vertical_layout.addWidget(self.show_status_btn)
 
     def _update_plugin_count(self):
         """Update count labels for both installed and available plugin lists.
