@@ -1080,7 +1080,11 @@ class QtPluginDialog(QDialog):
                 self.installed_list.scrollToItem(item)
                 self.installed_list.setCurrentItem(item)
                 if widget.npe_version != 1:
-                    _show_message(widget)
+                    self._show_status_message(
+                        'When (un)installing npe2 plugins, you must restart napari for UI changes to take effect.',
+                        10000,
+                    )
+                    # _show_message(widget)
                 break
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
@@ -1176,7 +1180,18 @@ class QtPluginDialog(QDialog):
         self.cancel_all_btn.setVisible(False)
         self.cancel_all_btn.clicked.connect(self.installer.cancel_all)
 
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy.setRetainSizeWhenHidden(True)
+        self.cancel_all_btn.setSizePolicy(sizePolicy)
+
         self.status_bar = QStatusBar(self)
+        self.status_bar.setObjectName("plugin_manager_status_bar")
+        self.status_bar.addPermanentWidget(self.process_success_indicator)
+        self.status_bar.addPermanentWidget(self.process_error_indicator)
+        self.status_bar.addPermanentWidget(self.working_indicator)
+        self.status_bar.setSizeGripEnabled(True)
+        self.status_bar.addPermanentWidget(self.show_status_btn)
+        # layout_bottom.addWidget(self.working_indicator)
 
         # Layout
         top_layout = QHBoxLayout()
@@ -1201,9 +1216,9 @@ class QtPluginDialog(QDialog):
         if not visibility_direct_entry:
             layout_bottom.addStretch()
 
-        layout_bottom.addWidget(self.working_indicator)
-        layout_bottom.addWidget(self.process_success_indicator)
-        layout_bottom.addWidget(self.process_error_indicator)
+        # layout_bottom.addWidget(self.working_indicator)
+        # layout_bottom.addWidget(self.process_success_indicator)
+        # layout_bottom.addWidget(self.process_error_indicator)
         layout_bottom.addSpacing(20)
         layout_bottom.addWidget(self.cancel_all_btn)
         layout_bottom.setContentsMargins(0, 0, 4, 0)
@@ -1213,8 +1228,16 @@ class QtPluginDialog(QDialog):
         main_layout.addWidget(self.v_splitter)
         main_layout.addLayout(layout_bottom)
         main_layout.addWidget(self.stdout_text)
-        main_layout.addWidget(self.show_status_btn)
+        # main_layout.addWidget(self.show_status_btn)
+        main_layout.addSpacing(20)
         main_layout.addWidget(self.status_bar)
+        margins = main_layout.contentsMargins()
+        main_layout.setContentsMargins(
+            margins.left(),
+            margins.top(),
+            margins.right(),
+            margins.bottom() // 2,
+        )
 
         self.resize(900, 600)
 
@@ -1363,6 +1386,10 @@ class QtPluginDialog(QDialog):
 
     def _refresh_and_clear_cache(self):
         self.refresh(clear_cache=True)
+
+    def _show_status_message(self, message, timeout=0):
+        self.status_bar.showMessage(message, timeout)
+        self.process_success_indicator.show()
 
     # endregion - Private methods
 
