@@ -1194,6 +1194,7 @@ class QtPluginDialog(QDialog):
         self.direct_entry_btn.clicked.connect(self._install_packages)
         self.direct_entry_btn.setText(trans._("Install"))
         self.direct_entry_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.direct_entry_btn.setPopupMode(QToolButton.MenuButtonPopup)
 
         self._action_conda = QAction(trans._('Conda'), self)
         self._action_conda.setCheckable(True)
