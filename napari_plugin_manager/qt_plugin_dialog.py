@@ -860,6 +860,8 @@ class QPluginList(QListWidget):
 class QtPluginDialog(QDialog):
     MAX_PLUGIN_SEARCH_ITEMS = 20
 
+    finished = Signal()
+
     def __init__(self, parent=None, prefix=None) -> None:
         super().__init__(parent)
 
@@ -1111,6 +1113,7 @@ class QtPluginDialog(QDialog):
         self.worker.yielded.connect(self._handle_yield)
         self.worker.started.connect(self.working_indicator.show)
         self.worker.finished.connect(self.working_indicator.hide)
+        self.worker.finished.connect(self.finished)
         # self.worker.finished.connect(self._add_items_timer.start)
         self.worker.start()
 
