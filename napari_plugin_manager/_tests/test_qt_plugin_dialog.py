@@ -570,7 +570,7 @@ def test_shortcut_close(plugin_dialog, qtbot):
     qtbot.keyClicks(
         plugin_dialog, 'W', modifier=Qt.KeyboardModifier.ControlModifier
     )
-    qtbot.wait(200)
+    qtbot.wait(500)
     assert not plugin_dialog.isVisible()
 
 
@@ -578,5 +578,5 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     qtbot.keyClicks(
         plugin_dialog, 'Q', modifier=Qt.KeyboardModifier.ControlModifier
     )
-    qtbot.wait(200)
+    qtbot.wait(500)
     assert not plugin_dialog.isVisible()
