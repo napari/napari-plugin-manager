@@ -54,7 +54,7 @@ from napari_plugin_manager.qt_package_installer import (
     InstallerTools,
     ProcessFinishedData,
 )
-from napari_plugin_manager.qt_widgets import ClickableLabel
+from napari_plugin_manager.qt_widgets import ClickableLabel, DisclaimerWidget
 from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
@@ -1116,13 +1116,6 @@ class QtPluginDialog(QDialog):
         installed = QWidget(self.v_splitter)
         lay = QVBoxLayout(installed)
         lay.setContentsMargins(0, 2, 0, 2)
-        self.disclaimer_label = QLabel(
-            trans._(
-                "DISCLAIMER: Available plugin packages are user produced content. Any use of the provided files is at your own risk."
-            )
-        )
-        self.disclaimer_label.setObjectName("small_bold_text")
-        self.disclaimer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.installed_label = QLabel(trans._("Installed Plugins"))
         self.packages_filter = QLineEdit()
         self.packages_filter.setPlaceholderText(trans._("filter..."))
@@ -1144,9 +1137,7 @@ class QtPluginDialog(QDialog):
         horizontal_mid_layout.addWidget(self.packages_filter)
         horizontal_mid_layout.addStretch()
         horizontal_mid_layout.addWidget(self.refresh_button)
-        mid_layout.addWidget(self.disclaimer_label)
         mid_layout.addLayout(horizontal_mid_layout)
-        # mid_layout.addWidget(self.packages_filter)
         mid_layout.addWidget(self.installed_label)
         lay.addLayout(mid_layout)
 
@@ -1161,6 +1152,12 @@ class QtPluginDialog(QDialog):
         mid_layout.addWidget(self.avail_label)
         mid_layout.addStretch()
         lay.addLayout(mid_layout)
+        self.disclaimer_widget = DisclaimerWidget(
+            trans._(
+                "DISCLAIMER: Available plugin packages are user produced content. Any use of the provided files is at your own risk."
+            )
+        )
+        lay.addWidget(self.disclaimer_widget)
         self.available_list = QPluginList(uninstalled, self.installer)
         lay.addWidget(self.available_list)
 
@@ -1228,7 +1225,7 @@ class QtPluginDialog(QDialog):
         self.show_status_btn.setChecked(False)
         self.show_status_btn.toggled.connect(self.toggle_status)
 
-        self.disclaimer_label.setVisible(self._show_disclaimer)
+        self.disclaimer_widget.setVisible(self._show_disclaimer)
 
         self.v_splitter.setStretchFactor(1, 2)
         self.h_splitter.setStretchFactor(0, 2)
@@ -1413,7 +1410,7 @@ class QtPluginDialog(QDialog):
         if plugin_dialog != self:
             self.close()
 
-        plugin_dialog.disclaimer_label.setVisible(self._show_disclaimer)
+        plugin_dialog.disclaimer_widget.setVisible(self._show_disclaimer)
         plugin_dialog.setModal(True)
         plugin_dialog.show()
 
