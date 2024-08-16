@@ -44,6 +44,7 @@ from qtpy.QtWidgets import (
 )
 from superqt import QCollapsible, QElidingLabel
 
+from napari_plugin_manager.config import get_configuration
 from napari_plugin_manager.npe2api import (
     cache_clear,
     iter_napari_plugin_info,
@@ -848,9 +849,7 @@ class QPluginList(QListWidget):
 
 
 class QtPluginDialog(QDialog):
-    def __init__(
-        self, parent=None, prefix=None, show_disclaimer=False
-    ) -> None:
+    def __init__(self, parent=None, prefix=None) -> None:
         super().__init__(parent)
 
         self._parent = parent
@@ -864,7 +863,9 @@ class QtPluginDialog(QDialog):
         self.available_set = set()
         self._prefix = prefix
         self._first_open = True
-        self._show_disclaimer = show_disclaimer
+        self._show_disclaimer = get_configuration().getboolean(
+            'general', 'show_disclaimer'
+        )
         self._plugin_queue = []  # Store plugin data to be added
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
