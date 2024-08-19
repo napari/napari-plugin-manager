@@ -547,6 +547,28 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert plugin_dialog.installed_list.count() == 2
 
 
+@pytest.mark.skipif(
+    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
+)
+def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
+    if "[constructor]" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    with qtbot.waitSignal(
+        plugin_dialog.installer.processFinished, timeout=60_000
+    ) as blocker:
+        plugin_dialog.direct_entry_edit.setText('requests')
+        plugin_dialog.direct_entry_btn.click()
+
+    process_finished_data = blocker.args[0]
+    assert process_finished_data['action'] == InstallerActions.INSTALL
+    assert process_finished_data['pkgs'][0].startswith("requests")
+    qtbot.wait(5000)
+
+
 def test_shortcut_close(plugin_dialog, qtbot):
     qtbot.keyClicks(
         plugin_dialog, 'W', modifier=Qt.KeyboardModifier.ControlModifier

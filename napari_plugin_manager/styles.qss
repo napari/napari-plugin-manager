@@ -350,3 +350,34 @@ QtLayerList::indicator:checked {
   min-height: 36px;
   min-width: 36px;
 }
+
+QToolButton {
+  background-color: {{ darken(foreground, 20) }};
+  color: {{ darken(text, 15) }};
+  padding: 3 12px;
+  font: 14px;
+}
+
+QToolButton:hover {
+  background-color: {{ lighten(foreground, 10) }}
+}
+
+QToolButton:pressed {
+  background-color: {{ lighten(foreground, 20) }}
+}
+
+QToolButton::menu-arrow {
+  image: url("theme_{{ id }}:/down_arrow.svg");
+  top: 0px;
+  left: 0px;
+  width: 8px;
+  height: 8px;
+}
+
+QToolButton[popupMode="1"]{
+  padding-right: 20px;
+}
+
+QToolButton::menu-button {
+  width: 16px;
+}

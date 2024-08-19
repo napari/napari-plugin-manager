@@ -64,10 +64,11 @@ dev = [
 ]
 
 testing = [
+  "flaky",
   "pytest",
-  "virtualenv",
   "pytest-cov",
   "pytest-qt",
+  "virtualenv"
 ]
 
 docs = [
