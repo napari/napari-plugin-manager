@@ -923,6 +923,11 @@ class QtPluginDialog(QDialog):
             self._parent.close(quit_app=True, confirm_need=True)
 
     def _setup_shortcuts(self):
+        self._refresh_styles_action = QAction(trans._('Refresh Styles'), self)
+        self._refresh_styles_action.setShortcut('Ctrl+R')
+        self._refresh_styles_action.triggered.connect(self._update_theme)
+        self.addAction(self._refresh_styles_action)
+
         self._quit_action = QAction(trans._('Exit'), self)
         self._quit_action.setShortcut('Ctrl+Q')
         self._quit_action.setMenuRole(QAction.QuitRole)
@@ -1193,8 +1198,6 @@ class QtPluginDialog(QDialog):
         self.direct_entry_btn.setVisible(visibility_direct_entry)
         self.direct_entry_btn.clicked.connect(self._install_packages)
         self.direct_entry_btn.setText(trans._("Install"))
-        self.direct_entry_btn.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.direct_entry_btn.setPopupMode(QToolButton.MenuButtonPopup)
 
         self._action_conda = QAction(trans._('Conda'), self)
         self._action_conda.setCheckable(True)
@@ -1214,6 +1217,7 @@ class QtPluginDialog(QDialog):
         self._menu.addAction(self._action_pypi)
 
         if IS_NAPARI_CONDA_INSTALLED:
+            self.direct_entry_btn.setPopupMode(QToolButton.MenuButtonPopup)
             self._action_conda.setChecked(True)
             self.direct_entry_btn.setMenu(self._menu)
 
