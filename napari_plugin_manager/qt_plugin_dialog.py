@@ -1062,7 +1062,10 @@ class QtPluginDialog(QDialog):
             distname,
         ) in napari.plugins.plugin_manager.iter_available():
             # not showing these in the plugin dialog
-            if plugin_name in ('napari_plugin_engine',):
+            if plugin_name in (
+                'napari_plugin_engine',
+                'napari_plugin_manager',
+            ):
                 continue
             if normalized_name(distname or '') in self.already_installed:
                 continue
