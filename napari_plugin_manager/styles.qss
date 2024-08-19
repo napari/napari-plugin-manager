@@ -350,3 +350,8 @@ QtLayerList::indicator:checked {
   min-height: 36px;
   min-width: 36px;
 }
+
+#plugin_manager_status_bar {
+  background-color: {{ background }};
+  font-size: 11px;
+}
