@@ -23,7 +23,14 @@ from napari.utils.misc import (
 from napari.utils.notifications import show_info, show_warning
 from napari.utils.translations import trans
 from qtpy.QtCore import QPoint, QSize, Qt, QTimer, Signal, Slot
-from qtpy.QtGui import QAction, QFont, QKeySequence, QMovie, QShortcut
+from qtpy.QtGui import (
+    QAction,
+    QActionGroup,
+    QFont,
+    QKeySequence,
+    QMovie,
+    QShortcut,
+)
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -35,10 +42,12 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMenu,
     QPushButton,
     QSizePolicy,
     QSplitter,
     QTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -918,6 +927,11 @@ class QtPluginDialog(QDialog):
             self._parent.close(quit_app=True, confirm_need=True)
 
     def _setup_shortcuts(self):
+        self._refresh_styles_action = QAction(trans._('Refresh Styles'), self)
+        self._refresh_styles_action.setShortcut('Ctrl+R')
+        self._refresh_styles_action.triggered.connect(self._update_theme)
+        self.addAction(self._refresh_styles_action)
+
         self._quit_action = QAction(trans._('Exit'), self)
         self._quit_action.setShortcut('Ctrl+Q')
         self._quit_action.setMenuRole(QAction.QuitRole)
@@ -1066,7 +1080,10 @@ class QtPluginDialog(QDialog):
             distname,
         ) in napari.plugins.plugin_manager.iter_available():
             # not showing these in the plugin dialog
-            if plugin_name in ('napari_plugin_engine',):
+            if plugin_name in (
+                'napari_plugin_engine',
+                'napari_plugin_manager',
+            ):
                 continue
             if normalized_name(distname or '') in self.already_installed:
                 continue
@@ -1187,13 +1204,34 @@ class QtPluginDialog(QDialog):
         visibility_direct_entry = not running_as_constructor_app()
         self.direct_entry_edit = QLineEdit(self)
         self.direct_entry_edit.installEventFilter(self)
-        self.direct_entry_edit.setPlaceholderText(
-            trans._('install by name/url, or drop file...')
-        )
+        self.direct_entry_edit.returnPressed.connect(self._install_packages)
         self.direct_entry_edit.setVisible(visibility_direct_entry)
-        self.direct_entry_btn = QPushButton(trans._("Install"), self)
+        self.direct_entry_btn = QToolButton(self)
         self.direct_entry_btn.setVisible(visibility_direct_entry)
         self.direct_entry_btn.clicked.connect(self._install_packages)
+        self.direct_entry_btn.setText(trans._("Install"))
+
+        self._action_conda = QAction(trans._('Conda'), self)
+        self._action_conda.setCheckable(True)
+        self._action_conda.triggered.connect(self._update_direct_entry_text)
+
+        self._action_pypi = QAction(trans._('pip'), self)
+        self._action_pypi.setCheckable(True)
+        self._action_pypi.triggered.connect(self._update_direct_entry_text)
+
+        self._action_group = QActionGroup(self)
+        self._action_group.addAction(self._action_pypi)
+        self._action_group.addAction(self._action_conda)
+        self._action_group.setExclusive(True)
+
+        self._menu = QMenu(self)
+        self._menu.addAction(self._action_conda)
+        self._menu.addAction(self._action_pypi)
+
+        if IS_NAPARI_CONDA_INSTALLED:
+            self.direct_entry_btn.setPopupMode(QToolButton.MenuButtonPopup)
+            self._action_conda.setChecked(True)
+            self.direct_entry_btn.setMenu(self._menu)
 
         self.show_status_btn = QPushButton(trans._("Show Status"), self)
         self.show_status_btn.setFixedWidth(100)
@@ -1232,6 +1270,19 @@ class QtPluginDialog(QDialog):
         self.h_splitter.setStretchFactor(0, 2)
 
         self.packages_filter.setFocus()
+        self._update_direct_entry_text()
+
+    def _update_direct_entry_text(self):
+        tool = (
+            str(InstallerTools.CONDA)
+            if self._action_conda.isChecked()
+            else str(InstallerTools.PIP)
+        )
+        self.direct_entry_edit.setPlaceholderText(
+            trans._(
+                "install with '{tool}' by name/url, or drop file...", tool=tool
+            )
+        )
 
     def _update_plugin_count(self):
         """Update count labels for both installed and available plugin lists.
@@ -1286,7 +1337,12 @@ class QtPluginDialog(QDialog):
             self.direct_entry_edit.clear()
 
         if packages:
-            self.installer.install(InstallerTools.PIP, packages)
+            tool = (
+                InstallerTools.CONDA
+                if self._action_conda.isChecked()
+                else InstallerTools.PIP
+            )
+            self.installer.install(tool, packages)
 
     def _tag_outdated_plugins(self):
         """Tag installed plugins that might be outdated."""
