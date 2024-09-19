@@ -14,15 +14,14 @@ from napari.utils.translations import trans
 from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
 from qtpy.QtGui import QDropEvent
 
-if (qtpy.API_NAME == 'PySide2') or (
-    sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
-):
-    pytest.skip(
-        "Known PySide2 x Python incompatibility: "
-        "... object cannot be interpreted as an integer",
-        allow_module_level=True,
-    )
-
+# if (qtpy.API_NAME == 'PySide2') or (
+#     sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
+# ):
+#     pytest.skip(
+#         "Known PySide2 x Python incompatibility: "
+#         "... object cannot be interpreted as an integer",
+#         allow_module_level=True,
+#     )
 from napari_plugin_manager import qt_plugin_dialog
 from napari_plugin_manager.qt_package_installer import InstallerActions
 
