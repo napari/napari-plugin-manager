@@ -104,9 +104,7 @@ class PluginListItem(QFrame):
     author, source, version, and buttons to update, install/uninstall, etc."""
 
     # item, package_name, action_name, version, installer_choice
-    actionRequested = Signal(
-        QListWidgetItem, str, InstallerActions, str, InstallerTools
-    )
+    actionRequested = Signal(QListWidgetItem, str, str, str, str)
 
     def __init__(
         self,
