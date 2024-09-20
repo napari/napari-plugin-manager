@@ -30,7 +30,7 @@ This package currently provides:
   the [npe2api service](https://api.napari.org).
 - The ability to install other packages via URL of by dragging and dropping artifacts from [PyPI].
 
-![Screenshot of the napari-plugin-manager interface, showcasing the plugin descriptions](./images/description.png)
+![Screenshot of the napari-plugin-manager interface, showcasing the plugin descriptions](https://raw.githubusercontent.com/napari/napari-plugin-manager/refs/heads/main/images/description.png)
 
 `napari-plugin-manager` knows how to detect if napari was installed using `conda` or `pip` and
 provide the appropriate default installer tool on the `Installation Info` dropdown for each plugin.
@@ -79,7 +79,7 @@ In the image below filtering by the word `arcos` yields a single plugin, the
 `arcos-gui` plugin. Notice that plugins that provide a display name, will show
 the package name to the right in parenthesis.
 
-![Screenshot of the napari-plugin-manager interface showcasing the filtering features with the query 'arcos'](./images/filter.png)
+![Screenshot of the napari-plugin-manager interface showcasing the filtering features with the query 'arcos'](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/filter.png)
 
 ### Refreshing
 
@@ -102,7 +102,7 @@ You can cancel the process at any time by clicking the `Cancel` button of each p
 [conda-forge channel](https://anaconda.org/conda-forge/). Some plugins will require
 a restart to be properly configured.
 
-![Screenshot of the napari-plugin-manager showing the process of installing a plugin](./images/install.png)
+![Screenshot of the napari-plugin-manager showing the process of installing a plugin](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/install.png)
 
 ### Uninstalling a plugin
 
@@ -116,7 +116,7 @@ You can cancel the process at any time by clicking the `Cancel` button of each p
 
 **Note**: Some plugins will require a restart to be properly removed.
 
-![Screenshot of the napari-plugin-manager showing the process of uninstalling a plugin](./images/uninstall.png)
+![Screenshot of the napari-plugin-manager showing the process of uninstalling a plugin](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/uninstall.png)
 
 ### Updating a plugin
 
@@ -131,7 +131,7 @@ filtering by name or description.
 
 You can cancel the process at any time by clicking the `Cancel` button of each plugin.
 
-![Screenshot of the napari-plugin-manager showing the process of updating a plugin](./images/update.png)
+![Screenshot of the napari-plugin-manager showing the process of updating a plugin](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/update.png)
 
 ### Batch actions
 
@@ -154,7 +154,7 @@ Some issues that you might experience when using the installer include:
 * Incompatible packages due to conflicting dependencies.
 * Network connectivity errors.
 
-![Screenshot of the napari-plugin-amanger interface showcasing the status information, which is initially hidden by default.](./images/status.png)
+![Screenshot of the napari-plugin-manager interface showcasing the status information, which is initially hidden by default.](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/status.png)
 
 ## License
 
