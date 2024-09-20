@@ -154,7 +154,7 @@ Some issues that you might experience when using the installer include:
 * Incompatible packages due to conflicting dependencies.
 * Network connectivity errors.
 
-![Screenshot of the napari-plugin-amanger interface showcasing the status information, which is initially hidden by default.](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/status.png)
+![Screenshot of the napari-plugin-manager interface showcasing the status information, which is initially hidden by default.](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/status.png)
 
 ## License
 
