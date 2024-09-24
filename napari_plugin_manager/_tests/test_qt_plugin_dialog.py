@@ -14,9 +14,7 @@ from napari.utils.translations import trans
 from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
 from qtpy.QtGui import QDropEvent
 
-if (qtpy.API_NAME == 'PySide2') or (
-    sys.version_info[:2] > (3, 10) and platform.system() == "Linux"
-):
+if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     pytest.skip(
         "Known PySide2 x Python incompatibility: "
         "... object cannot be interpreted as an integer",
