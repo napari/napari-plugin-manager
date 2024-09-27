@@ -1,6 +1,5 @@
 import importlib.metadata
 import os
-import platform
 import sys
 from typing import Generator, Optional, Tuple
 from unittest.mock import patch
@@ -406,12 +405,6 @@ def test_add_items_outdated_and_update(plugin_dialog, qtbot):
     assert widget.version.toolTip() == updated_version
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside')
-    and sys.version_info[:2] > (3, 10)
-    and platform.system() == "Darwin",
-    reason='pyside specific bug',
-)
 def test_refresh(qtbot, plugin_dialog):
     with qtbot.waitSignal(plugin_dialog._add_items_timer.timeout, timeout=500):
         plugin_dialog.refresh(clear_cache=False)
@@ -423,12 +416,6 @@ def test_refresh(qtbot, plugin_dialog):
         plugin_dialog._refresh_and_clear_cache()
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside')
-    and sys.version_info[:2] > (3, 10)
-    and platform.system() == "Darwin",
-    reason='pyside specific bug',
-)
 def test_toggle_status(plugin_dialog):
     plugin_dialog.toggle_status(True)
     assert plugin_dialog.stdout_text.isVisible()
@@ -436,22 +423,10 @@ def test_toggle_status(plugin_dialog):
     assert not plugin_dialog.stdout_text.isVisible()
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside')
-    and sys.version_info[:2] > (3, 10)
-    and platform.system() == "Darwin",
-    reason='pyside specific bug',
-)
 def test_exec(plugin_dialog):
     plugin_dialog.exec_()
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside')
-    and sys.version_info[:2] > (3, 10)
-    and platform.system() == "Darwin",
-    reason='pyside specific bug',
-)
 def test_search_in_available(plugin_dialog):
     idxs = plugin_dialog._search_in_available("test")
     assert idxs == [0, 1, 2, 3]
@@ -474,9 +449,6 @@ def test_drop_event(plugin_dialog, tmp_path):
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
-)
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
@@ -497,9 +469,6 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     qtbot.wait(5000)
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
-)
 def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
@@ -522,9 +491,6 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert plugin_dialog.installed_list.count() == 2
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
-)
 def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
@@ -545,9 +511,6 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert plugin_dialog.installed_list.count() == 2
 
 
-@pytest.mark.skipif(
-    qtpy.API_NAME.lower().startswith('pyside'), reason='pyside specific bug'
-)
 def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
