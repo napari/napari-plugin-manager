@@ -17,7 +17,6 @@ from napari._qt.widgets.qt_tooltip import QtToolTipLabel
 from napari.plugins.utils import normalized_name
 from napari.settings import get_settings
 from napari.utils.misc import (
-    StringEnum,
     parse_version,
     running_as_constructor_app,
 )
@@ -105,7 +104,7 @@ class PluginListItem(QFrame):
     author, source, version, and buttons to update, install/uninstall, etc."""
 
     # item, package_name, action_name, version, installer_choice
-    actionRequested = Signal(QListWidgetItem, str, StringEnum, str, StringEnum)
+    actionRequested = Signal(QListWidgetItem, str, object, str, object)
 
     def __init__(
         self,
