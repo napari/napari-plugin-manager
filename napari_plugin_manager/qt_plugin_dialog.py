@@ -2,7 +2,9 @@ import contextlib
 import importlib.metadata
 import os
 import sys
+import uuid
 import webbrowser
+from enum import auto
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
@@ -17,6 +19,7 @@ from napari._qt.widgets.qt_tooltip import QtToolTipLabel
 from napari.plugins.utils import normalized_name
 from napari.settings import get_settings
 from napari.utils.misc import (
+    StringEnum,
     parse_version,
     running_as_constructor_app,
 )
@@ -65,6 +68,25 @@ from napari_plugin_manager.qt_package_installer import (
 )
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
+
+try:
+    from napari.utils.processes import (
+        ProcessStatus,
+        register_process_status,
+        unregister_process_status,
+    )
+except ImportError:
+
+    class ProcessStatus(StringEnum):
+        BUSY = auto()
+        IDLE = auto()
+
+    def register_process_status(status: ProcessStatus, description: str):
+        pass
+
+    def unregister_process_status(process_status_id: uuid.UUID) -> bool:
+        pass
+
 
 # Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'
@@ -874,6 +896,7 @@ class QtPluginDialog(QDialog):
         self._filter_texts = []
         self._filter_idxs_cache = set()
         self._filter_timer = QTimer(self)
+        self._process_status_id = None
         self.worker = None
 
         # timer to avoid triggering a filter for every keystroke
@@ -942,6 +965,19 @@ class QtPluginDialog(QDialog):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
 
+    def _register_process_status(self):
+        if self._process_status_id is not None:
+            self._unregister_process_status(self._process_status_id)
+
+        status, description = self.query_status()
+        self._process_status_id = register_process_status(status, description)
+
+    def _unregister_process_status(self):
+        if self._process_status_id is not None:
+            unregister_process_status(self._process_status_id)
+
+        self._process_status_id = None
+
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
         self.cancel_all_btn.setVisible(True)
@@ -949,6 +985,9 @@ class QtPluginDialog(QDialog):
         self.process_success_indicator.hide()
         self.process_error_indicator.hide()
         self.refresh_button.setDisabled(True)
+
+        if self._process_status_id is None:
+            self._register_process_status()
 
     def _on_process_finished(self, process_finished_data: ProcessFinishedData):
         action = process_finished_data['action']
@@ -1012,6 +1051,8 @@ class QtPluginDialog(QDialog):
                 )
             else:
                 show_info(trans._('Plugin Manager: process completed\n'))
+
+        self._unregister_process_status()
 
     def _add_to_available(self, pkg_name):
         self._add_items_timer.stop()
@@ -1506,6 +1547,7 @@ class QtPluginDialog(QDialog):
         self._plugin_queue = []
         self._plugin_data = []
         self._plugin_data_map = {}
+        self._latest_status = None
 
         self.installed_list.clear()
         self.available_list.clear()
@@ -1538,6 +1580,21 @@ class QtPluginDialog(QDialog):
             item.widget.prefix = prefix
 
     # endregion - Public methods
+
+    def query_status(self) -> Tuple[ProcessStatus, str]:
+        """Return the current status of the plugin."""
+        if self.installer.hasJobs():
+            process_status = ProcessStatus.BUSY
+            description = trans._n(
+                'The plugin manager is currently busy with {n} task.',
+                'The plugin manager is currently busy with {n} tasks.',
+                n=self.installer.currentJobs(),
+            )
+        else:
+            process_status = ProcessStatus.IDLE
+            description = ''
+
+        return process_status, description
 
 
 if __name__ == "__main__":
