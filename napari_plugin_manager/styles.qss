@@ -145,6 +145,16 @@ QPushButton#refresh_button:disabled {
   font-style: italic;
 }
 
+DisclaimerWidget {
+  color: {{ opacity(text, 150) }};
+  font-size: {{ font_size }};
+  font-weight: bold;
+  background-color: {{ foreground }};
+  border: 1px solid {{ foreground }};
+  padding: 5px;
+  border-radius: 3px;
+}
+
 #plugin_manager_process_status{
   background: {{ background }};
   color: {{ opacity(text, 200) }};
