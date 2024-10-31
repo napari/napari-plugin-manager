@@ -865,7 +865,7 @@ class QPluginList(QListWidget):
 
 
 class QtPluginDialog(QDialog):
-    MAX_PLUGIN_SEARCH_ITEMS = 20
+    MAX_PLUGIN_SEARCH_ITEMS = 35
 
     finished = Signal()
 
@@ -882,7 +882,6 @@ class QtPluginDialog(QDialog):
         self._plugins_found = 0
         self.already_installed = set()
         self.available_set = set()
-        self._max_search_items = 20
         self._prefix = prefix
         self._first_open = True
         self._plugin_queue = []  # Store plugin data to be added
