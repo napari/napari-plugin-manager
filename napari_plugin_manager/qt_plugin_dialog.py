@@ -1127,6 +1127,7 @@ class QtPluginDialog(QDialog):
         self.worker.started.connect(self.working_indicator.show)
         self.worker.finished.connect(self.working_indicator.hide)
         self.worker.finished.connect(self.finished)
+        self.worker.finished.connect(self.search)
         self.worker.start()
 
         pm2 = npe2.PluginManager.instance()
