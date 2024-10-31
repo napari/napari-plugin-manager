@@ -1317,7 +1317,7 @@ class QtPluginDialog(QDialog):
         if self._plugins_found == 0:
             self.avail_label.setText(
                 trans._(
-                    "{amount} plugins available in the napari Hub",
+                    "{amount} plugins available on the napari hub",
                     found=self._plugins_found,
                     amount=available_count,
                 )
@@ -1325,7 +1325,7 @@ class QtPluginDialog(QDialog):
         elif self._plugins_found > self.MAX_PLUGIN_SEARCH_ITEMS:
             self.avail_label.setText(
                 trans._(
-                    "Found ({found}) out of {amount} in the napari Hub. Displaying the first {max_count} plugins...",
+                    "Found {found) out of {amount} plugins on the napari hub. Displaying the first {max_count}...",
                     found=self._plugins_found,
                     amount=available_count,
                     max_count=self.MAX_PLUGIN_SEARCH_ITEMS,
@@ -1334,7 +1334,7 @@ class QtPluginDialog(QDialog):
         else:
             self.avail_label.setText(
                 trans._(
-                    "Found ({found}) out of {amount} in the napari Hub",
+                    "Found {found} out of {amount} plugins on the napari hub",
                     found=self._plugins_found,
                     amount=available_count,
                 )
