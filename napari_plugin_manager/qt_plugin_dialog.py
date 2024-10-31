@@ -1325,7 +1325,7 @@ class QtPluginDialog(QDialog):
         elif self._plugins_found > self.MAX_PLUGIN_SEARCH_ITEMS:
             self.avail_label.setText(
                 trans._(
-                    "Found {found) out of {amount} plugins on the napari hub. Displaying the first {max_count}...",
+                    "Found {found} out of {amount} plugins on the napari hub. Displaying the first {max_count}...",
                     found=self._plugins_found,
                     amount=available_count,
                     max_count=self.MAX_PLUGIN_SEARCH_ITEMS,
