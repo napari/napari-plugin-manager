@@ -43,6 +43,7 @@ from qtpy.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMenu,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSplitter,
@@ -528,6 +529,26 @@ class PluginListItem(QFrame):
             if self.action_button.objectName() == 'install_button'
             else InstallerActions.UNINSTALL
         )
+        if (
+            tool == InstallerTools.PIP
+            and action == InstallerActions.INSTALL
+            and ON_BUNDLE
+        ):
+            button_clicked = QMessageBox.warning(
+                self,
+                trans._('PyPI installation on bundle'),
+                trans._(
+                    'Installing from PyPI does not take into account existing installed packages, '
+                    'so it can break existing installations. '
+                    'If this happens the only solution is to reinstall the bundle.\n\n'
+                    'Are you sure you want to install from PyPI?'
+                ),
+                buttons=QMessageBox.StandardButton.Ok
+                | QMessageBox.StandardButton.Cancel,
+                defaultButton=QMessageBox.StandardButton.Cancel,
+            )
+            if button_clicked != QMessageBox.StandardButton.Ok:
+                return
         self.actionRequested.emit(self.item, self.name, action, version, tool)
 
     def _update_requested(self):
@@ -1190,7 +1211,7 @@ class QtPluginDialog(QDialog):
         self.working_indicator.setMovie(mov)
         mov.start()
 
-        visibility_direct_entry = not running_as_constructor_app()
+        visibility_direct_entry = not ON_BUNDLE
         self.direct_entry_edit = QLineEdit(self)
         self.direct_entry_edit.installEventFilter(self)
         self.direct_entry_edit.returnPressed.connect(self._install_packages)
