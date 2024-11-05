@@ -384,7 +384,7 @@ class PluginListItem(QFrame):
         if IS_NAPARI_CONDA_INSTALLED and self._versions_conda:
             self.source_choice_dropdown.addItem(CONDA)
 
-        if self._versions_pypi:
+        if self._versions_pypi and not ON_BUNDLE:
             self.source_choice_dropdown.addItem(PYPI)
 
         source = self.get_installer_source()
@@ -1190,7 +1190,7 @@ class QtPluginDialog(QDialog):
         self.working_indicator.setMovie(mov)
         mov.start()
 
-        visibility_direct_entry = not running_as_constructor_app()
+        visibility_direct_entry = not ON_BUNDLE
         self.direct_entry_edit = QLineEdit(self)
         self.direct_entry_edit.installEventFilter(self)
         self.direct_entry_edit.returnPressed.connect(self._install_packages)
@@ -1382,7 +1382,7 @@ class QtPluginDialog(QDialog):
                             extra_info['conda_versions'],
                         )
                     )
-                if ON_BUNDLE and not is_available_in_conda:
+                if ON_BUNDLE and len(extra_info['conda_versions']) == 0:
                     self.available_list.tag_unavailable(metadata)
 
             if len(self._plugin_queue) == 0:
