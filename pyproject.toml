@@ -51,7 +51,8 @@ dependencies = [
   "npe2",
   "qtpy",
   "superqt",
-  "pip"
+  "pip",
+  "packaging",
 ]
 dynamic = [
   "version"
