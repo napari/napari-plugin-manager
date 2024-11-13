@@ -1,19 +1,26 @@
 import contextlib
-import importlib.metadata
 import os
 import sys
 import webbrowser
 from functools import partial
 from pathlib import Path
-from typing import Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
+from typing import (
+    Dict,
+    List,
+    Literal,
+    NamedTuple,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+)
 
-from qtpy.QtCore import QPoint, QSize, Qt, QTimer, Signal, Slot
+from qtpy.QtCore import QSize, Qt, QTimer, Signal, Slot
 from qtpy.QtGui import (
     QAction,
     QActionGroup,
     QFont,
     QKeySequence,
-    QMovie,
     QShortcut,
 )
 from qtpy.QtWidgets import (
@@ -53,7 +60,37 @@ PYPI = 'PyPI'
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
 
 
-class BasePackageMetadata(NamedTuple):
+class BasePackageMetadata(Protocol):
+    @property
+    def metadata_version(self) -> str:
+        pass
+
+    @property
+    def name(self) -> str:
+        pass
+
+    @property
+    def version(self) -> str:
+        pass
+
+    @property
+    def summary(self) -> str:
+        pass
+
+    @property
+    def home_page(self) -> str:
+        pass
+
+    @property
+    def author(self) -> str:
+        pass
+
+    @property
+    def license(self) -> str:
+        pass
+
+
+class _BasePackageMetadata(NamedTuple):
     metadata_version: str
     name: str
     version: str
@@ -64,7 +101,7 @@ class BasePackageMetadata(NamedTuple):
 
 
 class BaseProjectInfoVersions(NamedTuple):
-    metadata: BasePackageMetadata
+    metadata: _BasePackageMetadata
     display_name: str
     pypi_versions: List[str]
     conda_versions: List[str]
@@ -73,6 +110,8 @@ class BaseProjectInfoVersions(NamedTuple):
 class BasePluginListItem(QFrame):
     """An entry in the plugin dialog.  This will include the package name, summary,
     author, source, version, and buttons to update, install/uninstall, etc."""
+
+    BASE_PACKAGE_NAME = ''
 
     # item, package_name, action_name, version, installer_choice
     actionRequested = Signal(QListWidgetItem, str, object, str, object)
@@ -92,7 +131,7 @@ class BasePluginListItem(QFrame):
         parent: QWidget = None,
         enabled: bool = True,
         installed: bool = False,
-        npe_version=1,
+        plugin_api_version=1,
         versions_conda: Optional[List[str]] = None,
         versions_pypi: Optional[List[str]] = None,
         prefix=None,
@@ -102,7 +141,7 @@ class BasePluginListItem(QFrame):
         self.item = item
         self.url = url
         self.name = package_name
-        self.npe_version = npe_version
+        self.plugin_api_version = plugin_api_version
         self._version = version
         self._versions_conda = versions_conda
         self._versions_pypi = versions_pypi
@@ -134,55 +173,30 @@ class BasePluginListItem(QFrame):
         self.package_author.setWordWrap(True)
         self.cancel_btn.setVisible(False)
 
-        self._handle_npe2_plugin(npe_version)
+        self._handle_plugin_api_version(plugin_api_version)
         self._set_installed(installed, package_name)
         self._populate_version_dropdown(self.get_installer_source())
 
     def _logo_icon(self, color=None, opacity=None):
-        # TODO: Raises NotImplementedError
-        from napari._qt.qt_resources import QColoredSVGIcon
-
-        return QColoredSVGIcon.from_resources('logo_silhouette').colored(
-            color=color, opacity=opacity
-        )
+        raise NotImplementedError
 
     def _warning_icon(self, color=None, opacity=None):
-        # TODO: Raises NotImplementedError
-        from napari._qt.qt_resources import QColoredSVGIcon
-
-        return QColoredSVGIcon.from_resources("warning")
+        raise NotImplementedError
 
     def _collapsed_icon(self, color=None, opacity=None):
-        # TODO: Raises NotImplementedError
-        from napari._qt.qt_resources import QColoredSVGIcon
-
-        return QColoredSVGIcon.from_resources('right_arrow').colored(
-            color=color
-        )
+        raise NotImplementedError
 
     def _expanded_icon(self, color=None, opacity=None):
-        # TODO: Raises NotImplementedError
-        from napari._qt.qt_resources import QColoredSVGIcon
-
-        return QColoredSVGIcon.from_resources('down_arrow').colored(
-            color=color
-        )
+        raise NotImplementedError
 
     def _warning_tooltip(self):
-        # TODO: Raise NotImplementedError
-        from napari._qt.widgets.qt_tooltip import QtToolTipLabel
-
-        return QtToolTipLabel(self)
+        raise NotImplementedError
 
     def _trans(self, *args, **kwargs):
-        # TODO: Raise NotImplementedError
-        from napari.utils.translations import trans
-
-        return trans._(*args, **kwargs)
+        raise NotImplementedError
 
     def _is_main_app_conda_package(self):
-        # TODO: Raise NotImplementedError
-        return is_conda_package('napari')
+        return is_conda_package(self.BASE_PACKAGE_NAME)
 
     def _set_installed(self, installed: bool, package_name):
         if installed:
@@ -203,17 +217,8 @@ class BasePluginListItem(QFrame):
             self.install_info_button.addWidget(self.info_choice_wdg)
             self.info_choice_wdg.show()
 
-    def _handle_npe2_plugin(self, npe_version):
-        # TODO: Raises NotImplementedError
-        if npe_version in (None, 1):
-            return
-
-        opacity = 0.4 if npe_version == 'shim' else 1
-        text = (
-            self._trans('npe1 (adapted)') if npe_version == 'shim' else 'npe2'
-        )
-        icon = self._logo_icon(color='#33F0FF', opacity=opacity)
-        self.set_status(icon.pixmap(20, 20), text)
+    def _handle_plugin_api_version(self, plugin_api_version):
+        raise NotImplementedError
 
     def set_status(self, icon=None, text=''):
         """Set the status icon and text. next to the package name."""
@@ -306,14 +311,7 @@ class BasePluginListItem(QFrame):
         icon = self._warning_icon()
         self.warning_tooltip = self._warning_tooltip()
 
-        # TODO: This color should come from the theme but the theme needs
-        # to provide the right color. Default warning should be orange, not
-        # red. Code example:
-        # theme_name = get_settings().appearance.theme
-        # napari.utils.theme.get_theme(theme_name, as_dict=False).warning.as_hex()
-        self.warning_tooltip.setPixmap(
-            icon.colored(color="#E3B617").pixmap(15, 15)
-        )
+        self.warning_tooltip.setPixmap(icon.pixmap(15, 15))
         self.warning_tooltip.setVisible(False)
 
         # Item status
@@ -510,28 +508,7 @@ class BasePluginListItem(QFrame):
 
     def _on_enabled_checkbox(self, state: int):
         """Called with `state` when checkbox is clicked."""
-        # TODO: Raise NotImplementedError
-        import napari.plugins
-        import npe2
-        from napari.plugins.utils import normalized_name
-
-        enabled = bool(state)
-        plugin_name = self.plugin_name.text()
-        pm2 = npe2.PluginManager.instance()
-        if plugin_name in pm2:
-            pm2.enable(plugin_name) if state else pm2.disable(plugin_name)
-            return
-
-        for (
-            npe1_name,
-            _,
-            distname,
-        ) in napari.plugins.plugin_manager.iter_available():
-            if distname and (normalized_name(distname) == plugin_name):
-                napari.plugins.plugin_manager.set_blocked(
-                    npe1_name, not enabled
-                )
-                return
+        raise NotImplementedError
 
     def _cancel_requested(self):
         version = self.version_choice_dropdown.currentText()
@@ -593,31 +570,8 @@ class BaseQPluginList(QListWidget):
 
         self.setSortingEnabled(True)
 
-    def _show_message(self, widget):
-        from napari._qt.widgets.qt_message_popup import WarnPopup
-        from napari.utils.translations import trans
-
-        message = trans._(
-            'When installing/uninstalling npe2 plugins, '
-            'you must restart napari for UI changes to take effect.'
-        )
-        if widget.isVisible():
-            button = widget.action_button
-            warn_dialog = WarnPopup(text=message)
-            global_point = widget.action_button.mapToGlobal(
-                button.rect().topRight()
-            )
-            global_point = QPoint(
-                global_point.x() - button.width(), global_point.y()
-            )
-            warn_dialog.move(global_point)
-            warn_dialog.exec_()
-
     def _trans(self, *args, **kwargs):
-        # TODO: Raise NotImplementedError
-        from napari.utils.translations import trans
-
-        return trans._(*args, **kwargs)
+        raise NotImplementedError
 
     def count_visible(self) -> int:
         """Return the number of visible items.
@@ -640,7 +594,7 @@ class BaseQPluginList(QListWidget):
         installed=False,
         plugin_name=None,
         enabled=True,
-        npe_version=None,
+        plugin_api_version=None,
     ):
         pkg_name = project_info.metadata.name
         # don't add duplicates
@@ -668,12 +622,12 @@ class BaseQPluginList(QListWidget):
             plugin_name=plugin_name,
             enabled=enabled,
             installed=installed,
-            npe_version=npe_version,
+            plugin_api_version=plugin_api_version,
             versions_conda=project_info.conda_versions,
             versions_pypi=project_info.pypi_versions,
         )
         item.widget = widg
-        item.npe_version = npe_version
+        item.plugin_api_version = plugin_api_version
         item.setSizeHint(widg.sizeHint())
         self.setItemWidget(item, widg)
 
@@ -724,6 +678,9 @@ class BaseQPluginList(QListWidget):
 
         item.setSizeHint(QSize(0, item.widget.height()))
 
+    def _handle_plugin_api_version_action(self, widget, action_name):
+        raise NotImplementedError
+
     def handle_action(
         self,
         item: QListWidgetItem,
@@ -741,12 +698,7 @@ class BaseQPluginList(QListWidget):
         if not item.text().startswith(self._SORT_ORDER_PREFIX):
             item.setText(f"{self._SORT_ORDER_PREFIX}{item.text()}")
 
-        # TODO: NPE version unknown before installing
-        if (
-            widget.npe_version != 1
-            and action_name == InstallerActions.UNINSTALL
-        ):
-            self._show_message(widget)
+        self._handle_plugin_api_version_action(widget, action_name)
 
         if action_name == InstallerActions.INSTALL:
             if version:
@@ -903,9 +855,10 @@ class BaseQPluginList(QListWidget):
 
 class BaseQtPluginDialog(QDialog):
 
-    PACKAGE_METADATA_CLASS = BasePackageMetadata
+    PACKAGE_METADATA_CLASS = _BasePackageMetadata
     PROJECT_INFO_VERSION_CLASS = BaseProjectInfoVersions
     PLUGIN_LIST_CLASS = BaseQPluginList
+    BASE_PACKAGE_NAME = ''
 
     def __init__(self, parent=None, prefix=None) -> None:
         super().__init__(parent)
@@ -993,17 +946,10 @@ class BaseQtPluginDialog(QDialog):
         self._close_shortcut.activated.connect(self.close)
 
     def _setup_theme_update(self):
-        # TODO: Raises NotImplementedError
-        from napari.settings import get_settings
-
-        get_settings().appearance.events.theme.connect(self._update_theme)
+        raise NotImplementedError
 
     def _update_theme(self, event):
-        # TODO: Raise NotImplementedError
-        from napari._qt.qt_resources import get_current_stylesheet
-
-        stylesheet = get_current_stylesheet([STYLES_PATH])
-        self.setStyleSheet(stylesheet)
+        raise NotImplementedError
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -1086,175 +1032,32 @@ class BaseQtPluginDialog(QDialog):
         self._add_items_timer.start()
         self._update_plugin_count()
 
-    def _add_to_installed(self, distname, enabled, npe_version=1):
-        # TODO: Raises NotImplementedError
-        from napari.plugins.utils import normalized_name
-
-        norm_name = normalized_name(distname or '')
-        if distname:
-            try:
-                meta = importlib.metadata.metadata(distname)
-
-            except importlib.metadata.PackageNotFoundError:
-                return  # a race condition has occurred and the package is uninstalled by another thread
-            if len(meta) == 0:
-                # will not add builtins.
-                return
-            self.already_installed.add(norm_name)
-        else:
-            meta = {}
-
-        self.installed_list.addItem(
-            self.PROJECT_INFO_VERSION_CLASS(
-                display_name=norm_name,
-                pypi_versions=[],
-                conda_versions=[],
-                metadata=self.PACKAGE_METADATA_CLASS(
-                    metadata_version="1.0",
-                    name=norm_name,
-                    version=meta.get('version', ''),
-                    summary=meta.get('summary', ''),
-                    home_page=meta.get('Home-page', ''),
-                    author=meta.get('author', ''),
-                    license=meta.get('license', ''),
-                ),
-            ),
-            installed=True,
-            enabled=enabled,
-            npe_version=npe_version,
-        )
+    def _add_to_installed(self, distname, enabled, plugin_api_version=1):
+        raise NotImplementedError
 
     def _add_installed(self, pkg_name=None):
-        # TODO: Raise NotImplementedError
-        import napari.plugins
-        import npe2
-        from napari.plugins.utils import normalized_name
-
-        pm2 = npe2.PluginManager.instance()
-        pm2.discover()
-        for manifest in pm2.iter_manifests():
-            distname = normalized_name(manifest.name or '')
-            if distname in self.already_installed or distname == 'napari':
-                continue
-            enabled = not pm2.is_disabled(manifest.name)
-            # if it's an Npe1 adaptor, call it v1
-            npev = 'shim' if manifest.npe1_shim else 2
-            if distname == pkg_name or pkg_name is None:
-                self._add_to_installed(distname, enabled, npe_version=npev)
-
-        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
-        for (
-            plugin_name,
-            _,
-            distname,
-        ) in napari.plugins.plugin_manager.iter_available():
-            # not showing these in the plugin dialog
-            if plugin_name in (
-                'napari_plugin_engine',
-                'napari_plugin_manager',
-            ):
-                continue
-            if normalized_name(distname or '') in self.already_installed:
-                continue
-            if normalized_name(distname or '') == pkg_name or pkg_name is None:
-                self._add_to_installed(
-                    distname,
-                    not napari.plugins.plugin_manager.is_blocked(plugin_name),
-                )
-        self._update_plugin_count()
-
-        for i in range(self.installed_list.count()):
-            item = self.installed_list.item(i)
-            widget = item.widget
-            if widget.name == pkg_name:
-                self.installed_list.scrollToItem(item)
-                self.installed_list.setCurrentItem(item)
-                if widget.npe_version != 1:
-                    self._show_message(widget)
-                break
+        raise NotImplementedError
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
-        # TODO: Raise NotImplementedError
-        import npe2
-        from napari._qt.qthreading import create_worker
-        from napari.settings import get_settings
-
-        from napari_plugin_manager.npe2api import (
-            cache_clear,
-            iter_napari_plugin_info,
-        )
-
-        get_settings()
-
-        if clear_cache:
-            cache_clear()
-
-        self.worker = create_worker(iter_napari_plugin_info)
-        self.worker.yielded.connect(self._handle_yield)
-        self.worker.started.connect(self.working_indicator.show)
-        self.worker.finished.connect(self.working_indicator.hide)
-        self.worker.finished.connect(self._add_items_timer.start)
-        self.worker.start()
-
-        pm2 = npe2.PluginManager.instance()
-        pm2.discover()
+        raise NotImplementedError
 
     def _loading_gif(self):
-        # TODO: Raises NotImplementedError
-        import napari.resources
-
-        load_gif = str(Path(napari.resources.__file__).parent / "loading.gif")
-        mov = QMovie(load_gif)
-        mov.setScaledSize(QSize(18, 18))
-        return mov
+        raise NotImplementedError
 
     def _on_bundle(self):
-        # TODO: Raise NotImplementedError
-        from napari.utils.misc import running_as_constructor_app
-
-        return running_as_constructor_app()
-
-    def _show_message(self, widget):
-        from napari._qt.widgets.qt_message_popup import WarnPopup
-        from napari.utils.translations import trans
-
-        message = trans._(
-            'When installing/uninstalling npe2 plugins, '
-            'you must restart napari for UI changes to take effect.'
-        )
-        if widget.isVisible():
-            button = widget.action_button
-            warn_dialog = WarnPopup(text=message)
-            global_point = widget.action_button.mapToGlobal(
-                button.rect().topRight()
-            )
-            global_point = QPoint(
-                global_point.x() - button.width(), global_point.y()
-            )
-            warn_dialog.move(global_point)
-            warn_dialog.exec_()
+        raise NotImplementedError
 
     def _show_info(self, info):
-        # TODO: Raise NotImplementedError
-        from napari.utils.notifications import show_info
-
-        show_info(info)
+        raise NotImplementedError
 
     def _show_warning(self, warning):
-        # TODO: Raise NotImplementedError
-        from napari.utils.notifications import show_warning
-
-        show_warning(warning)
+        raise NotImplementedError
 
     def _trans(self, *args, **kwargs):
-        # TODO: Raise NotImplementedError
-        from napari.utils.translations import trans
-
-        return trans._(*args, **kwargs)
+        raise NotImplementedError
 
     def _is_main_app_conda_package(self):
-        # TODO: Raise NotImplementedError
-        return is_conda_package('napari')
+        return is_conda_package(self.BASE_PACKAGE_NAME)
 
     def _setup_ui(self):
         """Defines the layout for the PluginDialog."""
