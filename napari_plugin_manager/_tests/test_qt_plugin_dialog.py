@@ -189,10 +189,6 @@ def plugin_dialog(
         qt_plugin_dialog, "running_as_constructor_app", lambda: request.param
     )
     monkeypatch.setattr(
-        qt_plugin_dialog, "IS_NAPARI_CONDA_INSTALLED", request.param
-    )
-    monkeypatch.setattr(qt_plugin_dialog, "ON_BUNDLE", request.param)
-    monkeypatch.setattr(
         napari.plugins, 'plugin_manager', OldPluginManagerMock()
     )
 
@@ -201,6 +197,9 @@ def plugin_dialog(
     monkeypatch.setattr(npe2, 'PluginManager', PluginManagerMock())
 
     widget = qt_plugin_dialog.QtPluginDialog()
+    monkeypatch.setattr(
+        widget, '_is_main_app_conda_package', lambda: request.param
+    )
     # monkeypatch.setattr(widget, '_tag_outdated_plugins', lambda: None)
     widget.show()
     qtbot.waitUntil(widget.isVisible, timeout=300)

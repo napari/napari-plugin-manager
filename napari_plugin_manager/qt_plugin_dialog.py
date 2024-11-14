@@ -34,13 +34,10 @@ from napari_plugin_manager.npe2api import (
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
 )
-from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'
 PYPI = 'PyPI'
-ON_BUNDLE = running_as_constructor_app()
-IS_NAPARI_CONDA_INSTALLED = is_conda_package('napari')
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
 
 
@@ -71,11 +68,6 @@ class PluginListItem(BasePluginListItem):
     author, source, version, and buttons to update, install/uninstall, etc."""
 
     BASE_PACKAGE_NAME = 'napari'
-
-    def _logo_icon(self, color=None, opacity=None):
-        return QColoredSVGIcon.from_resources('logo_silhouette').colored(
-            color=color, opacity=opacity
-        )
 
     def _warning_icon(self, color=None, opacity=None):
         # TODO: This color should come from the theme but the theme needs
@@ -113,7 +105,9 @@ class PluginListItem(BasePluginListItem):
             if plugin_api_version == 'shim'
             else 'npe2'
         )
-        icon = self._logo_icon(color='#33F0FF', opacity=opacity)
+        icon = QColoredSVGIcon.from_resources('logo_silhouette').colored(
+            color='#33F0FF', opacity=opacity
+        )
         self.set_status(icon.pixmap(20, 20), text)
 
     def _on_enabled_checkbox(self, state: int):

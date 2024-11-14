@@ -1,9 +1,7 @@
 import contextlib
 import os
-import sys
 import webbrowser
 from functools import partial
-from pathlib import Path
 from typing import (
     Dict,
     List,
@@ -57,10 +55,11 @@ from napari_plugin_manager.utils import is_conda_package, parse_version
 # Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'
 PYPI = 'PyPI'
-STYLES_PATH = Path(__file__).parent / 'styles.qss'
 
 
 class BasePackageMetadata(Protocol):
+    """Protocol class defining the minimum atributtes/properties needed for package metadata."""
+
     @property
     def metadata_version(self) -> str:
         pass
@@ -108,8 +107,12 @@ class BaseProjectInfoVersions(NamedTuple):
 
 
 class BasePluginListItem(QFrame):
-    """An entry in the plugin dialog.  This will include the package name, summary,
-    author, source, version, and buttons to update, install/uninstall, etc."""
+    """
+    An entry in the plugin dialog.
+
+    This will include the package name, summary,
+    author, source, version, and buttons to update, install/uninstall, etc.
+    """
 
     BASE_PACKAGE_NAME = ''
 
@@ -176,9 +179,6 @@ class BasePluginListItem(QFrame):
         self._handle_plugin_api_version(plugin_api_version)
         self._set_installed(installed, package_name)
         self._populate_version_dropdown(self.get_installer_source())
-
-    def _logo_icon(self, color=None, opacity=None):
-        raise NotImplementedError
 
     def _warning_icon(self, color=None, opacity=None):
         raise NotImplementedError
@@ -1032,9 +1032,6 @@ class BaseQtPluginDialog(QDialog):
         self._add_items_timer.start()
         self._update_plugin_count()
 
-    def _add_to_installed(self, distname, enabled, plugin_api_version=1):
-        raise NotImplementedError
-
     def _add_installed(self, pkg_name=None):
         raise NotImplementedError
 
@@ -1485,12 +1482,3 @@ class BaseQtPluginDialog(QDialog):
             item.widget.prefix = prefix
 
     # endregion - Public methods
-
-
-if __name__ == "__main__":
-    from qtpy.QtWidgets import QApplication
-
-    app = QApplication([])
-    widget = BaseQtPluginDialog()
-    widget.exec_()
-    sys.exit(app.exec_())
