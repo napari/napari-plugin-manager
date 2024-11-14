@@ -1148,7 +1148,9 @@ class QtPluginDialog(QDialog):
         lay.setContentsMargins(0, 2, 0, 2)
         self.installed_label = QLabel(trans._("Installed Plugins"))
         self.packages_search = QLineEdit()
-        self.packages_search.setPlaceholderText(trans._("search..."))
+        self.packages_search.setPlaceholderText(trans._("Type here to start searching for plugins..."))
+        self.packages_search.setToolTip(trans._("The search text will filter currently installed plugins "
+                                                "while also being used to search for plugins on the napari hub"))
         self.packages_search.setMaximumWidth(350)
         self.packages_search.setClearButtonEnabled(True)
         self.packages_search.textChanged.connect(self.search)
