@@ -13,6 +13,7 @@ from typing import (
     Tuple,
 )
 
+from packaging.version import parse as parse_version
 from qtpy.QtCore import QSize, Qt, QTimer, Signal, Slot
 from qtpy.QtGui import (
     QAction,
@@ -50,7 +51,7 @@ from napari_plugin_manager.qt_package_installer import (
     ProcessFinishedData,
 )
 from napari_plugin_manager.qt_widgets import ClickableLabel
-from napari_plugin_manager.utils import is_conda_package, parse_version
+from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'

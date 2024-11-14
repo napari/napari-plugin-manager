@@ -3,8 +3,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-import packaging
-
 
 def is_conda_package(pkg: str, prefix: Optional[str] = None) -> bool:
     """Determines if plugin was installed through conda.
@@ -22,13 +20,3 @@ def is_conda_package(pkg: str, prefix: Optional[str] = None) -> bool:
         re.match(rf"{pkg}-[^-]+-[^-]+.json", p.name)
         for p in conda_meta_dir.glob(f"{pkg}-*-*.json")
     )
-
-
-def parse_version(v: str) -> packaging.version._BaseVersion:
-    """Parse a version string and return a packaging.version.Version obj."""
-    import packaging.version
-
-    try:
-        return packaging.version.Version(v)
-    except packaging.version.InvalidVersion:
-        return packaging.version.LegacyVersion(v)  # type: ignore[attr-defined]
