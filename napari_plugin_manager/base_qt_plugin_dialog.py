@@ -222,7 +222,7 @@ class BasePluginListItem(QFrame):
         raise NotImplementedError
 
     def set_status(self, icon=None, text=''):
-        """Set the status icon and text. next to the package name."""
+        """Set the status icon and text next to the package name."""
         if icon:
             self.status_icon.setPixmap(icon)
 
