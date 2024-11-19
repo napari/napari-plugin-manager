@@ -53,7 +53,6 @@ from napari_plugin_manager.qt_package_installer import (
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
 
-# Scaling factor for each list widget item when expanding.
 CONDA = 'Conda'
 PYPI = 'PyPI'
 
@@ -113,8 +112,13 @@ class BasePluginListItem(QFrame):
 
     This will include the package name, summary,
     author, source, version, and buttons to update, install/uninstall, etc.
+
+    Make sure to implement all the methods that raise `NotImplementedError` over a subclass.
+    Details are available in each method docstring.
     """
 
+    # This should be set to the name of package that handles plugins
+    # e.g `napari` for napari
     BASE_PACKAGE_NAME = ''
 
     # item, package_name, action_name, version, installer_choice
@@ -558,6 +562,12 @@ class BasePluginListItem(QFrame):
 
 
 class BaseQPluginList(QListWidget):
+    """
+    A list of plugins.
+
+    Make sure to implement all the methods that raise `NotImplementedError` over a subclass.
+    Details are available in each method docstring.
+    """
 
     _SORT_ORDER_PREFIX = '0-'
     PLUGIN_LIST_ITEM_CLASS = BasePluginListItem
@@ -855,6 +865,19 @@ class BaseQPluginList(QListWidget):
 
 
 class BaseQtPluginDialog(QDialog):
+    """
+    A plugins dialog.
+
+    The dialog shows two list of plugins:
+        * A list for the already installed plugins and
+        * A list for the plugins that could be installed
+
+    It also counts with a space to show output related with the actions being done
+    (installing/uninstalling/updating a plugin).
+
+    Make sure to implement all the methods that raise `NotImplementedError` over a subclass.
+    Details are available in each method docstring.
+    """
 
     PACKAGE_METADATA_CLASS = _BasePackageMetadata
     PROJECT_INFO_VERSION_CLASS = BaseProjectInfoVersions
