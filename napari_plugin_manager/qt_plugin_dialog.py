@@ -67,7 +67,7 @@ class PluginListItem(BasePluginListItem):
 
     BASE_PACKAGE_NAME = 'napari'
 
-    def _warning_icon(self, color=None, opacity=None):
+    def _warning_icon(self):
         # TODO: This color should come from the theme but the theme needs
         # to provide the right color. Default warning should be orange, not
         # red. Code example:
@@ -77,21 +77,21 @@ class PluginListItem(BasePluginListItem):
             color="#E3B617"
         )
 
-    def _collapsed_icon(self, color=None, opacity=None):
+    def _collapsed_icon(self):
         return QColoredSVGIcon.from_resources('right_arrow').colored(
-            color=color
+            color='white'
         )
 
-    def _expanded_icon(self, color=None, opacity=None):
+    def _expanded_icon(self):
         return QColoredSVGIcon.from_resources('down_arrow').colored(
-            color=color
+            color='white'
         )
 
     def _warning_tooltip(self):
         return QtToolTipLabel(self)
 
-    def _trans(self, *args, **kwargs):
-        return trans._(*args, **kwargs)
+    def _trans(self, text, **kwargs):
+        return trans._(text, **kwargs)
 
     def _handle_plugin_api_version(self, plugin_api_version):
         if plugin_api_version in (None, 1):
@@ -133,10 +133,10 @@ class QPluginList(BaseQPluginList):
 
     PLUGIN_LIST_ITEM_CLASS = PluginListItem
 
-    def _trans(self, *args, **kwargs):
-        return trans._(*args, **kwargs)
+    def _trans(self, text, **kwargs):
+        return trans._(text, **kwargs)
 
-    def _handle_plugin_api_version_action(self, widget, action_name):
+    def _before_handle_action(self, widget, action_name):
         if (
             widget.plugin_api_version != 1
             and action_name == InstallerActions.UNINSTALL
@@ -270,8 +270,8 @@ class QtPluginDialog(BaseQtPluginDialog):
     def _show_warning(self, warning):
         show_warning(warning)
 
-    def _trans(self, *args, **kwargs):
-        return trans._(*args, **kwargs)
+    def _trans(self, text, **kwargs):
+        return trans._(text, **kwargs)
 
 
 if __name__ == "__main__":

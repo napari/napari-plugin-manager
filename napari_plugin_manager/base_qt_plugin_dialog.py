@@ -62,31 +62,31 @@ class BasePackageMetadata(Protocol):
 
     @property
     def metadata_version(self) -> str:
-        pass
+        """Metadata version the package metadata class aims to support."""
 
     @property
     def name(self) -> str:
-        pass
+        """Name of the package being represented."""
 
     @property
     def version(self) -> str:
-        pass
+        """Version of the package being represented."""
 
     @property
     def summary(self) -> str:
-        pass
+        """Summary of the package being represented."""
 
     @property
     def home_page(self) -> str:
-        pass
+        """Home page URL of the package being represented."""
 
     @property
     def author(self) -> str:
-        pass
+        """Author information of the package being represented."""
 
     @property
     def license(self) -> str:
-        pass
+        """License information of the package being represented."""
 
 
 class _BasePackageMetadata(NamedTuple):
@@ -185,19 +185,63 @@ class BasePluginListItem(QFrame):
         self._set_installed(installed, package_name)
         self._populate_version_dropdown(self.get_installer_source())
 
-    def _warning_icon(self, color=None, opacity=None):
+    def _warning_icon(self):
+        """
+        The warning icon to be used.
+
+        Returns
+        -------
+        The icon (`QIcon` instance) defined as the warning icon for plugin item.
+        """
         raise NotImplementedError
 
-    def _collapsed_icon(self, color=None, opacity=None):
+    def _collapsed_icon(self):
+        """
+        The icon to be used to indicate the plugin item info collapsible section
+        can be collapsed.
+
+        Returns
+        -------
+        The icon (`QIcon` instance) defined as the warning icon for plugin item
+        info section.
+
+        """
         raise NotImplementedError
 
-    def _expanded_icon(self, color=None, opacity=None):
+    def _expanded_icon(self):
+        """
+        The icon to be used to indicate the plugin item info collapsible section
+        can be expanded.
+
+        Returns
+        -------
+        The icon (`QIcon` instance) defined as the expanded icon for plugin item
+        info section.
+        """
         raise NotImplementedError
 
     def _warning_tooltip(self):
+        """
+        The widget to be used to indicate the plugin item warning information.
+
+        Returns
+        -------
+        The widget (`QWidget` instance/`QWidget` subclass instance that supports setting a pixmap i.e has
+        a `setPixmap` method - e.g a `QLabel`) used to show warning information.
+        """
         raise NotImplementedError
 
-    def _trans(self, *args, **kwargs):
+    def _trans(self, text, **kwargs):
+        """
+        Translates the given text.
+
+        Parameters
+        ----------
+        text : str
+            The singular string to translate.
+        **kwargs : dict, optional
+            Any additional arguments to use when formatting the string.
+        """
         raise NotImplementedError
 
     def _is_main_app_conda_package(self):
@@ -370,8 +414,8 @@ class BasePluginListItem(QFrame):
         self.cancel_btn.clicked.connect(self._cancel_requested)
 
         # Collapsible button
-        coll_icon = self._collapsed_icon(color='white')
-        exp_icon = self._expanded_icon(color='white')
+        coll_icon = self._collapsed_icon()
+        exp_icon = self._expanded_icon()
 
         self.install_info_button = QCollapsible(
             "Installation Info", collapsedIcon=coll_icon, expandedIcon=exp_icon
@@ -512,7 +556,15 @@ class BasePluginListItem(QFrame):
             self.version_choice_dropdown.addItem(version)
 
     def _on_enabled_checkbox(self, state: int):
-        """Called with `state` when checkbox is clicked."""
+        """
+        Enable/disable the plugin item.
+
+        Called with `state` (`Qt.CheckState` value) when checkbox is clicked.
+        An implementation of this method could call a plugin manager in charge of
+        enabling/disabling plugins.
+
+        Note that the plugin can be identified with the `plugin_name` attribute.
+        """
         raise NotImplementedError
 
     def _cancel_requested(self):
@@ -581,7 +633,17 @@ class BaseQPluginList(QListWidget):
 
         self.setSortingEnabled(True)
 
-    def _trans(self, *args, **kwargs):
+    def _trans(self, text, **kwargs):
+        """
+        Translates the given text.
+
+        Parameters
+        ----------
+        text : str
+            The singular string to translate.
+        **kwargs : dict, optional
+            Any additional arguments to use when formatting the string.
+        """
         raise NotImplementedError
 
     def count_visible(self) -> int:
@@ -689,7 +751,21 @@ class BaseQPluginList(QListWidget):
 
         item.setSizeHint(QSize(0, item.widget.height()))
 
-    def _handle_plugin_api_version_action(self, widget, action_name):
+    def _before_handle_action(self, widget, action_name):
+        """
+        Hook to add custom logic before handling an action.
+
+        It can be used for example to show a message before an action is going to take
+        place, for example a warning message before installing/uninstalling a plugin.
+
+        Parameters
+        ----------
+        widget : BasePluginListItem
+            Plugin item widget that the action to be done is going to affect.
+        action_name : InstallerActions
+            Action that will be done to the plugin.
+
+        """
         raise NotImplementedError
 
     def handle_action(
@@ -709,7 +785,7 @@ class BaseQPluginList(QListWidget):
         if not item.text().startswith(self._SORT_ORDER_PREFIX):
             item.setText(f"{self._SORT_ORDER_PREFIX}{item.text()}")
 
-        self._handle_plugin_api_version_action(widget, action_name)
+        self._before_handle_action(widget, action_name)
 
         if action_name == InstallerActions.INSTALL:
             if version:
@@ -970,9 +1046,27 @@ class BaseQtPluginDialog(QDialog):
         self._close_shortcut.activated.connect(self.close)
 
     def _setup_theme_update(self):
+        """
+        Setup any initial style that should be applied to the plugin dialog.
+
+        To be used along side `_update_theme`. For example, this could be implemented
+        in a way that the `_update_theme` method gets called when a signal is emitted.
+        """
         raise NotImplementedError
 
     def _update_theme(self, event):
+        """
+        Update the plugin dialog theme.
+
+        To be used along side `_setup_theme_update`. This method should end up calling
+        `setStyleSheet` to change the style of the dialog.
+
+        Parameters
+        ----------
+        event : obj
+            Object with information about the theme/style change.
+
+        """
         raise NotImplementedError
 
     def _on_installer_start(self):
@@ -1057,24 +1151,93 @@ class BaseQtPluginDialog(QDialog):
         self._update_plugin_count()
 
     def _add_installed(self, pkg_name=None):
+        """
+        Add plugins that are installed to the dialog.
+
+        This should call the `installed_list.addItem` method to add each plugin item
+        that should be shown as an installed plugin.
+
+        Parameters
+        ----------
+        pkg_name : str, optional
+            The name of the package that needs to be shown as installed.
+            The default is None. Without passing a package name the logic should
+            fetch/get the info of all the installed plugins and add them to the dialog
+            via the `installed_list.addItem` method.
+
+        """
+        # TODO: This could be better reused?
         raise NotImplementedError
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
+        """
+        Fetch plugina available for installation.
+
+        This should call `_handle_yield` in order to queue the addition of plugins available
+        for installation to the corresponded list (`available_list`).
+
+        Parameters
+        ----------
+        clear_cache : bool, optional
+            If a cache is implemented, if the cache should be cleared or not.
+            The default is False.
+
+        """
         raise NotImplementedError
 
     def _loading_gif(self):
+        """
+        Movie to use to indicate something is loading.
+
+        This should return an instance of `QMovie` with a scaled size fo 18x18
+
+        """
         raise NotImplementedError
 
     def _on_bundle(self):
+        """
+        If the current installation comes from a bundle/standalone approach or not.
+
+        This should return a `bool`, `True` if under a bundle like installation, `False`
+        otherwise.
+        """
         raise NotImplementedError
 
     def _show_info(self, info):
+        """
+        Shows a info message.
+
+        Parameters
+        ----------
+        info : str
+            Info message to be shown.
+
+        """
         raise NotImplementedError
 
     def _show_warning(self, warning):
+        """
+        Shows a warning message.
+
+        Parameters
+        ----------
+        warning : str
+            Warning message to be shown.
+
+        """
         raise NotImplementedError
 
-    def _trans(self, *args, **kwargs):
+    def _trans(self, text, **kwargs):
+        """
+        Translates the given text.
+
+        Parameters
+        ----------
+        text : str
+            The singular string to translate.
+        **kwargs : dict, optional
+            Any additional arguments to use when formatting the string.
+        """
         raise NotImplementedError
 
     def _is_main_app_conda_package(self):
