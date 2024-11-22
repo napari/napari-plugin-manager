@@ -1190,11 +1190,10 @@ class BaseQtPluginDialog(QDialog):
         Movie to use to indicate something is loading.
 
         This should return an instance of `QMovie` with a scaled size fo 18x18
-
         """
         raise NotImplementedError
 
-    def _on_bundle(self):
+    def _on_bundle(self) -> bool:
         """
         If the current installation comes from a bundle/standalone approach or not.
 
