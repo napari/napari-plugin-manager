@@ -579,7 +579,7 @@ class BasePluginListItem(QFrame):
         for version in versions:
             self.version_choice_dropdown.addItem(version)
 
-    def _on_enabled_checkbox(self, state: int | Qt.CheckState) -> None:
+    def _on_enabled_checkbox(self, state: Qt.CheckState) -> None:
         """
         Enable/disable the plugin item.
 
