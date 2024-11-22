@@ -3,6 +3,7 @@ import os
 import webbrowser
 from functools import partial
 from typing import (
+    Any,
     Dict,
     List,
     Literal,
@@ -19,7 +20,9 @@ from qtpy.QtGui import (
     QAction,
     QActionGroup,
     QFont,
+    QIcon,
     QKeySequence,
+    QMovie,
     QShortcut,
 )
 from qtpy.QtWidgets import (
@@ -57,8 +60,13 @@ CONDA = 'Conda'
 PYPI = 'PyPI'
 
 
-class BasePackageMetadata(Protocol):
-    """Protocol class defining the minimum atributtes/properties needed for package metadata."""
+class PackageMetadataProtocol(Protocol):
+    """
+    Protocol class defining the minimum atributtes/properties needed for package metadata.
+
+    This class is meant for type checking propuses as well as to provide a type to use with
+    with the Qt `Slot` decorator.
+    """
 
     @property
     def metadata_version(self) -> str:
@@ -89,7 +97,9 @@ class BasePackageMetadata(Protocol):
         """License information of the package being represented."""
 
 
-class _BasePackageMetadata(NamedTuple):
+class BasePackageMetadata(NamedTuple):
+    """Base class implementing the bare minimum to follow the `PackageMetadataProtocol` protocol class."""
+
     metadata_version: str
     name: str
     version: str
@@ -100,7 +110,7 @@ class _BasePackageMetadata(NamedTuple):
 
 
 class BaseProjectInfoVersions(NamedTuple):
-    metadata: _BasePackageMetadata
+    metadata: BasePackageMetadata
     display_name: str
     pypi_versions: List[str]
     conda_versions: List[str]
@@ -185,9 +195,9 @@ class BasePluginListItem(QFrame):
         self._set_installed(installed, package_name)
         self._populate_version_dropdown(self.get_installer_source())
 
-    def _warning_icon(self):
+    def _warning_icon(self) -> QIcon:
         """
-        The warning icon to be used.
+        Warning icon to be used.
 
         Returns
         -------
@@ -195,22 +205,20 @@ class BasePluginListItem(QFrame):
         """
         raise NotImplementedError
 
-    def _collapsed_icon(self):
+    def _collapsed_icon(self) -> QIcon:
         """
-        The icon to be used to indicate the plugin item info collapsible section
-        can be collapsed.
+        Icon to be used to indicate the plugin item info collapsible section can be collapsed.
 
         Returns
         -------
         The icon (`QIcon` instance) defined as the warning icon for plugin item
         info section.
-
         """
         raise NotImplementedError
 
-    def _expanded_icon(self):
+    def _expanded_icon(self) -> QIcon:
         """
-        The icon to be used to indicate the plugin item info collapsible section
+        Icon to be used to indicate the plugin item info collapsible section
         can be expanded.
 
         Returns
@@ -220,9 +228,9 @@ class BasePluginListItem(QFrame):
         """
         raise NotImplementedError
 
-    def _warning_tooltip(self):
+    def _warning_tooltip(self) -> QWidget:
         """
-        The widget to be used to indicate the plugin item warning information.
+        Widget to be used to indicate the plugin item warning information.
 
         Returns
         -------
@@ -231,9 +239,9 @@ class BasePluginListItem(QFrame):
         """
         raise NotImplementedError
 
-    def _trans(self, text, **kwargs):
+    def _trans(self, text: str, **kwargs) -> str:
         """
-        Translates the given text.
+        Translate the given text.
 
         Parameters
         ----------
@@ -241,6 +249,10 @@ class BasePluginListItem(QFrame):
             The singular string to translate.
         **kwargs : dict, optional
             Any additional arguments to use when formatting the string.
+
+        Returns
+        -------
+        The translated string.
         """
         raise NotImplementedError
 
@@ -266,7 +278,19 @@ class BasePluginListItem(QFrame):
             self.install_info_button.addWidget(self.info_choice_wdg)
             self.info_choice_wdg.show()
 
-    def _handle_plugin_api_version(self, plugin_api_version):
+    def _handle_plugin_api_version(self, plugin_api_version) -> None:
+        """
+        Customize a plugin item before it is finished being setup.
+
+        An example usage could be calling the `set_status` method to define a
+        an icon and text that the plugin should show depending on the plugin
+        API version implementation.
+
+        Parameters
+        ----------
+        plugin_api_version : Any
+            The value of the API version the plugin uses.
+        """
         raise NotImplementedError
 
     def set_status(self, icon=None, text=''):
@@ -555,7 +579,7 @@ class BasePluginListItem(QFrame):
         for version in versions:
             self.version_choice_dropdown.addItem(version)
 
-    def _on_enabled_checkbox(self, state: int):
+    def _on_enabled_checkbox(self, state: int | Qt.CheckState) -> None:
         """
         Enable/disable the plugin item.
 
@@ -564,6 +588,11 @@ class BasePluginListItem(QFrame):
         enabling/disabling plugins.
 
         Note that the plugin can be identified with the `plugin_name` attribute.
+
+        Parameters
+        ----------
+        state : int | Qt.CheckState
+            Current state the enable checkbox has.
         """
         raise NotImplementedError
 
@@ -633,7 +662,7 @@ class BaseQPluginList(QListWidget):
 
         self.setSortingEnabled(True)
 
-    def _trans(self, text, **kwargs):
+    def _trans(self, text: str, **kwargs) -> str:
         """
         Translates the given text.
 
@@ -643,6 +672,10 @@ class BaseQPluginList(QListWidget):
             The singular string to translate.
         **kwargs : dict, optional
             Any additional arguments to use when formatting the string.
+
+        Returns
+        -------
+        The translated string.
         """
         raise NotImplementedError
 
@@ -751,7 +784,9 @@ class BaseQPluginList(QListWidget):
 
         item.setSizeHint(QSize(0, item.widget.height()))
 
-    def _before_handle_action(self, widget, action_name):
+    def _before_handle_action(
+        self, widget: BasePluginListItem, action_name: InstallerActions
+    ) -> None:
         """
         Hook to add custom logic before handling an action.
 
@@ -764,7 +799,6 @@ class BaseQPluginList(QListWidget):
             Plugin item widget that the action to be done is going to affect.
         action_name : InstallerActions
             Action that will be done to the plugin.
-
         """
         raise NotImplementedError
 
@@ -852,8 +886,10 @@ class BaseQPluginList(QListWidget):
     def packages(self):
         return [self.item(idx).widget.name for idx in range(self.count())]
 
-    @Slot(BasePackageMetadata, bool)
-    def tag_outdated(self, metadata: BasePackageMetadata, is_available: bool):
+    @Slot(PackageMetadataProtocol, bool)
+    def tag_outdated(
+        self, metadata: PackageMetadataProtocol, is_available: bool
+    ):
         """Determines if an installed plugin is up to date with the latest version.
         If it is not, the latest version will be displayed on the update button.
         """
@@ -887,7 +923,7 @@ class BaseQPluginList(QListWidget):
                 self._trans("update (v{latest})", latest=latest)
             )
 
-    def tag_unavailable(self, metadata: BasePackageMetadata):
+    def tag_unavailable(self, metadata: PackageMetadataProtocol):
         """
         Tag list items as unavailable for install with conda-forge.
 
@@ -955,7 +991,7 @@ class BaseQtPluginDialog(QDialog):
     Details are available in each method docstring.
     """
 
-    PACKAGE_METADATA_CLASS = _BasePackageMetadata
+    PACKAGE_METADATA_CLASS = BasePackageMetadata
     PROJECT_INFO_VERSION_CLASS = BaseProjectInfoVersions
     PLUGIN_LIST_CLASS = BaseQPluginList
     BASE_PACKAGE_NAME = ''
@@ -1045,7 +1081,7 @@ class BaseQtPluginDialog(QDialog):
         )
         self._close_shortcut.activated.connect(self.close)
 
-    def _setup_theme_update(self):
+    def _setup_theme_update(self) -> None:
         """
         Setup any initial style that should be applied to the plugin dialog.
 
@@ -1054,7 +1090,7 @@ class BaseQtPluginDialog(QDialog):
         """
         raise NotImplementedError
 
-    def _update_theme(self, event):
+    def _update_theme(self, event: Any) -> None:
         """
         Update the plugin dialog theme.
 
@@ -1063,9 +1099,8 @@ class BaseQtPluginDialog(QDialog):
 
         Parameters
         ----------
-        event : obj
+        event : Any
             Object with information about the theme/style change.
-
         """
         raise NotImplementedError
 
@@ -1150,7 +1185,7 @@ class BaseQtPluginDialog(QDialog):
         self._add_items_timer.start()
         self._update_plugin_count()
 
-    def _add_installed(self, pkg_name=None):
+    def _add_installed(self, pkg_name: Optional[str] = None) -> None:
         """
         Add plugins that are installed to the dialog.
 
@@ -1164,32 +1199,32 @@ class BaseQtPluginDialog(QDialog):
             The default is None. Without passing a package name the logic should
             fetch/get the info of all the installed plugins and add them to the dialog
             via the `installed_list.addItem` method.
-
         """
-        # TODO: This could be better reused?
         raise NotImplementedError
 
-    def _fetch_available_plugins(self, clear_cache: bool = False):
+    def _fetch_available_plugins(self, clear_cache: bool = False) -> None:
         """
-        Fetch plugina available for installation.
+        Fetch plugins available for installation.
 
         This should call `_handle_yield` in order to queue the addition of plugins available
-        for installation to the corresponded list (`available_list`).
+        for installation to the corresponding list (`self.available_list`).
 
         Parameters
         ----------
         clear_cache : bool, optional
             If a cache is implemented, if the cache should be cleared or not.
             The default is False.
-
         """
         raise NotImplementedError
 
-    def _loading_gif(self):
+    def _loading_gif(self) -> QMovie:
         """
-        Movie to use to indicate something is loading.
+        Animation to indicate something is loading.
 
-        This should return an instance of `QMovie` with a scaled size fo 18x18
+        Returns
+        -------
+        An instance of `QMovie` with a scaled size fo 18x18 that represents the animation to use
+        when things are loading/an operation is being done.
         """
         raise NotImplementedError
 
@@ -1197,12 +1232,14 @@ class BaseQtPluginDialog(QDialog):
         """
         If the current installation comes from a bundle/standalone approach or not.
 
+        Returns
+        -------
         This should return a `bool`, `True` if under a bundle like installation, `False`
         otherwise.
         """
         raise NotImplementedError
 
-    def _show_info(self, info):
+    def _show_info(self, info: str) -> None:
         """
         Shows a info message.
 
@@ -1210,11 +1247,10 @@ class BaseQtPluginDialog(QDialog):
         ----------
         info : str
             Info message to be shown.
-
         """
         raise NotImplementedError
 
-    def _show_warning(self, warning):
+    def _show_warning(self, warning: str) -> None:
         """
         Shows a warning message.
 
@@ -1222,11 +1258,10 @@ class BaseQtPluginDialog(QDialog):
         ----------
         warning : str
             Warning message to be shown.
-
         """
         raise NotImplementedError
 
-    def _trans(self, text, **kwargs):
+    def _trans(self, text: str, **kwargs) -> str:
         """
         Translates the given text.
 
@@ -1236,6 +1271,11 @@ class BaseQtPluginDialog(QDialog):
             The singular string to translate.
         **kwargs : dict, optional
             Any additional arguments to use when formatting the string.
+
+        Returns
+        -------
+        The translated string
+
         """
         raise NotImplementedError
 
@@ -1522,7 +1562,7 @@ class BaseQtPluginDialog(QDialog):
         if not self._filter_timer.isActive():
             self.filter(None, skip=True)
 
-    def _handle_yield(self, data: Tuple[BasePackageMetadata, bool, Dict]):
+    def _handle_yield(self, data: Tuple[PackageMetadataProtocol, bool, Dict]):
         """Output from a worker process.
 
         Includes information about the plugin, including available versions on conda and pypi.

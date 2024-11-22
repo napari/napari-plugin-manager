@@ -194,6 +194,7 @@ class QtPluginDialog(BaseQtPluginDialog):
         )
 
     def _add_installed(self, pkg_name=None):
+        # TODO: Could this be better reused?
         pm2 = npe2.PluginManager.instance()
         pm2.discover()
         for manifest in pm2.iter_manifests():
