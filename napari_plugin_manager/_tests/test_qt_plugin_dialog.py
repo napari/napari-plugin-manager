@@ -22,6 +22,7 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
 
 from napari_plugin_manager import qt_plugin_dialog
 from napari_plugin_manager.qt_package_installer import InstallerActions
+from napari_plugin_manager.qt_plugin_dialog import ProcessStatus
 
 N_MOCKED_PLUGINS = 2
 
@@ -195,7 +196,6 @@ def plugin_dialog(
     monkeypatch.setattr(
         napari.plugins, 'plugin_manager', OldPluginManagerMock()
     )
-
     monkeypatch.setattr(importlib.metadata, 'metadata', mock_metadata)
 
     monkeypatch.setattr(npe2, 'PluginManager', PluginManagerMock())
@@ -544,3 +544,26 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     )
     qtbot.wait(200)
     assert not plugin_dialog.isVisible()
+
+
+def test_query_status(plugin_dialog, monkeypatch):
+    status, description = plugin_dialog.query_status()
+    assert status == ProcessStatus.IDLE
+    assert not description
+
+    monkeypatch.setattr(
+        plugin_dialog.installer,
+        "_queue",
+        ['mock'],
+    )
+    status, description = plugin_dialog.query_status()
+    assert status == ProcessStatus.BUSY
+    assert description
+
+    monkeypatch.setattr(
+        plugin_dialog.installer,
+        "_queue",
+        ['mock', 'other-mock'],
+    )
+    assert status == ProcessStatus.BUSY
+    assert description
