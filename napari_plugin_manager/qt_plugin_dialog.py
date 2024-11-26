@@ -1,4 +1,3 @@
-import importlib.metadata
 import sys
 from pathlib import Path
 
@@ -158,43 +157,7 @@ class QtPluginDialog(BaseQtPluginDialog):
         stylesheet = get_current_stylesheet([STYLES_PATH])
         self.setStyleSheet(stylesheet)
 
-    def _add_to_installed(self, distname, enabled, plugin_api_version=1):
-        norm_name = normalized_name(distname or '')
-        if distname:
-            try:
-                meta = importlib.metadata.metadata(distname)
-
-            except importlib.metadata.PackageNotFoundError:
-                return  # a race condition has occurred and the package is uninstalled by another thread
-            if len(meta) == 0:
-                # will not add builtins.
-                return
-            self.already_installed.add(norm_name)
-        else:
-            meta = {}
-
-        self.installed_list.addItem(
-            self.PROJECT_INFO_VERSION_CLASS(
-                display_name=norm_name,
-                pypi_versions=[],
-                conda_versions=[],
-                metadata=self.PACKAGE_METADATA_CLASS(
-                    metadata_version="1.0",
-                    name=norm_name,
-                    version=meta.get('version', ''),
-                    summary=meta.get('summary', ''),
-                    home_page=meta.get('Home-page', ''),
-                    author=meta.get('author', ''),
-                    license=meta.get('license', ''),
-                ),
-            ),
-            installed=True,
-            enabled=enabled,
-            plugin_api_version=plugin_api_version,
-        )
-
     def _add_installed(self, pkg_name=None):
-        # TODO: Could this be better reused?
         pm2 = npe2.PluginManager.instance()
         pm2.discover()
         for manifest in pm2.iter_manifests():
@@ -206,7 +169,7 @@ class QtPluginDialog(BaseQtPluginDialog):
             npev = 'shim' if manifest.npe1_shim else 2
             if distname == pkg_name or pkg_name is None:
                 self._add_to_installed(
-                    distname, enabled, plugin_api_version=npev
+                    distname, enabled, distname, plugin_api_version=npev
                 )
 
         napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
@@ -227,6 +190,7 @@ class QtPluginDialog(BaseQtPluginDialog):
                 self._add_to_installed(
                     distname,
                     not napari.plugins.plugin_manager.is_blocked(plugin_name),
+                    normalized_name(distname or ''),
                 )
         self._update_plugin_count()
 

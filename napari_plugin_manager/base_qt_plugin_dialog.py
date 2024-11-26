@@ -1,4 +1,5 @@
 import contextlib
+import importlib.metadata
 import os
 import webbrowser
 from functools import partial
@@ -1179,6 +1180,42 @@ class BaseQtPluginDialog(QDialog):
                     self._trans('Plugin Manager: process completed\n')
                 )
 
+    def _add_to_installed(
+        self, distname, enabled, norm_name, plugin_api_version=1
+    ):
+        if distname:
+            try:
+                meta = importlib.metadata.metadata(distname)
+
+            except importlib.metadata.PackageNotFoundError:
+                return  # a race condition has occurred and the package is uninstalled by another thread
+            if len(meta) == 0:
+                # will not add builtins.
+                return
+            self.already_installed.add(norm_name)
+        else:
+            meta = {}
+
+        self.installed_list.addItem(
+            self.PROJECT_INFO_VERSION_CLASS(
+                display_name=norm_name,
+                pypi_versions=[],
+                conda_versions=[],
+                metadata=self.PACKAGE_METADATA_CLASS(
+                    metadata_version="1.0",
+                    name=norm_name,
+                    version=meta.get('version', ''),
+                    summary=meta.get('summary', ''),
+                    home_page=meta.get('Home-page', ''),
+                    author=meta.get('author', ''),
+                    license=meta.get('license', ''),
+                ),
+            ),
+            installed=True,
+            enabled=enabled,
+            plugin_api_version=plugin_api_version,
+        )
+
     def _add_to_available(self, pkg_name):
         self._add_items_timer.stop()
         self._plugin_queue.insert(0, self._plugin_data_map[pkg_name])
@@ -1189,7 +1226,7 @@ class BaseQtPluginDialog(QDialog):
         """
         Add plugins that are installed to the dialog.
 
-        This should call the `installed_list.addItem` method to add each plugin item
+        This should call the `_add_to_installed` method to add each plugin item
         that should be shown as an installed plugin.
 
         Parameters
@@ -1198,7 +1235,7 @@ class BaseQtPluginDialog(QDialog):
             The name of the package that needs to be shown as installed.
             The default is None. Without passing a package name the logic should
             fetch/get the info of all the installed plugins and add them to the dialog
-            via the `installed_list.addItem` method.
+            via the `_add_to_installed` method.
         """
         raise NotImplementedError
 
