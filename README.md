@@ -104,6 +104,20 @@ a restart to be properly configured.
 
 ![Screenshot of the napari-plugin-manager showing the process of installing a plugin](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/install.png)
 
+### Installing a plugin via direct entry
+
+You can also install a napari plugin or any other package via the direct entry option. The following steps 
+correspond to the options and buttons located at the **bottom of the dialog**.
+
+1. You can type either the name of the package, a url to the resource or drag and drop a compressed file
+   of a previously downloaded package.
+2. Select the tool (`conda` or `pip`) by clicking on the arrow dorpdown of the `Install` button.
+3. Start the installation process by clicking on the `Install` button.
+
+You can cancel the process at any time by clicking the `Cancel all` button.
+
+![Screenshot of the napari-plugin-manager showing the direct entry options](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/direct-entry.png)
+
 ### Uninstalling a plugin
 
 To uninstall a plugin:
