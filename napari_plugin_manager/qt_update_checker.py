@@ -1,7 +1,3 @@
-from qtpy.QtCore import QObject, QTimer
-from qtpy.QtWidgets import QWidget, QLabel, QVBoxLayout, QMessageBox
-
-
 import json
 import os
 import sys
@@ -17,8 +13,7 @@ import packaging.version
 from napari import __version__
 from napari._qt.qthreading import create_worker
 from napari.utils.notifications import show_warning
-from qtpy.QtCore import QObject
-from qtpy.QtWidgets import QMessageBox
+from qtpy.QtWidgets import QMessageBox, QWidget
 from superqt import ensure_main_thread
 
 IGNORE_DAYS = 21
@@ -75,10 +70,9 @@ def get_latest_version():
         yield latest_tag
 
 
-
 class UpdateChecker(QWidget):
 
-    FIRST_TIME = False    
+    FIRST_TIME = False
 
     # def __init__(self):
     #     super().__init__()
