@@ -13,8 +13,17 @@ import packaging.version
 from napari import __version__
 from napari._qt.qthreading import create_worker
 from napari.utils.notifications import show_warning
-from qtpy.QtWidgets import QMessageBox, QWidget
+from qtpy.QtCore import QTimer
+from qtpy.QtWidgets import (
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 from superqt import ensure_main_thread
+
+from napari_plugin_manager.qt_plugin_dialog import ON_BUNDLE
 
 IGNORE_DAYS = 21
 IGNORE_FILE = "ignore.txt"
@@ -73,30 +82,36 @@ def get_latest_version():
 class UpdateChecker(QWidget):
 
     FIRST_TIME = False
-
-    # def __init__(self):
-    #     super().__init__()
-    #     print("hello!")
-    #     self.label = QLabel("Hello, world!")
-    #     layout = QVBoxLayout()
-    #     layout.addWidget(self.label)
-    #     self.setLayout(layout)
-    #     self._timer = QTimer()
-    #     self._timer.setInterval(5000)
-    #     self._timer.timeout.connect(self.run)
-    #     self._timer.setSingleShot(True)
-    #     self._timer.start()
+    URL_PACKAGE = "https://napari.org/dev/tutorials/fundamentals/installation.html#install-as-python-package-recommended"
+    URL_BUNDLE = "https://napari.org/dev/tutorials/fundamentals/installation.html#install-as-a-bundled-app"
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-
         self._current_version = packaging.version.parse(__version__)
         self._latest_version = None
         self._worker = None
         self._base_folder = sys.prefix
 
-    def check(self):
+        self.label = QLabel("Checking for updates...<br>")
+        self.check_updates_button = QPushButton("Check for updates")
+        self.check_updates_button.clicked.connect(self._check)
 
+        layout = QVBoxLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.check_updates_button)
+        self.setLayout(layout)
+
+        self._timer = QTimer()
+        self._timer.setInterval(2000)
+        self._timer.timeout.connect(self.check)
+        self._timer.setSingleShot(True)
+        self._timer.start()
+
+    def _check(self):
+        self.label.setText("Checking for updates...\n")
+        self._timer.start()
+
+    def check(self):
         if os.path.exists(os.path.join(self._base_folder, IGNORE_FILE)):
             with (
                 open(
@@ -120,15 +135,22 @@ class UpdateChecker(QWidget):
         my_version = self._current_version
         remote_version = latest_version
         if remote_version > my_version:
+            url = self.URL_BUNDLE if ON_BUNDLE else self.URL_PACKAGE
+            msg = (
+                f"You use outdated version of napari.<br><br>"
+                f"Installed version: {my_version}<br>"
+                f"Current version: {remote_version}<br><br>"
+                "For more information on how to update <br>"
+                f'visit the <a href="{url}">online documentation</a><br><br>'
+            )
+            self.label.setText(msg)
             message = QMessageBox(
                 QMessageBox.Icon.Information,
                 "New release",
-                f"You use outdated version of napari. "
-                f"Your version is {my_version} and current is {remote_version}.",
+                msg,
                 QMessageBox.StandardButton.Ok
                 | QMessageBox.StandardButton.Ignore,
             )
-
             if message.exec_() == QMessageBox.StandardButton.Ignore:
                 os.makedirs(self._base_folder, exist_ok=True)
                 with open(
@@ -137,11 +159,12 @@ class UpdateChecker(QWidget):
                     encoding="utf-8",
                 ) as f_p:
                     f_p.write(date.today().isoformat())
-
-    def run(self):
-        parent = self.parent()
-        parent.hide()
-        QMessageBox.information(None, "Hello!", "Hello, world!")
+        else:
+            msg = (
+                f"You are using the latest version of napari!<br><br>"
+                f"Installed version: {my_version}<br><br>"
+            )
+            self.label.setText(msg)
 
 
 if __name__ == '__main__':
@@ -149,5 +172,4 @@ if __name__ == '__main__':
 
     app = QApplication([])
     checker = UpdateChecker()
-    checker.check()
     sys.exit(app.exec_())
