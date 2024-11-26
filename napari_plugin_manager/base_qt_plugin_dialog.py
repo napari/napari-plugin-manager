@@ -64,7 +64,7 @@ class PackageMetadataProtocol(Protocol):
     """
     Protocol class defining the minimum atributtes/properties needed for package metadata.
 
-    This class is meant for type checking propuses as well as to provide a type to use with
+    This class is meant for type checking purposes as well as to provide a type to use with
     with the Qt `Slot` decorator.
     """
 
