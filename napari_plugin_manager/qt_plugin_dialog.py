@@ -127,6 +127,9 @@ class PluginListItem(BasePluginListItem):
                 )
                 return
 
+    def _on_bundle(self):
+        return running_as_constructor_app()
+
 
 class QPluginList(BaseQPluginList):
 

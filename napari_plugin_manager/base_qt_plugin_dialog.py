@@ -38,6 +38,7 @@ from qtpy.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMenu,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSplitter,
@@ -600,6 +601,17 @@ class BasePluginListItem(QFrame):
         """
         raise NotImplementedError
 
+    def _on_bundle(self) -> bool:
+        """
+        If the current installation comes from a bundle/standalone approach or not.
+
+        Returns
+        -------
+        This should return a `bool`, `True` if under a bundle like installation, `False`
+        otherwise.
+        """
+        raise NotImplementedError
+
     def _cancel_requested(self):
         version = self.version_choice_dropdown.currentText()
         tool = self.get_installer_tool()
@@ -615,6 +627,26 @@ class BasePluginListItem(QFrame):
             if self.action_button.objectName() == 'install_button'
             else InstallerActions.UNINSTALL
         )
+        if (
+            tool == InstallerTools.PIP
+            and action == InstallerActions.INSTALL
+            and self._on_bundle()
+        ):
+            button_clicked = QMessageBox.warning(
+                self,
+                self._trans('PyPI installation on bundle'),
+                self._trans(
+                    'Installing from PyPI does not take into account existing installed packages, '
+                    'so it can break existing installations. '
+                    'If this happens the only solution is to reinstall the bundle.\n\n'
+                    'Are you sure you want to install from PyPI?'
+                ),
+                buttons=QMessageBox.StandardButton.Ok
+                | QMessageBox.StandardButton.Cancel,
+                defaultButton=QMessageBox.StandardButton.Cancel,
+            )
+            if button_clicked != QMessageBox.StandardButton.Ok:
+                return
         self.actionRequested.emit(self.item, self.name, action, version, tool)
 
     def _update_requested(self):
