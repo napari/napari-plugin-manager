@@ -53,6 +53,7 @@ from qtpy.QtWidgets import (
 )
 from superqt import QCollapsible, QElidingLabel
 
+from napari_plugin_manager.config import get_configuration
 from napari_plugin_manager.npe2api import (
     cache_clear,
     iter_napari_plugin_info,
@@ -63,7 +64,7 @@ from napari_plugin_manager.qt_package_installer import (
     InstallerTools,
     ProcessFinishedData,
 )
-from napari_plugin_manager.qt_widgets import ClickableLabel
+from napari_plugin_manager.qt_widgets import ClickableLabel, DisclaimerWidget
 from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
@@ -884,6 +885,9 @@ class QtPluginDialog(QDialog):
         self.available_set = set()
         self._prefix = prefix
         self._first_open = True
+        self._show_disclaimer = get_configuration().getboolean(
+            'general', 'show_disclaimer'
+        )
         self._plugin_queue = []  # Store plugin data to be added
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
@@ -1190,6 +1194,12 @@ class QtPluginDialog(QDialog):
         mid_layout.addWidget(self.avail_label)
         mid_layout.addStretch()
         lay.addLayout(mid_layout)
+        self.disclaimer_widget = DisclaimerWidget(
+            trans._(
+                "DISCLAIMER: Available plugin packages are user produced content. Any use of the provided files is at your own risk."
+            )
+        )
+        lay.addWidget(self.disclaimer_widget)
         self.available_list = QPluginList(uninstalled, self.installer)
         lay.addWidget(self.available_list)
 
@@ -1277,6 +1287,8 @@ class QtPluginDialog(QDialog):
         self.show_status_btn.setCheckable(True)
         self.show_status_btn.setChecked(False)
         self.show_status_btn.toggled.connect(self.toggle_status)
+
+        self.disclaimer_widget.setVisible(self._show_disclaimer)
 
         self.v_splitter.setStretchFactor(1, 2)
         self.h_splitter.setStretchFactor(0, 2)
@@ -1492,6 +1504,7 @@ class QtPluginDialog(QDialog):
         if plugin_dialog != self:
             self.close()
 
+        plugin_dialog.disclaimer_widget.setVisible(self._show_disclaimer)
         plugin_dialog.setModal(True)
         plugin_dialog.show()
 

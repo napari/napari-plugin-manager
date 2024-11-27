@@ -575,3 +575,10 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     )
     qtbot.wait(500)
     assert not plugin_dialog.isVisible()
+
+
+def test_disclaimer_widget(plugin_dialog, qtbot):
+    assert not plugin_dialog.disclaimer_widget.isVisible()
+    plugin_dialog._show_disclaimer = True
+    plugin_dialog.exec_()
+    assert plugin_dialog.disclaimer_widget.isVisible()
