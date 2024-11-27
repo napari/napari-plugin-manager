@@ -88,7 +88,6 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         with ThreadPoolExecutor() as executor:
             data = executor.submit(plugin_summaries)
             _conda = executor.submit(conda_map)
-
         conda = _conda.result()
         data_set = data.result()
     except (HTTPError, URLError):

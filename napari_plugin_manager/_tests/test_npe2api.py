@@ -13,7 +13,7 @@ def test_user_agent():
     assert _user_agent()
 
 
-@flaky(max_runs=3, min_passes=2)
+@flaky(max_runs=4, min_passes=2)
 def test_plugin_summaries():
     keys = [
         "name",
