@@ -33,6 +33,7 @@ from napari_plugin_manager.npe2api import (
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
 )
+from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
 STYLES_PATH = Path(__file__).parent / 'styles.qss'

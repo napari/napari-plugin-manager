@@ -603,11 +603,12 @@ class BasePluginListItem(QFrame):
 
     def _warn_pypi_install(self) -> bool:
         """
-        If the current installation comes from a bundle/standalone approach or not.
+        If the current installation should warn that a package from PyPI is going
+        to be installed.
 
         Returns
         -------
-        This should return a `bool`, `True` if under a bundle like installation, `False`
+        This should return a `bool`, `True` if a warning should be shown, `False`
         otherwise.
         """
         raise NotImplementedError
@@ -630,7 +631,7 @@ class BasePluginListItem(QFrame):
         if (
             tool == InstallerTools.PIP
             and action == InstallerActions.INSTALL
-            and self._on_bundle()
+            and self._warn_pypi_install()
         ):
             button_clicked = QMessageBox.warning(
                 self,
