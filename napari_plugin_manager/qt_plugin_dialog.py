@@ -33,6 +33,7 @@ from napari_plugin_manager.npe2api import (
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
 )
+from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
@@ -126,6 +127,9 @@ class PluginListItem(BasePluginListItem):
                     npe1_name, not enabled
                 )
                 return
+
+    def _warn_pypi_install(self):
+        return running_as_constructor_app() or is_conda_package('napari')
 
 
 class QPluginList(BaseQPluginList):
