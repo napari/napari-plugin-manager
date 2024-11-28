@@ -601,7 +601,7 @@ class BasePluginListItem(QFrame):
         """
         raise NotImplementedError
 
-    def _on_bundle(self) -> bool:
+    def _warn_pypi_install(self) -> bool:
         """
         If the current installation comes from a bundle/standalone approach or not.
 

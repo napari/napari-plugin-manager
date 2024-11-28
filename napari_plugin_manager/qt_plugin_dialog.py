@@ -127,7 +127,7 @@ class PluginListItem(BasePluginListItem):
                 )
                 return
 
-    def _on_bundle(self):
+    def _warn_pypi_install(self):
         return running_as_constructor_app()
 
 
