@@ -129,7 +129,9 @@ class PluginListItem(BasePluginListItem):
                 return
 
     def _warn_pypi_install(self):
-        return running_as_constructor_app() or is_conda_package('napari')
+        return running_as_constructor_app() or is_conda_package(
+            'napari'
+        )  # or True
 
 
 class QPluginList(BaseQPluginList):
