@@ -600,6 +600,20 @@ class BasePluginListItem(QFrame):
         """
         raise NotImplementedError
 
+    def _action_validation(self, tool, action) -> bool:
+        """
+        Validate if the current action should be done or not.
+
+        As an example you could warn that a package from PyPI is going
+        to be installed.
+
+        Returns
+        -------
+        This should return a `bool`, `True` if the action should proceed, `False`
+        otherwise.
+        """
+        raise NotImplementedError
+
     def _cancel_requested(self):
         version = self.version_choice_dropdown.currentText()
         tool = self.get_installer_tool()
@@ -615,7 +629,10 @@ class BasePluginListItem(QFrame):
             if self.action_button.objectName() == 'install_button'
             else InstallerActions.UNINSTALL
         )
-        self.actionRequested.emit(self.item, self.name, action, version, tool)
+        if self._action_validation(tool, action):
+            self.actionRequested.emit(
+                self.item, self.name, action, version, tool
+            )
 
     def _update_requested(self):
         version = self.version_choice_dropdown.currentText()

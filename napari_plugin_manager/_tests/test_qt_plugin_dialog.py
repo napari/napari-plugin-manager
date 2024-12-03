@@ -12,6 +12,7 @@ from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
 from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
 from qtpy.QtGui import QDropEvent
+from qtpy.QtWidgets import QMessageBox
 
 if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     pytest.skip(
@@ -482,6 +483,35 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert process_finished_data['action'] == InstallerActions.INSTALL
     assert process_finished_data['pkgs'][0].startswith("requests")
     qtbot.wait(5000)
+
+
+@pytest.mark.parametrize(
+    "message_return",
+    [QMessageBox.StandardButton.Cancel, QMessageBox.StandardButton.Ok],
+)
+def test_install_pypi_constructor(
+    qtbot, tmp_virtualenv, plugin_dialog, request, message_return
+):
+    if "no-constructor" in request.node.name:
+        pytest.skip(
+            reason="This test is only relevant for constructor-based installs"
+        )
+
+    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    plugin_dialog.search('requests')
+    qtbot.wait(500)
+    item = plugin_dialog.available_list.item(0)
+    widget = plugin_dialog.available_list.itemWidget(item)
+    with patch.object(qt_plugin_dialog.QMessageBox, "exec_") as mock:
+        mock.return_value = message_return
+        if message_return == QMessageBox.StandardButton.Ok:
+            with qtbot.waitSignal(
+                plugin_dialog.installer.processFinished, timeout=60_000
+            ):
+                widget.action_button.click()
+        else:
+            widget.action_button.click()
+        assert mock.called
 
 
 def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
