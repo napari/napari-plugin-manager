@@ -170,7 +170,8 @@ class PluginListItem(BasePluginListItem):
             button_clicked = warn_msgbox.exec_()
             DISMISS_WARN_PYPI_INSTALL_DLG = warn_checkbox.isChecked()
             if button_clicked != QMessageBox.StandardButton.Ok:
-                return
+                return False
+        return True
 
 
 class QPluginList(BaseQPluginList):
