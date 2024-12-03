@@ -38,7 +38,6 @@ from qtpy.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMenu,
-    QMessageBox,
     QPushButton,
     QSizePolicy,
     QSplitter,
@@ -60,7 +59,6 @@ from napari_plugin_manager.utils import is_conda_package
 
 CONDA = 'Conda'
 PYPI = 'PyPI'
-DISMISS_WARN_PYPI_INSTALL_DLG = False
 
 
 class PackageMetadataProtocol(Protocol):
@@ -602,14 +600,16 @@ class BasePluginListItem(QFrame):
         """
         raise NotImplementedError
 
-    def _warn_pypi_install(self) -> bool:
+    def _action_validation(self, tool, action) -> bool:
         """
-        If the current installation should warn that a package from PyPI is going
+        Validate if the current action should be done or not.
+
+        As an example you could warn that a package from PyPI is going
         to be installed.
 
         Returns
         -------
-        This should return a `bool`, `True` if a warning should be shown, `False`
+        This should return a `bool`, `True` if the action should proceed, `False`
         otherwise.
         """
         raise NotImplementedError
@@ -622,7 +622,6 @@ class BasePluginListItem(QFrame):
         )
 
     def _action_requested(self):
-        global DISMISS_WARN_PYPI_INSTALL_DLG
         version = self.version_choice_dropdown.currentText()
         tool = self.get_installer_tool()
         action = (
@@ -630,40 +629,10 @@ class BasePluginListItem(QFrame):
             if self.action_button.objectName() == 'install_button'
             else InstallerActions.UNINSTALL
         )
-        if (
-            tool == InstallerTools.PIP
-            and action == InstallerActions.INSTALL
-            and self._warn_pypi_install()
-            and not DISMISS_WARN_PYPI_INSTALL_DLG
-        ):
-            warn_msgbox = QMessageBox(self)
-            warn_msgbox.setWindowTitle(
-                self._trans('PyPI installation on bundle')
+        if self._action_validation(tool, action):
+            self.actionRequested.emit(
+                self.item, self.name, action, version, tool
             )
-            warn_msgbox.setText(
-                self._trans(
-                    'Installing from PyPI does not take into account existing installed packages, '
-                    'so it can break existing installations. '
-                    'If this happens the only solution is to reinstall the bundle.\n\n'
-                    'Are you sure you want to install from PyPI?'
-                )
-            )
-            warn_checkbox = QCheckBox(
-                self._trans(
-                    "Don't show this message again in the current session"
-                )
-            )
-            warn_msgbox.setCheckBox(warn_checkbox)
-            warn_msgbox.setIcon(QMessageBox.Icon.Warning)
-            warn_msgbox.setStandardButtons(
-                QMessageBox.StandardButton.Ok
-                | QMessageBox.StandardButton.Cancel
-            )
-            button_clicked = warn_msgbox.exec_()
-            DISMISS_WARN_PYPI_INSTALL_DLG = warn_checkbox.isChecked()
-            if button_clicked != QMessageBox.StandardButton.Ok:
-                return
-        self.actionRequested.emit(self.item, self.name, action, version, tool)
 
     def _update_requested(self):
         version = self.version_choice_dropdown.currentText()
