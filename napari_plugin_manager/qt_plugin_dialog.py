@@ -19,6 +19,7 @@ from qtpy.QtCore import QPoint, QSize
 from qtpy.QtGui import (
     QMovie,
 )
+from qtpy.QtWidgets import QCheckBox, QMessageBox
 
 from napari_plugin_manager.base_qt_plugin_dialog import (
     BasePluginListItem,
@@ -32,10 +33,13 @@ from napari_plugin_manager.npe2api import (
 )
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
+    InstallerTools,
 )
+from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
+DISMISS_WARN_PYPI_INSTALL_DLG = False
 
 
 def _show_message(widget):
@@ -126,6 +130,48 @@ class PluginListItem(BasePluginListItem):
                     npe1_name, not enabled
                 )
                 return
+
+    def _warn_pypi_install(self):
+        return running_as_constructor_app() or is_conda_package(
+            'napari'
+        )  # or True
+
+    def _action_validation(self, tool, action):
+        global DISMISS_WARN_PYPI_INSTALL_DLG
+        if (
+            tool == InstallerTools.PIP
+            and action == InstallerActions.INSTALL
+            and self._warn_pypi_install()
+            and not DISMISS_WARN_PYPI_INSTALL_DLG
+        ):
+            warn_msgbox = QMessageBox(self)
+            warn_msgbox.setWindowTitle(
+                self._trans('PyPI installation on bundle/conda')
+            )
+            warn_msgbox.setText(
+                self._trans(
+                    'Installing from PyPI does not take into account existing installed packages, '
+                    'so it can break existing installations. '
+                    'If this happens the only solution is to reinstall the bundle/create a new conda environment.\n\n'
+                    'Are you sure you want to install from PyPI?'
+                )
+            )
+            warn_checkbox = QCheckBox(
+                self._trans(
+                    "Don't show this message again in the current session"
+                )
+            )
+            warn_msgbox.setCheckBox(warn_checkbox)
+            warn_msgbox.setIcon(QMessageBox.Icon.Warning)
+            warn_msgbox.setStandardButtons(
+                QMessageBox.StandardButton.Ok
+                | QMessageBox.StandardButton.Cancel
+            )
+            button_clicked = warn_msgbox.exec_()
+            DISMISS_WARN_PYPI_INSTALL_DLG = warn_checkbox.isChecked()
+            if button_clicked != QMessageBox.StandardButton.Ok:
+                return False
+        return True
 
 
 class QPluginList(BaseQPluginList):
