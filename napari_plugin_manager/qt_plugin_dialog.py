@@ -21,6 +21,10 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QCheckBox, QMessageBox
 
+from napari_plugin_manager.base_qt_package_installer import (
+    InstallerActions,
+    InstallerTools,
+)
 from napari_plugin_manager.base_qt_plugin_dialog import (
     BasePluginListItem,
     BaseProjectInfoVersions,
@@ -31,11 +35,7 @@ from napari_plugin_manager.npe2api import (
     cache_clear,
     iter_napari_plugin_info,
 )
-from napari_plugin_manager.qt_package_installer import (
-    InstallerActions,
-    InstallerTools,
-    NapariInstallerQueue,
-)
+from napari_plugin_manager.qt_package_installer import NapariInstallerQueue
 from napari_plugin_manager.utils import is_conda_package
 
 # Scaling factor for each list widget item when expanding.

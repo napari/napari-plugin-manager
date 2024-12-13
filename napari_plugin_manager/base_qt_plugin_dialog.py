@@ -48,7 +48,7 @@ from qtpy.QtWidgets import (
 )
 from superqt import QCollapsible, QElidingLabel
 
-from napari_plugin_manager.qt_package_installer import (
+from napari_plugin_manager.base_qt_package_installer import (
     InstallerActions,
     InstallerQueue,
     InstallerTools,

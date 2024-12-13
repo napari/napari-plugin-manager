@@ -7,10 +7,12 @@ from typing import TYPE_CHECKING
 import pytest
 from qtpy.QtCore import QProcessEnvironment
 
-from napari_plugin_manager.qt_package_installer import (
+from napari_plugin_manager.base_qt_package_installer import (
     AbstractInstallerTool,
     InstallerActions,
     InstallerTools,
+)
+from napari_plugin_manager.qt_package_installer import (
     NapariCondaInstallerTool,
     NapariInstallerQueue,
     NapariPipInstallerTool,
