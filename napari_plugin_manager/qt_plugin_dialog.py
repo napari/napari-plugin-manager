@@ -34,6 +34,7 @@ from napari_plugin_manager.npe2api import (
 from napari_plugin_manager.qt_package_installer import (
     InstallerActions,
     InstallerTools,
+    NapariInstallerQueue,
 )
 from napari_plugin_manager.utils import is_conda_package
 
@@ -194,6 +195,7 @@ class QtPluginDialog(BaseQtPluginDialog):
     PACKAGE_METADATA_CLASS = npe2.PackageMetadata
     PROJECT_INFO_VERSION_CLASS = ProjectInfoVersions
     PLUGIN_LIST_CLASS = QPluginList
+    INSTALLER_QUEUE_CLASS = NapariInstallerQueue
     BASE_PACKAGE_NAME = 'napari'
 
     def _setup_theme_update(self):

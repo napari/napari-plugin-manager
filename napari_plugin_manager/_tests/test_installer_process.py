@@ -9,11 +9,11 @@ from qtpy.QtCore import QProcessEnvironment
 
 from napari_plugin_manager.qt_package_installer import (
     AbstractInstallerTool,
-    CondaInstallerTool,
     InstallerActions,
-    InstallerQueue,
     InstallerTools,
-    PipInstallerTool,
+    NapariCondaInstallerTool,
+    NapariInstallerQueue,
+    NapariPipInstallerTool,
 )
 
 if TYPE_CHECKING:
@@ -71,9 +71,11 @@ def test_not_implemented_methods():
 
 
 def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
-    installer = InstallerQueue()
+    installer = NapariInstallerQueue()
     monkeypatch.setattr(
-        PipInstallerTool, "executable", lambda *a: tmp_virtualenv.creator.exe
+        NapariPipInstallerTool,
+        "executable",
+        lambda *a: tmp_virtualenv.creator.exe,
     )
     with qtbot.waitSignal(installer.allFinished, timeout=20000):
         installer.install(
@@ -139,9 +141,11 @@ def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
 
 
 def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
-    installer = InstallerQueue()
+    installer = NapariInstallerQueue()
     monkeypatch.setattr(
-        PipInstallerTool, "executable", lambda *a: tmp_virtualenv.creator.exe
+        NapariPipInstallerTool,
+        "executable",
+        lambda *a: tmp_virtualenv.creator.exe,
     )
 
     # CHECK 1) Errors should trigger finished and allFinished too
@@ -181,7 +185,7 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
 
 
 def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
-    installer = InstallerQueue()
+    installer = NapariInstallerQueue()
     with qtbot.waitSignal(installer.allFinished, timeout=20000):
         job_id = installer.install(
             tool=InstallerTools.PIP,
@@ -192,13 +196,13 @@ def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
 
 
 @pytest.mark.skipif(
-    not CondaInstallerTool.available(), reason="Conda is not available."
+    not NapariCondaInstallerTool.available(), reason="Conda is not available."
 )
 def test_conda_installer(qtbot, tmp_conda_env: Path):
     conda_meta = tmp_conda_env / "conda-meta"
     glob_pat = "typing-extensions-*.json"
     glob_pat_2 = "pyzenhub-*.json"
-    installer = InstallerQueue()
+    installer = NapariInstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
@@ -277,9 +281,11 @@ def test_conda_installer(qtbot, tmp_conda_env: Path):
 
 
 def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
-    installer = InstallerQueue()
+    installer = NapariInstallerQueue()
     monkeypatch.setattr(
-        PipInstallerTool, "executable", lambda *a: 'not-a-real-executable'
+        NapariPipInstallerTool,
+        "executable",
+        lambda *a: 'not-a-real-executable',
     )
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
@@ -289,10 +295,10 @@ def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
 
 
 @pytest.mark.skipif(
-    not CondaInstallerTool.available(), reason="Conda is not available."
+    not NapariCondaInstallerTool.available(), reason="Conda is not available."
 )
 def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
-    installer = InstallerQueue()
+    installer = NapariInstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
@@ -309,8 +315,8 @@ def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
 
 
 def test_constraints_are_in_sync():
-    conda_constraints = sorted(CondaInstallerTool.constraints())
-    pip_constraints = sorted(PipInstallerTool.constraints())
+    conda_constraints = sorted(NapariCondaInstallerTool.constraints())
+    pip_constraints = sorted(NapariPipInstallerTool.constraints())
 
     assert len(conda_constraints) == len(pip_constraints)
 
@@ -324,15 +330,15 @@ def test_constraints_are_in_sync():
 
 
 def test_executables():
-    assert CondaInstallerTool.executable()
-    assert PipInstallerTool.executable()
+    assert NapariCondaInstallerTool.executable()
+    assert NapariPipInstallerTool.executable()
 
 
 def test_available():
-    assert str(CondaInstallerTool.available())
-    assert PipInstallerTool.available()
+    assert str(NapariCondaInstallerTool.available())
+    assert NapariPipInstallerTool.available()
 
 
 def test_unrecognized_tool():
     with pytest.raises(ValueError):
-        InstallerQueue().install(tool='shrug', pkgs=[])
+        NapariInstallerQueue().install(tool='shrug', pkgs=[])

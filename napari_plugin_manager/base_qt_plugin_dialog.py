@@ -1025,6 +1025,7 @@ class BaseQtPluginDialog(QDialog):
     PACKAGE_METADATA_CLASS = BasePackageMetadata
     PROJECT_INFO_VERSION_CLASS = BaseProjectInfoVersions
     PLUGIN_LIST_CLASS = BaseQPluginList
+    INSTALLER_QUEUE_CLASS = InstallerQueue
     BASE_PACKAGE_NAME = ''
     MAX_PLUGIN_SEARCH_ITEMS = 35
 
@@ -1065,7 +1066,7 @@ class BaseQtPluginDialog(QDialog):
         self._add_items_timer.setInterval(61)  # ms
         self._add_items_timer.timeout.connect(self._add_items)
 
-        self.installer = InstallerQueue(parent=self, prefix=prefix)
+        self.installer = self.INSTALLER_QUEUE_CLASS(parent=self, prefix=prefix)
         self.setWindowTitle(self._trans('Plugin Manager'))
         self._setup_ui()
         self.installer.set_output_widget(self.stdout_text)

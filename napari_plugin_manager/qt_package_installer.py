@@ -96,7 +96,7 @@ class AbstractInstallerTool:
         """
         Version constraints to limit unwanted changes in installation.
         """
-        return [f"napari=={_napari_version}", "numpy<2"]
+        raise NotImplementedError
 
     @classmethod
     def available(cls) -> bool:
@@ -107,10 +107,6 @@ class AbstractInstallerTool:
 
 
 class PipInstallerTool(AbstractInstallerTool):
-    @classmethod
-    def executable(cls):
-        return str(_get_python_exe())
-
     @classmethod
     def available(cls):
         return call([cls.executable(), "-m", "pip", "--version"]) == 0
@@ -151,12 +147,7 @@ class PipInstallerTool(AbstractInstallerTool):
     @classmethod
     @lru_cache(maxsize=0)
     def _constraints_file(cls) -> str:
-        with NamedTemporaryFile(
-            "w", suffix="-napari-constraints.txt", delete=False
-        ) as f:
-            f.write("\n".join(cls.constraints()))
-        atexit.register(os.unlink, f.name)
-        return f.name
+        raise NotImplementedError
 
 
 class CondaInstallerTool(AbstractInstallerTool):
@@ -214,21 +205,6 @@ class CondaInstallerTool(AbstractInstallerTool):
             env.remove("PYTHONEXECUTABLE")
         return env
 
-    @staticmethod
-    def constraints() -> Sequence[str]:
-        # FIXME
-        # dev or rc versions might not be available in public channels
-        # but only installed locally - if we try to pin those, mamba
-        # will fail to pin it because there's no record of that version
-        # in the remote index, only locally; to work around this bug
-        # we will have to pin to e.g. 0.4.* instead of 0.4.17.* for now
-        version_lower = _napari_version.lower()
-        is_dev = "rc" in version_lower or "dev" in version_lower
-        pin_level = 2 if is_dev else 3
-        version = ".".join([str(x) for x in _napari_version_tuple[:pin_level]])
-
-        return [f"napari={version}", "numpy<2.0a0"]
-
     def _add_constraints_to_env(
         self, env: QProcessEnvironment
     ) -> QProcessEnvironment:
@@ -262,6 +238,13 @@ class InstallerQueue(QObject):
 
     # emitted when each job starts
     started = Signal()
+
+    # classes to manage pip and conda installations
+    PIP_INSTALLER_TOOL_CLASS = PipInstallerTool
+    CONDA_INSTALLER_TOOL_CLASS = CondaInstallerTool
+    # This should be set to the name of package that handles plugins
+    # e.g `napari` for napari
+    BASE_PACKAGE_NAME = ''
 
     def __init__(
         self, parent: Optional[QObject] = None, prefix: Optional[str] = None
@@ -502,9 +485,9 @@ class InstallerQueue(QObject):
 
     def _get_tool(self, tool: InstallerTools):
         if tool == InstallerTools.PIP:
-            return PipInstallerTool
+            return self.PIP_INSTALLER_TOOL_CLASS
         if tool == InstallerTools.CONDA:
-            return CondaInstallerTool
+            return self.CONDA_INSTALLER_TOOL_CLASS
         raise ValueError(f"InstallerTool {tool} not recognized!")
 
     def _build_queue_item(
@@ -590,7 +573,9 @@ class InstallerQueue(QObject):
                     plugin_manager.unregister(pkg)
                 else:
                     log.warning(
-                        'Cannot unregister %s, not a known napari plugin.', pkg
+                        'Cannot unregister %s, not a known %s plugin.',
+                        pkg,
+                        self.BASE_PACKAGE_NAME,
                     )
         self._on_process_done(exit_code=exit_code, exit_status=exit_status)
 
@@ -645,6 +630,52 @@ class InstallerQueue(QObject):
             text = self._current_process.readAllStandardError().data().decode()
             if text:
                 self._log(text)
+
+
+class NapariPipInstallerTool(PipInstallerTool):
+    @classmethod
+    def executable(cls):
+        return str(_get_python_exe())
+
+    @staticmethod
+    def constraints() -> Sequence[str]:
+        """
+        Version constraints to limit unwanted changes in installation.
+        """
+        return [f"napari=={_napari_version}", "numpy<2"]
+
+    @classmethod
+    @lru_cache(maxsize=0)
+    def _constraints_file(cls) -> str:
+        with NamedTemporaryFile(
+            "w", suffix="-napari-constraints.txt", delete=False
+        ) as f:
+            f.write("\n".join(cls.constraints()))
+        atexit.register(os.unlink, f.name)
+        return f.name
+
+
+class NapariCondaInstallerTool(CondaInstallerTool):
+    @staticmethod
+    def constraints() -> Sequence[str]:
+        # FIXME
+        # dev or rc versions might not be available in public channels
+        # but only installed locally - if we try to pin those, mamba
+        # will fail to pin it because there's no record of that version
+        # in the remote index, only locally; to work around this bug
+        # we will have to pin to e.g. 0.4.* instead of 0.4.17.* for now
+        version_lower = _napari_version.lower()
+        is_dev = "rc" in version_lower or "dev" in version_lower
+        pin_level = 2 if is_dev else 3
+        version = ".".join([str(x) for x in _napari_version_tuple[:pin_level]])
+
+        return [f"napari={version}", "numpy<2.0a0"]
+
+
+class NapariInstallerQueue(InstallerQueue):
+    PIP_INSTALLER_TOOL_CLASS = NapariPipInstallerTool
+    CONDA_INSTALLER_TOOL_CLASS = NapariCondaInstallerTool
+    BASE_PACKAGE_NAME = 'napari'
 
 
 def _get_python_exe():
