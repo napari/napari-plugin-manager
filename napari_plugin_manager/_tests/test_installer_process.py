@@ -1,5 +1,6 @@
 import logging
 import re
+import sys
 import time
 from pathlib import Path
 from types import MethodType
@@ -90,7 +91,7 @@ def test_pip_installer_tasks(
     monkeypatch.setattr(
         NapariPipInstallerTool,
         "origins",
-        ("https://pypi.org/simple"),
+        ("https://pypi.org/simple",),
     )
     with qtbot.waitSignal(installer.allFinished, timeout=20000):
         installer.install(
@@ -235,7 +236,11 @@ def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
 @pytest.mark.skipif(
     not NapariCondaInstallerTool.available(), reason="Conda is not available."
 )
-def test_conda_installer(qtbot, tmp_conda_env: Path):
+def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
+    if sys.platform == "darwin":
+        # check  handled for `PYTHONEXECUTABLE` env definition on macOS
+        monkeypatch.setenv("PYTHONEXECUTABLE", sys.executable)
+    caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
     conda_meta = tmp_conda_env / "conda-meta"
     glob_pat = "typing-extensions-*.json"
     glob_pat_2 = "pyzenhub-*.json"
