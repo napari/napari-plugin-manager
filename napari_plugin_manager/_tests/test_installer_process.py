@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from pathlib import Path
@@ -7,6 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 from qtpy.QtCore import QProcessEnvironment
 
+import napari_plugin_manager.base_qt_package_installer as bqpi
 from napari_plugin_manager.base_qt_package_installer import (
     AbstractInstallerTool,
     InstallerActions,
@@ -69,15 +71,26 @@ def test_not_implemented_methods():
         tool.environment()
 
     with pytest.raises(NotImplementedError):
+        tool.constraints()
+
+    with pytest.raises(NotImplementedError):
         tool.available()
 
 
-def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
+def test_pip_installer_tasks(
+    qtbot, tmp_virtualenv: 'Session', monkeypatch, caplog
+):
+    caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         NapariPipInstallerTool,
         "executable",
         lambda *a: tmp_virtualenv.creator.exe,
+    )
+    monkeypatch.setattr(
+        NapariPipInstallerTool,
+        "origins",
+        ("https://pypi.org/simple"),
     )
     with qtbot.waitSignal(installer.allFinished, timeout=20000):
         installer.install(
@@ -140,6 +153,28 @@ def test_pip_installer_tasks(qtbot, tmp_virtualenv: 'Session', monkeypatch):
             tool=InstallerTools.PIP,
             pkgs=['requests'],
         )
+
+
+def test_pip_installer_invalid_action(tmp_virtualenv: 'Session', monkeypatch):
+    installer = NapariInstallerQueue()
+    monkeypatch.setattr(
+        NapariPipInstallerTool,
+        "executable",
+        lambda *a: tmp_virtualenv.creator.exe,
+    )
+    invalid_action = 'Invalid Action'
+    with pytest.raises(
+        ValueError, match=f"Action '{invalid_action}' not supported!"
+    ):
+        item = installer._build_queue_item(
+            tool=InstallerTools.PIP,
+            action=invalid_action,
+            pkgs=['pip-install-test'],
+            prefix=None,
+            origins=(),
+            process=installer._create_process(),
+        )
+        installer._queue_item(item)
 
 
 def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
