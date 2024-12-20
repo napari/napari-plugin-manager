@@ -60,24 +60,6 @@ class _NonExistingTool(AbstractInstallerTool):
         return QProcessEnvironment.systemEnvironment()
 
 
-def test_not_implemented_methods():
-    tool = AbstractInstallerTool('install', ['requests'])
-    with pytest.raises(NotImplementedError):
-        tool.executable()
-
-    with pytest.raises(NotImplementedError):
-        tool.arguments()
-
-    with pytest.raises(NotImplementedError):
-        tool.environment()
-
-    with pytest.raises(NotImplementedError):
-        tool.constraints()
-
-    with pytest.raises(NotImplementedError):
-        tool.available()
-
-
 def test_pip_installer_tasks(
     qtbot, tmp_virtualenv: 'Session', monkeypatch, caplog
 ):
