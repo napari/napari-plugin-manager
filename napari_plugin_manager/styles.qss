@@ -26,6 +26,11 @@ QLabel#author_text {
   color: {{ darken(text, 35) }};
 }
 
+QElidingLabel#summary_text {
+  color: {{ darken(text, 35) }};
+}
+
+
 QLabel#install_choice {
   background-color: {{ current }};
   color: {{ darken(text, 35) }};
@@ -55,8 +60,7 @@ QWidget#install_choice_widget {
 }
 
 QPluginList {
-  background: {{ console }};
-  background: black;
+  background-color: {{ console }};
 }
 
 PluginListItem {
@@ -126,6 +130,9 @@ QPushButton#close_button:disabled {
   background-color: {{ lighten(secondary, 10) }}
 }
 
+QPushButton#refresh_button:disabled {
+  background-color: {{ lighten(secondary, 10) }}
+}
 
 #small_text {
   color: {{ opacity(text, 150) }};
@@ -342,4 +349,35 @@ QtLayerList::indicator:checked {
   image: url("theme_{{ id }}:/error.svg");
   min-height: 36px;
   min-width: 36px;
+}
+
+QToolButton {
+  background-color: {{ darken(foreground, 20) }};
+  color: {{ darken(text, 15) }};
+  padding: 3 12px;
+  font: 14px;
+}
+
+QToolButton:hover {
+  background-color: {{ lighten(foreground, 10) }}
+}
+
+QToolButton:pressed {
+  background-color: {{ lighten(foreground, 20) }}
+}
+
+QToolButton::menu-arrow {
+  image: url("theme_{{ id }}:/down_arrow.svg");
+  top: 0px;
+  left: 0px;
+  width: 8px;
+  height: 8px;
+}
+
+QToolButton[popupMode="1"]{
+  padding-right: 20px;
+}
+
+QToolButton::menu-button {
+  width: 16px;
 }

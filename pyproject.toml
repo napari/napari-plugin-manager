@@ -9,6 +9,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "napari_plugin_manager/_version.py"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["napari_plugin_manager"]
+exclude = []
+namespaces = false  
+
 [project]
 name = "napari-plugin-manager"
 description = "Install plugins for napari, in napari."
@@ -20,15 +26,16 @@ license = {file = "LICENSE"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: X11 Applications :: Qt",
+    "Framework :: napari",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: C",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: Scientific/Engineering :: Information Analysis",
@@ -44,25 +51,42 @@ dependencies = [
   "npe2",
   "qtpy",
   "superqt",
-  "pip"
+  "pip",
+  "packaging",
 ]
 dynamic = [
   "version"
 ]
 
 [project.optional-dependencies]
+dev = [
+  "PyQt5",
+  "pre-commit",
+]
+
 testing = [
+  "flaky",
   "pytest",
-  "virtualenv",
   "pytest-cov",
   "pytest-qt",
+  "virtualenv"
+]
+
+docs = [
+  "sphinx>6",
+  "sphinx-autobuild",
+  "sphinx-external-toc",
+  "sphinx-copybutton",
+  "sphinx-favicon",
+  "myst-nb",
+  "napari-sphinx-theme>=0.3.0",
 ]
 
 [project.urls]
 homepage = "https://github.com/napari/napari-plugin-manager"
 
 [tool.black]
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py39', 'py310', 'py311']
 skip-string-normalization = true
 line-length = 79
 
@@ -185,3 +209,8 @@ check_untyped_defs = true
 # disallow_any_generics = true
 # no_implicit_reexport = true
 # disallow_untyped_defs = true
+
+[tool.coverage.report]
+exclude_also = [
+  "raise NotImplementedError",
+]

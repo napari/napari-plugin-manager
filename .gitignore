@@ -87,3 +87,33 @@ target/
 # spyder stuff
 .spyproject/
 
+# Environment variables file
+.env
+
+# Sphinx documentation
+docs/_build/
+
+# MkDocs documentation
+/site/
+
+# PyBuilder
+target/
+
+# IPython Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# OS
+.DS_Store
+
+# written by setuptools_scm
+*/_version.py
+
+# vscode
+.vscode
+
+# Images
+docs/images/
+
