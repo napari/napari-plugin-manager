@@ -509,6 +509,7 @@ def test_install_pypi_constructor(
                 plugin_dialog.installer.processFinished, timeout=60_000
             ):
                 widget.action_button.click()
+            qtbot.wait(5000)
         else:
             widget.action_button.click()
         assert mock.called
