@@ -22,7 +22,7 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     )
 
 from napari_plugin_manager import qt_plugin_dialog
-from napari_plugin_manager.qt_package_installer import InstallerActions
+from napari_plugin_manager.base_qt_package_installer import InstallerActions
 
 N_MOCKED_PLUGINS = 2
 
@@ -509,6 +509,7 @@ def test_install_pypi_constructor(
                 plugin_dialog.installer.processFinished, timeout=60_000
             ):
                 widget.action_button.click()
+            qtbot.wait(5000)
         else:
             widget.action_button.click()
         assert mock.called
