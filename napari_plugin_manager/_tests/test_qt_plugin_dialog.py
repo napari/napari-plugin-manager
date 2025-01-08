@@ -605,3 +605,15 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     )
     qtbot.wait(500)
     assert not plugin_dialog.isVisible()
+
+
+def test_export_plugins(plugin_dialog, tmp_path):
+    plugin_dialog.export_plugins(str(tmp_path / 'plugins.txt'))
+    assert (tmp_path / 'plugins.txt').exists()
+
+
+def test_import_plugins(plugin_dialog, tmp_path, qtbot):
+    path = tmp_path / 'plugins.txt'
+    path.write_text('requests\npyzenhub\n')
+    with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
+        plugin_dialog.import_plugins(str(path))
