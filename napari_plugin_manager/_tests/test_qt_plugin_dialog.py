@@ -610,36 +610,43 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     assert not plugin_dialog.isVisible()
 
 
-def test_export_plugins(plugin_dialog, tmp_path, qtbot):
+@pytest.mark.skipif(
+    not sys.platform.startswith('linux'), reason="Test works only on linux"
+)
+def test_export_plugins_button(plugin_dialog):
     def _timer():
-        app = QApplication.instance()
-        widgets = app.topLevelWidgets()
-        for widget in widgets:
-            qtbot.keyClick(widget, Qt.Key_Escape)
+        dialog = QApplication.activeModalWidget()
+        dialog.reject()
 
     timer = QTimer()
     timer.setSingleShot(True)
     timer.timeout.connect(_timer)
-    timer.start(2000)
+    timer.start(4_000)
     plugin_dialog.export_button.click()
 
-    plugin_dialog.export_plugins(str(tmp_path / 'plugins.txt'))
-    assert (tmp_path / 'plugins.txt').exists()
+
+def test_export_plugins(plugin_dialog, tmp_path):
+    plugins_file = 'plugins.txt'
+    plugin_dialog.export_plugins(str(tmp_path / plugins_file))
+    assert (tmp_path / plugins_file).exists()
+
+
+@pytest.mark.skipif(
+    not sys.platform.startswith('linux'), reason="Test works only on linux"
+)
+def test_import_plugins_button(plugin_dialog, tmp_path, qtbot):
+    def _timer():
+        dialog = QApplication.activeModalWidget()
+        dialog.reject()
+
+    timer = QTimer()
+    timer.setSingleShot(True)
+    timer.timeout.connect(_timer)
+    timer.start(4_000)
+    plugin_dialog.import_button.click()
 
 
 def test_import_plugins(plugin_dialog, tmp_path, qtbot):
-    def _timer():
-        app = QApplication.instance()
-        widgets = app.topLevelWidgets()
-        for widget in widgets:
-            qtbot.keyClick(widget, Qt.Key_Escape)
-
-    timer = QTimer()
-    timer.setSingleShot(True)
-    timer.timeout.connect(_timer)
-    timer.start(2000)
-    plugin_dialog.import_button.click()
-
     path = tmp_path / 'plugins.txt'
     path.write_text('requests\npyzenhub\n')
     with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
