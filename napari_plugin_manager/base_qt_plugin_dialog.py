@@ -1701,12 +1701,14 @@ class BaseQtPluginDialog(QDialog):
         self.refresh(clear_cache=True)
 
     def _import_plugins(self):
-        fpath, _ = getopenfilename()
-        self.import_plugins(fpath)
+        fpath, _ = getopenfilename(filters="Text files (*.txt)")
+        if fpath:
+            self.import_plugins(fpath)
 
     def _export_plugins(self):
-        fpath, _ = getsavefilename()
-        self.export_plugins(fpath)
+        fpath, _ = getsavefilename(filters="Text files (*.txt)")
+        if fpath:
+            self.export_plugins(fpath)
 
     # endregion - Private methods
 
