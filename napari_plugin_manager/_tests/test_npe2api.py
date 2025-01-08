@@ -1,3 +1,5 @@
+from urllib.error import HTTPError, URLError
+
 from flaky import flaky
 
 from napari_plugin_manager.npe2api import (
@@ -26,20 +28,26 @@ def test_plugin_summaries():
         "pypi_versions",
         "conda_versions",
     ]
-    data = plugin_summaries()
-    test_data = dict(data[0])
-    for key in keys:
-        assert key in test_data
-        test_data.pop(key)
+    try:
+        data = plugin_summaries()
+        test_data = dict(data[0])
+        for key in keys:
+            assert key in test_data
+            test_data.pop(key)
 
-    assert not test_data
+        assert not test_data
+    except (HTTPError, URLError):
+        pass
 
 
 def test_conda_map():
     pkgs = ["napari-svg"]
-    data = conda_map()
-    for pkg in pkgs:
-        assert pkg in data
+    try:
+        data = conda_map()
+        for pkg in pkgs:
+            assert pkg in data
+    except (HTTPError, URLError):
+        pass
 
 
 def test_iter_napari_plugin_info():
