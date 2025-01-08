@@ -16,6 +16,7 @@ from typing import (
 )
 
 from packaging.version import parse as parse_version
+from qtpy.compat import getopenfilename, getsavefilename
 from qtpy.QtCore import QSize, Qt, QTimer, Signal, Slot
 from qtpy.QtGui import (
     QAction,
@@ -1385,6 +1386,16 @@ class BaseQtPluginDialog(QDialog):
         self.packages_search.setClearButtonEnabled(True)
         self.packages_search.textChanged.connect(self.search)
 
+        self.import_button = QPushButton(self._trans('Import'), self)
+        self.import_button.setObjectName("import_button")
+        self.import_button.setToolTip(self._trans(''))
+        self.import_button.clicked.connect(self._import_plugins)
+
+        self.export_button = QPushButton(self._trans('Export'), self)
+        self.export_button.setObjectName("export_button")
+        self.export_button.setToolTip(self._trans(''))
+        self.export_button.clicked.connect(self._export_plugins)
+
         self.refresh_button = QPushButton(self._trans('Refresh'), self)
         self.refresh_button.setObjectName("refresh_button")
         self.refresh_button.setToolTip(
@@ -1398,6 +1409,8 @@ class BaseQtPluginDialog(QDialog):
         horizontal_mid_layout = QHBoxLayout()
         horizontal_mid_layout.addWidget(self.packages_search)
         horizontal_mid_layout.addStretch()
+        horizontal_mid_layout.addWidget(self.import_button)
+        horizontal_mid_layout.addWidget(self.export_button)
         horizontal_mid_layout.addWidget(self.refresh_button)
         mid_layout.addLayout(horizontal_mid_layout)
         mid_layout.addWidget(self.installed_label)
@@ -1687,6 +1700,16 @@ class BaseQtPluginDialog(QDialog):
     def _refresh_and_clear_cache(self):
         self.refresh(clear_cache=True)
 
+    def _import_plugins(self):
+        fpath, _ = getopenfilename(filters="Text files (*.txt)")
+        if fpath:
+            self.import_plugins(fpath)
+
+    def _export_plugins(self):
+        fpath, _ = getsavefilename(filters="Text files (*.txt)")
+        if fpath:
+            self.export_plugins(fpath)
+
     # endregion - Private methods
 
     # region - Qt overrides
@@ -1812,5 +1835,31 @@ class BaseQtPluginDialog(QDialog):
         for idx in range(self.installed_list.count()):
             item = self.installed_list.item(idx)
             item.widget.prefix = prefix
+
+    def export_plugins(self, fpath: str) -> list[str]:
+        """Export installed plugins to a file."""
+        plugins = []
+        if self.installed_list.count():
+            for idx in range(self.installed_list.count()):
+                item = self.installed_list.item(idx)
+                if item:
+                    name = item.widget.name
+                    version = item.widget._version  # Make public attr?
+                    plugins.append(f"{name}=={version}\n")
+
+        with open(fpath, 'w') as f:
+            f.writelines(plugins)
+
+        return plugins
+
+    def import_plugins(self, fpath: str) -> None:
+        """Install plugins from file."""
+        with open(fpath) as f:
+            plugins = f.read().split('\n')
+
+        print(plugins)
+
+        plugins = [p for p in plugins if p]
+        self._install_packages(plugins)
 
     # endregion - Public methods
