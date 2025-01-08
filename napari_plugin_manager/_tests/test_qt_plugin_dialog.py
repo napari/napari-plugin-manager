@@ -10,9 +10,12 @@ import pytest
 import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
-from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
+from qtpy.QtCore import QMimeData, QPointF, Qt, QTimer, QUrl
 from qtpy.QtGui import QDropEvent
-from qtpy.QtWidgets import QMessageBox
+from qtpy.QtWidgets import (
+    QApplication,
+    QMessageBox,
+)
 
 if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     pytest.skip(
@@ -607,12 +610,36 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     assert not plugin_dialog.isVisible()
 
 
-def test_export_plugins(plugin_dialog, tmp_path):
+def test_export_plugins(plugin_dialog, tmp_path, qtbot):
+    def _timer():
+        app = QApplication.instance()
+        widgets = app.topLevelWidgets()
+        for widget in widgets:
+            qtbot.keyClick(widget, Qt.Key_Escape)
+
+    timer = QTimer()
+    timer.setSingleShot(True)
+    timer.timeout.connect(_timer)
+    timer.start(2000)
+    plugin_dialog.export_button.click()
+
     plugin_dialog.export_plugins(str(tmp_path / 'plugins.txt'))
     assert (tmp_path / 'plugins.txt').exists()
 
 
 def test_import_plugins(plugin_dialog, tmp_path, qtbot):
+    def _timer():
+        app = QApplication.instance()
+        widgets = app.topLevelWidgets()
+        for widget in widgets:
+            qtbot.keyClick(widget, Qt.Key_Escape)
+
+    timer = QTimer()
+    timer.setSingleShot(True)
+    timer.timeout.connect(_timer)
+    timer.start(2000)
+    plugin_dialog.import_button.click()
+
     path = tmp_path / 'plugins.txt'
     path.write_text('requests\npyzenhub\n')
     with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
