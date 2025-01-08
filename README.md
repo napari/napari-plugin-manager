@@ -147,6 +147,19 @@ You can cancel the process at any time by clicking the `Cancel` button of each p
 
 ![Screenshot of the napari-plugin-manager showing the process of updating a plugin](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/update.png)
 
+### Export/Import plugins
+
+You can export the list of install plugins by clicking on the `Export` button located on the top right
+corner of the UI. This will prompt a dialog to select the location and name of the text file where
+the installed plugin list will be saved.
+
+This file can be shared and then imported by clicking on the `Import` button located on the top right
+corner of the UI. This will prompt a dialog to select the location of the text file to import.
+
+After selecting the file, the plugin will dialog will attempt to install all the listed plugins.
+
+![Screenshot of the napari-plugin-manager showing the process of import/export](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/import-export.png)
+
 ### Batch actions
 
 You don't need wait for one action to finish before you can start another one. You can add more

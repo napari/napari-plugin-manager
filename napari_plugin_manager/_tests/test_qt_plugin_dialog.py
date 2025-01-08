@@ -634,7 +634,7 @@ def test_export_plugins(plugin_dialog, tmp_path):
 @pytest.mark.skipif(
     not sys.platform.startswith('linux'), reason="Test works only on linux"
 )
-def test_import_plugins_button(plugin_dialog, tmp_path, qtbot):
+def test_import_plugins_button(plugin_dialog):
     def _timer():
         dialog = QApplication.activeModalWidget()
         dialog.reject()
