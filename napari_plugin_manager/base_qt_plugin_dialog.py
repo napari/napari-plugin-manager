@@ -1393,7 +1393,9 @@ class BaseQtPluginDialog(QDialog):
 
         self.export_button = QPushButton(self._trans('Export'), self)
         self.export_button.setObjectName("export_button")
-        self.export_button.setToolTip(self._trans('Export installed plugins list'))
+        self.export_button.setToolTip(
+            self._trans('Export installed plugins list')
+        )
         self.export_button.clicked.connect(self._export_plugins)
 
         self.refresh_button = QPushButton(self._trans('Refresh'), self)
