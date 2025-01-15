@@ -161,7 +161,7 @@ plugin_name==0.1.2
 This file can be shared and then imported by clicking on the `Import` button located on the top right
 corner of the UI. This will prompt a dialog to select the location of the text file to import.
 
-After selecting the file, the plugin manager will attempt to install all the listed plugins.
+After selecting the file, the plugin manager will attempt to install all the listed plugins using the auto-detected default installer.
 
 ![Screenshot of the napari-plugin-manager showing the process of import/export](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/import-export.png)
 
