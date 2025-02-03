@@ -36,6 +36,7 @@ log = getLogger(__name__)
 
 class InstallerActions(StringEnum):
     "Available actions for the plugin manager"
+
     INSTALL = auto()
     UNINSTALL = auto()
     CANCEL = auto()
@@ -52,6 +53,7 @@ class ProcessFinishedData(TypedDict):
 
 class InstallerTools(StringEnum):
     "Available tools for InstallerQueue jobs"
+
     CONDA = auto()
     PIP = auto()
 
