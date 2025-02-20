@@ -236,10 +236,15 @@ class QtPluginDialog(BaseQtPluginDialog):
                     continue
                 if normalized_name(distname or '') in self.already_installed:
                     continue
-                if normalized_name(distname or '') == pkg_name or pkg_name is None:
+                if (
+                    normalized_name(distname or '') == pkg_name
+                    or pkg_name is None
+                ):
                     self._add_to_installed(
                         distname,
-                        not napari.plugins.plugin_manager.is_blocked(plugin_name),
+                        not napari.plugins.plugin_manager.is_blocked(
+                            plugin_name
+                        ),
                         normalized_name(distname or ''),
                     )
         self._update_plugin_count()
