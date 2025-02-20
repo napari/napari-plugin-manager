@@ -141,7 +141,7 @@ def plugin_dialog(
         def is_disabled(self, name):
             return False
 
-        def discover(self):
+        def discover(self, include_npe1=False):
             return ['plugin']
 
         def enable(self, plugin):

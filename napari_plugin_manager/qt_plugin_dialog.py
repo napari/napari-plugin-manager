@@ -206,8 +206,9 @@ class QtPluginDialog(BaseQtPluginDialog):
         self.setStyleSheet(stylesheet)
 
     def _add_installed(self, pkg_name=None):
+        use_npe2_adpator = get_settings().plugins.use_npe2_adaptor
         pm2 = npe2.PluginManager.instance()
-        pm2.discover()
+        pm2.discover(include_npe1=use_npe2_adpator)
         for manifest in pm2.iter_manifests():
             distname = normalized_name(manifest.name or '')
             if distname in self.already_installed or distname == 'napari':
@@ -220,26 +221,27 @@ class QtPluginDialog(BaseQtPluginDialog):
                     distname, enabled, distname, plugin_api_version=npev
                 )
 
-        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
-        for (
-            plugin_name,
-            _,
-            distname,
-        ) in napari.plugins.plugin_manager.iter_available():
-            # not showing these in the plugin dialog
-            if plugin_name in (
-                'napari_plugin_engine',
-                'napari_plugin_manager',
-            ):
-                continue
-            if normalized_name(distname or '') in self.already_installed:
-                continue
-            if normalized_name(distname or '') == pkg_name or pkg_name is None:
-                self._add_to_installed(
-                    distname,
-                    not napari.plugins.plugin_manager.is_blocked(plugin_name),
-                    normalized_name(distname or ''),
-                )
+        if not use_npe2_adpator:
+            napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
+            for (
+                plugin_name,
+                _,
+                distname,
+            ) in napari.plugins.plugin_manager.iter_available():
+                # not showing these in the plugin dialog
+                if plugin_name in (
+                    'napari_plugin_engine',
+                    'napari_plugin_manager',
+                ):
+                    continue
+                if normalized_name(distname or '') in self.already_installed:
+                    continue
+                if normalized_name(distname or '') == pkg_name or pkg_name is None:
+                    self._add_to_installed(
+                        distname,
+                        not napari.plugins.plugin_manager.is_blocked(plugin_name),
+                        normalized_name(distname or ''),
+                    )
         self._update_plugin_count()
 
         for i in range(self.installed_list.count()):
