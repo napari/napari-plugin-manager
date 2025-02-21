@@ -2,7 +2,6 @@ import importlib.metadata
 import os
 import sys
 from collections.abc import Generator
-from typing import Tuple
 from unittest.mock import patch
 
 import napari.plugins
@@ -34,7 +33,7 @@ N_MOCKED_PLUGINS = 2
 def _iter_napari_pypi_plugin_info(
     conda_forge: bool = True,
 ) -> Generator[
-    Tuple[npe2.PackageMetadata | None, bool], None, None
+    tuple[npe2.PackageMetadata | None, bool], None, None
 ]:  # pragma: no cover  (this function is used in thread and codecov has a problem with the collection of coverage in such cases)
     """Mock the pypi method to collect available plugins.
 
