@@ -10,10 +10,10 @@ by a `deque` of `*InstallerTool` dataclasses (`NapariPipInstallerTool` and
 import atexit
 import os
 import sys
+from collections.abc import Sequence
 from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Sequence
 
 from napari._version import version as _napari_version
 from napari._version import version_tuple as _napari_version_tuple

@@ -13,6 +13,7 @@ import contextlib
 import os
 import sys
 from collections import deque
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import auto
 from functools import lru_cache
@@ -20,7 +21,7 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import call
 from tempfile import gettempdir
-from typing import Deque, Optional, Sequence, Tuple, TypedDict
+from typing import TypedDict
 
 from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
@@ -48,7 +49,7 @@ class ProcessFinishedData(TypedDict):
     exit_code: int
     exit_status: int
     action: InstallerActions
-    pkgs: Tuple[str, ...]
+    pkgs: tuple[str, ...]
 
 
 class InstallerTools(StringEnum):
@@ -61,9 +62,9 @@ class InstallerTools(StringEnum):
 @dataclass(frozen=True)
 class AbstractInstallerTool:
     action: InstallerActions
-    pkgs: Tuple[str, ...]
-    origins: Tuple[str, ...] = ()
-    prefix: Optional[str] = None
+    pkgs: tuple[str, ...]
+    origins: tuple[str, ...] = ()
+    prefix: str | None = None
     process: QProcess = None
 
     @property
@@ -110,7 +111,7 @@ class PipInstallerTool(AbstractInstallerTool):
     def available(cls):
         return call([cls.executable(), "-m", "pip", "--version"]) == 0
 
-    def arguments(self) -> Tuple[str, ...]:
+    def arguments(self) -> tuple[str, ...]:
         args = ['-m', 'pip']
         if self.action == InstallerActions.INSTALL:
             args += ['install', '-c', self._constraints_file()]
@@ -171,7 +172,7 @@ class CondaInstallerTool(AbstractInstallerTool):
         except FileNotFoundError:  # pragma: no cover
             return False
 
-    def arguments(self) -> Tuple[str, ...]:
+    def arguments(self) -> tuple[str, ...]:
         prefix = self.prefix or self._default_prefix()
         if self.action == InstallerActions.UPGRADE:
             args = ['update', '-y', '--prefix', prefix]
@@ -246,10 +247,10 @@ class InstallerQueue(QObject):
     BASE_PACKAGE_NAME = ''
 
     def __init__(
-        self, parent: Optional[QObject] = None, prefix: Optional[str] = None
+        self, parent: QObject | None = None, prefix: str | None = None
     ) -> None:
         super().__init__(parent)
-        self._queue: Deque[AbstractInstallerTool] = deque()
+        self._queue: deque[AbstractInstallerTool] = deque()
         self._current_process: QProcess = None
         self._prefix = prefix
         self._output_widget = None
@@ -261,7 +262,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         pkgs: Sequence[str],
         *,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         origins: Sequence[str] = (),
         **kwargs,
     ) -> JobId:
@@ -300,7 +301,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         pkgs: Sequence[str],
         *,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         origins: Sequence[str] = (),
         **kwargs,
     ) -> JobId:
@@ -339,7 +340,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         pkgs: Sequence[str],
         *,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         **kwargs,
     ) -> JobId:
         """Uninstall packages in `pkgs` from `prefix` using `tool`.
@@ -494,7 +495,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         action: InstallerActions,
         pkgs: Sequence[str],
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         origins: Sequence[str] = (),
         **kwargs,
     ) -> AbstractInstallerTool:
@@ -583,9 +584,9 @@ class InstallerQueue(QObject):
 
     def _on_process_done(
         self,
-        exit_code: Optional[int] = None,
-        exit_status: Optional[QProcess.ExitStatus] = None,
-        error: Optional[QProcess.ProcessError] = None,
+        exit_code: int | None = None,
+        exit_status: QProcess.ExitStatus | None = None,
+        error: QProcess.ProcessError | None = None,
     ):
         item = None
         with contextlib.suppress(IndexError):
