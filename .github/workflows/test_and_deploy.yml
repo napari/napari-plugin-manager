@@ -31,9 +31,18 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-13, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.13"]
         napari: ["latest", "repo"]
         tool: ["pip", "conda"]
+        include:
+          - platform: ubuntu-latest
+            python-version: "3.11"
+            napari: "latest"
+            tool: "pip"
+          - platform: ubuntu-latest
+            python-version: "3.12"
+            napari: "latest"
+            tool: "pip"
 
     steps:
       - uses: actions/checkout@v4
