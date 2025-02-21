@@ -2,6 +2,7 @@ import contextlib
 import importlib.metadata
 import os
 import webbrowser
+from collections.abc import Sequence
 from functools import partial
 from typing import (
     Any,
@@ -9,9 +10,7 @@ from typing import (
     List,
     Literal,
     NamedTuple,
-    Optional,
     Protocol,
-    Sequence,
     Tuple,
 )
 
@@ -147,13 +146,13 @@ class BasePluginListItem(QFrame):
         author: str = '',
         license: str = "UNKNOWN",  # noqa: A002
         *,
-        plugin_name: Optional[str] = None,
+        plugin_name: str | None = None,
         parent: QWidget = None,
         enabled: bool = True,
         installed: bool = False,
         plugin_api_version=1,
-        versions_conda: Optional[List[str]] = None,
-        versions_pypi: Optional[List[str]] = None,
+        versions_conda: List[str] | None = None,
+        versions_pypi: List[str] | None = None,
         prefix=None,
     ) -> None:
         super().__init__(parent)
@@ -309,9 +308,7 @@ class BasePluginListItem(QFrame):
     def set_busy(
         self,
         text: str,
-        action_name: Optional[
-            Literal['install', 'uninstall', 'cancel', 'upgrade']
-        ] = None,
+        action_name: Literal['install', 'uninstall', 'cancel', 'upgrade'] | None = None,
     ):
         """Updates status text and what buttons are visible when any button is pushed.
 
@@ -832,8 +829,8 @@ class BaseQPluginList(QListWidget):
         item: QListWidgetItem,
         pkg_name: str,
         action_name: InstallerActions,
-        version: Optional[str] = None,
-        installer_choice: Optional[str] = None,
+        version: str | None = None,
+        installer_choice: str | None = None,
     ):
         """Determine which action is called (install, uninstall, update, cancel).
         Update buttons appropriately and run the action."""
@@ -1259,7 +1256,7 @@ class BaseQtPluginDialog(QDialog):
         self._add_items_timer.start()
         self._update_plugin_count()
 
-    def _add_installed(self, pkg_name: Optional[str] = None) -> None:
+    def _add_installed(self, pkg_name: str | None = None) -> None:
         """
         Add plugins that are installed to the dialog.
 
@@ -1758,7 +1755,7 @@ class BaseQtPluginDialog(QDialog):
 
     # region - Public methods
     # ------------------------------------------------------------------------
-    def search(self, text: Optional[str] = None, skip=False) -> None:
+    def search(self, text: str | None = None, skip=False) -> None:
         """Filter by text or set current text as filter."""
         if text is None:
             text = self.packages_search.text()
