@@ -92,7 +92,8 @@ jobs:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
           FORCE_COLOR: 1
-          TOX_SKIP_ENV: ".*py3(11|12|13)-PySide2.*"
+          TOX_SKIP_ENV: |
+            ${{ matrix.platform == 'macos-latest' && '.*PySide2.*' || '.*py3(11|12|13)-PySide2.*'  }}
 
       - name: Test with tox - conda
         if: matrix.tool == 'conda'
