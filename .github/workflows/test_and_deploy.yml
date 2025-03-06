@@ -107,11 +107,57 @@ jobs:
           FORCE_COLOR: 1
           TOX_SKIP_ENV:  ${{ (matrix.platform == 'macos-latest' && '.*py3(10|13)-PySide2.*') || '.*py313-PySide2.*'  }}
 
-      - name: Coverage
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage reports ${{ inputs.platform }} py ${{ inputs.python_version }} ${{ inputs.toxenv || inputs.qt_backend }}
+          include-hidden-files: true
+          path: |
+            ./.coverage.*
+
+
+  upload_coverage:
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read    # Required for code checkout
+    name: Upload coverage
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+          cache-dependency-path: pyproject.toml
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install codecov
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage reports*
+          path: coverage
+          merge-multiple: true
+
+      - name: combine coverage data
+        run: |
+          python -Im coverage combine coverage
+          python -Im coverage xml -o coverage.xml
+
+          # Report and write to summary.
+          python -Im coverage report --format=markdown --skip-empty --skip-covered >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage data
         uses: codecov/codecov-action@v5
-        with:  
+        with:
           fail_ci_if_error: true
           use_oidc: true
+
 
   deploy:
     # this will run when you have tagged a commit, starting with "v*"

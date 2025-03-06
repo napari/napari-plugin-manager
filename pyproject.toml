@@ -65,9 +65,9 @@ dev = [
 ]
 
 testing = [
+  "coverage",
   "flaky",
   "pytest",
-  "pytest-cov",
   "pytest-qt",
   "virtualenv"
 ]
