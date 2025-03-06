@@ -110,7 +110,7 @@ jobs:
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
-          name: coverage reports ${{ inputs.platform }} py ${{ inputs.python_version }} ${{ inputs.toxenv || inputs.qt_backend }}
+          name: coverage reports ${{ matrix.platform }} py ${{ matrix.python_version }} ${{ matrix.tool }} ${{ matrix.napari }}
           include-hidden-files: true
           path: |
             ./.coverage.*
