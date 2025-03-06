@@ -10,9 +10,12 @@ import pytest
 import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
-from qtpy.QtCore import QMimeData, QPointF, Qt, QUrl
+from qtpy.QtCore import QMimeData, QPointF, Qt, QTimer, QUrl
 from qtpy.QtGui import QDropEvent
-from qtpy.QtWidgets import QMessageBox
+from qtpy.QtWidgets import (
+    QApplication,
+    QMessageBox,
+)
 
 if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     pytest.skip(
@@ -22,7 +25,7 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     )
 
 from napari_plugin_manager import qt_plugin_dialog
-from napari_plugin_manager.qt_package_installer import InstallerActions
+from napari_plugin_manager.base_qt_package_installer import InstallerActions
 
 N_MOCKED_PLUGINS = 2
 
@@ -509,6 +512,7 @@ def test_install_pypi_constructor(
                 plugin_dialog.installer.processFinished, timeout=60_000
             ):
                 widget.action_button.click()
+            qtbot.wait(5000)
         else:
             widget.action_button.click()
         assert mock.called
@@ -604,3 +608,46 @@ def test_shortcut_quit(plugin_dialog, qtbot):
     )
     qtbot.wait(500)
     assert not plugin_dialog.isVisible()
+
+
+@pytest.mark.skipif(
+    not sys.platform.startswith('linux'), reason="Test works only on linux"
+)
+def test_export_plugins_button(plugin_dialog):
+    def _timer():
+        dialog = QApplication.activeModalWidget()
+        dialog.reject()
+
+    timer = QTimer()
+    timer.setSingleShot(True)
+    timer.timeout.connect(_timer)
+    timer.start(4_000)
+    plugin_dialog.export_button.click()
+
+
+def test_export_plugins(plugin_dialog, tmp_path):
+    plugins_file = 'plugins.txt'
+    plugin_dialog.export_plugins(str(tmp_path / plugins_file))
+    assert (tmp_path / plugins_file).exists()
+
+
+@pytest.mark.skipif(
+    not sys.platform.startswith('linux'), reason="Test works only on linux"
+)
+def test_import_plugins_button(plugin_dialog):
+    def _timer():
+        dialog = QApplication.activeModalWidget()
+        dialog.reject()
+
+    timer = QTimer()
+    timer.setSingleShot(True)
+    timer.timeout.connect(_timer)
+    timer.start(4_000)
+    plugin_dialog.import_button.click()
+
+
+def test_import_plugins(plugin_dialog, tmp_path, qtbot):
+    path = tmp_path / 'plugins.txt'
+    path.write_text('requests\npyzenhub\n')
+    with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
+        plugin_dialog.import_plugins(str(path))
