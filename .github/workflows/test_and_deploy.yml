@@ -122,6 +122,7 @@ jobs:
       contents: read    # Required for code checkout
     name: Upload coverage
     needs: [test]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
