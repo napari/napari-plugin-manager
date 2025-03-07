@@ -7,10 +7,10 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "napari_plugin_manager/_version.py"
+write_to = "src/napari_plugin_manager/_version.py"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["napari_plugin_manager"]
 exclude = []
 namespaces = false  
@@ -60,7 +60,7 @@ dynamic = [
 
 [project.optional-dependencies]
 dev = [
-  "PyQt5",
+  "PyQt6",
   "pre-commit",
 ]
 
