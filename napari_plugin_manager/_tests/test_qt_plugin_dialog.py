@@ -2,7 +2,7 @@ import importlib.metadata
 import os
 import sys
 from typing import Generator, Optional, Tuple
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 import napari.plugins
 import npe2
@@ -347,7 +347,10 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 InstallerActions.CANCEL,
                 version='3',
             )
-            mock.assert_called_with("cancelling...", InstallerActions.CANCEL)
+            assert mock.call_count
+            assert mock.call_args_list[1] == call("cancelling...", InstallerActions.CANCEL)
+            qtbot.waitUntil(lambda : mock.call_count == 3) # wait for finish of process
+            mock.assert_called_with("", InstallerActions.CANCEL)
 
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
