@@ -341,6 +341,8 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 trans._("installing..."), InstallerActions.INSTALL
             )
 
+            job_id = item.widget.property("current_job_id")
+
             plugin_dialog.available_list.handle_action(
                 item,
                 'my-test-old-plugin-1',
@@ -351,9 +353,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
             assert mock.call_args_list[1] == call(
                 "cancelling...", InstallerActions.CANCEL
             )
-            qtbot.waitUntil(
-                lambda: mock.call_count == 3
-            )  # wait for finish of process
+            plugin_dialog.available_list.installer.waitForFinished()
             mock.assert_called_with("", InstallerActions.CANCEL)
 
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
