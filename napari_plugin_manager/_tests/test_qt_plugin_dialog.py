@@ -341,7 +341,6 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 trans._("installing..."), InstallerActions.INSTALL
             )
 
-
             plugin_dialog.available_list.handle_action(
                 item,
                 'my-test-old-plugin-1',
