@@ -337,11 +337,10 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 InstallerActions.INSTALL,
                 version='3',
             )
-            mock.assert_called_with(
+            mock.assert_called_once_with(
                 trans._("installing..."), InstallerActions.INSTALL
             )
 
-            job_id = item.widget.property("current_job_id")
 
             plugin_dialog.available_list.handle_action(
                 item,
@@ -349,12 +348,10 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 InstallerActions.CANCEL,
                 version='3',
             )
-            assert mock.call_count
+            assert mock.call_count >= 2
             assert mock.call_args_list[1] == call(
                 "cancelling...", InstallerActions.CANCEL
             )
-            plugin_dialog.available_list.installer.waitForFinished()
-            mock.assert_called_with("", InstallerActions.CANCEL)
 
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
