@@ -215,7 +215,7 @@ check_untyped_defs = true
 omit = [
   "napari_plugin_manager/_version.py",
   "napari_plugin_manager/_tests",
-  "**(builtin)**",
+  "**/(builtin)",
 ]
 
 [tool.coverage.report]
