@@ -10,6 +10,7 @@ and `cancel`.
 """
 
 import contextlib
+import logging
 import os
 import sys
 from collections import deque
@@ -618,9 +619,13 @@ class InstallerQueue(QObject):
 
     def _on_stdout_ready(self):
         if self._current_process is not None:
-            text = (
-                self._current_process.readAllStandardOutput().data().decode()
-            )
+            try:
+                text = (
+                    self._current_process.readAllStandardOutput().data().decode()
+                )
+            except UnicodeDecodeError:
+                logging.exception("Could not decode stdout")
+                return
             if text:
                 self._log(text)
 
