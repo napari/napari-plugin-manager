@@ -145,17 +145,6 @@ jobs:
           path: coverage
           merge-multiple: true
 
-      - name: PWD
-        run: pwd
-
-      - name : LS
-        run: ls -la
-
-      - name: ls src
-        run: ls -la src
-
-      - name: ls src
-        run: ls -la src/napari_plugin_manager
 
       - name: combine coverage data
         run: |
