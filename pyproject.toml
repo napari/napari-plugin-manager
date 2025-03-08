@@ -214,7 +214,7 @@ check_untyped_defs = true
 [tool.coverage.run]
 omit = [
   "napari_plugin_manager/_version.py",
-  "napari_plugin_manager/_tests,
+  "napari_plugin_manager/_tests",
   "**(builtin)**",
 ]
 
