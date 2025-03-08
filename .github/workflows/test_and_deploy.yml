@@ -154,6 +154,9 @@ jobs:
       - name: ls src
         run: ls -la src
 
+      - name: ls src
+        run: ls -la src/napari_plugin_manager
+
       - name: combine coverage data
         run: |
           python -Im coverage combine coverage
