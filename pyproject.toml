@@ -229,7 +229,7 @@ exclude_also = [
 
 [tool.coverage.paths]
 source = [
-    "src/napari/",
+    "src/napari_plugin_manager/",
     "D:\\a\\napari_plugin_manager\\napari_plugin_manager\\src\\napari",
     "/home/runner/work/napari_plugin_manager/napari_plugin_manager/src/napari/",
     "/Users/runner/work/napari_plugin_manager/napari_plugin_manager/src/napari/",

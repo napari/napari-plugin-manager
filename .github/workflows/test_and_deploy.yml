@@ -145,6 +145,12 @@ jobs:
           path: coverage
           merge-multiple: true
 
+      - name: PWD
+        run: pwd
+
+      - name : LS
+        run: ls -la
+
       - name: combine coverage data
         run: |
           python -Im coverage combine coverage
