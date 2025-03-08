@@ -621,7 +621,9 @@ class InstallerQueue(QObject):
         if self._current_process is not None:
             try:
                 text = (
-                    self._current_process.readAllStandardOutput().data().decode()
+                    self._current_process.readAllStandardOutput()
+                    .data()
+                    .decode()
                 )
             except UnicodeDecodeError:
                 logging.exception("Could not decode stdout")
