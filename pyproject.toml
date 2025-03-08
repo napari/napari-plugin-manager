@@ -214,11 +214,10 @@ check_untyped_defs = true
 [tool.coverage.run]
 omit = [
   "src/napari_plugin_manager/_version.py",
-  "src/napari_plugin_manager/_tests",
 ]
-source = [
-    "src/napari_plugin_manager"
-]
+source = ["src"]
+relative_files = true
+
 
 [tool.coverage.report]
 exclude_also = [
@@ -228,8 +227,7 @@ exclude_also = [
 
 [tool.coverage.paths]
 source = [
-    "src/napari_plugin_manager/",
-    "D:\\a\\napari_plugin_manager\\napari_plugin_manager\\src\\napari_plugin_manager",
-    "/home/runner/work/napari-plugin-manager/napari-plugin-manager/src/napari_plugin_manager",
-    "/Users/runner/work/napari-plugin-manager/napari-plugin-manager/src/napari_plugin_manager",
+    "src/",
+    "*/src/",
+    "*\\src\\",
 ]
