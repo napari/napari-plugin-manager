@@ -217,6 +217,9 @@ omit = [
   "napari_plugin_manager/_tests",
   "**/(builtin)",
 ]
+source = [
+    "src/napari_plugin_manager"
+]
 
 [tool.coverage.report]
 exclude_also = [
@@ -226,6 +229,8 @@ exclude_also = [
 
 [tool.coverage.paths]
 source = [
-    "src/napari_plugin_manager",
-    "napari_plugin_manager"
+    "src/napari/",
+    "D:\\a\\napari_plugin_manager\\napari_plugin_manager\\src\\napari",
+    "/home/runner/work/napari_plugin_manager/napari_plugin_manager/src/napari/",
+    "/Users/runner/work/napari_plugin_manager/napari_plugin_manager/src/napari/",
 ]
