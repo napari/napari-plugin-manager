@@ -10,6 +10,7 @@ and `cancel`.
 """
 
 import contextlib
+import logging
 import os
 import sys
 from collections import deque
@@ -36,6 +37,7 @@ log = getLogger(__name__)
 
 class InstallerActions(StringEnum):
     "Available actions for the plugin manager"
+
     INSTALL = auto()
     UNINSTALL = auto()
     CANCEL = auto()
@@ -52,6 +54,7 @@ class ProcessFinishedData(TypedDict):
 
 class InstallerTools(StringEnum):
     "Available tools for InstallerQueue jobs"
+
     CONDA = auto()
     PIP = auto()
 
@@ -616,9 +619,15 @@ class InstallerQueue(QObject):
 
     def _on_stdout_ready(self):
         if self._current_process is not None:
-            text = (
-                self._current_process.readAllStandardOutput().data().decode()
-            )
+            try:
+                text = (
+                    self._current_process.readAllStandardOutput()
+                    .data()
+                    .decode()
+                )
+            except UnicodeDecodeError:
+                logging.exception("Could not decode stdout")
+                return
             if text:
                 self._log(text)
 
