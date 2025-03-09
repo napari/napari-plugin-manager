@@ -93,6 +93,7 @@ jobs:
         env:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
+          TOOL: ${{ matrix.tool }}
           FORCE_COLOR: 1
           
       - name: Test with tox - conda
@@ -104,6 +105,7 @@ jobs:
         env:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
+          TOOL: ${{ matrix.tool }}
           FORCE_COLOR: 1
           
       - name: Upload coverage data
