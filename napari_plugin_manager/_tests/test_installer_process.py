@@ -346,7 +346,7 @@ def test_constraints_are_in_sync():
 
     name_re = re.compile(r"([a-z0-9_\-]+).*")
     for conda_constraint, pip_constraint in zip(
-        conda_constraints, pip_constraints
+        conda_constraints, pip_constraints, strict=False
     ):
         conda_name = name_re.match(conda_constraint).group(1)
         pip_name = name_re.match(pip_constraint).group(1)

@@ -13,6 +13,7 @@ import contextlib
 import os
 import sys
 from collections import deque
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import auto
 from functools import lru_cache
@@ -20,7 +21,7 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import call
 from tempfile import gettempdir
-from typing import Deque, Optional, Sequence, Tuple, TypedDict
+from typing import Deque, Tuple, TypedDict
 
 from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
@@ -63,7 +64,7 @@ class AbstractInstallerTool:
     action: InstallerActions
     pkgs: Tuple[str, ...]
     origins: Tuple[str, ...] = ()
-    prefix: Optional[str] = None
+    prefix: str | None = None
     process: QProcess = None
 
     @property
@@ -246,7 +247,7 @@ class InstallerQueue(QObject):
     BASE_PACKAGE_NAME = ''
 
     def __init__(
-        self, parent: Optional[QObject] = None, prefix: Optional[str] = None
+        self, parent: QObject | None = None, prefix: str | None = None
     ) -> None:
         super().__init__(parent)
         self._queue: Deque[AbstractInstallerTool] = deque()
@@ -261,7 +262,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         pkgs: Sequence[str],
         *,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         origins: Sequence[str] = (),
         **kwargs,
     ) -> JobId:
@@ -300,7 +301,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         pkgs: Sequence[str],
         *,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         origins: Sequence[str] = (),
         **kwargs,
     ) -> JobId:
@@ -339,7 +340,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         pkgs: Sequence[str],
         *,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         **kwargs,
     ) -> JobId:
         """Uninstall packages in `pkgs` from `prefix` using `tool`.
@@ -494,7 +495,7 @@ class InstallerQueue(QObject):
         tool: InstallerTools,
         action: InstallerActions,
         pkgs: Sequence[str],
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         origins: Sequence[str] = (),
         **kwargs,
     ) -> AbstractInstallerTool:
@@ -583,9 +584,9 @@ class InstallerQueue(QObject):
 
     def _on_process_done(
         self,
-        exit_code: Optional[int] = None,
-        exit_status: Optional[QProcess.ExitStatus] = None,
-        error: Optional[QProcess.ProcessError] = None,
+        exit_code: int | None = None,
+        exit_status: QProcess.ExitStatus | None = None,
+        error: QProcess.ProcessError | None = None,
     ):
         item = None
         with contextlib.suppress(IndexError):
