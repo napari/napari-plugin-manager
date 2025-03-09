@@ -16,6 +16,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Sequence
 
+import qtpy
 from packaging.version import parse as parse_version
 
 from napari_plugin_manager.base_qt_package_installer import (
@@ -36,9 +37,21 @@ CRITICAL_PACKAGES = [
     "vispy",
 ]
 
+QT_BACKENDS = ["PyQt5", "PySide2", "PySide6", "PyQt6"]
+CURRENT_BACKEND = qtpy.API_NAME
+
+QT_BACKENDS_PIN = [
+    (
+        f"{pkg}=={package_version(pkg)}"
+        if pkg == CURRENT_BACKEND
+        else f"{pkg}==0"
+    )
+    for pkg in QT_BACKENDS
+]
+
 CRITICAL_PACKAGES_PIN = [
     f"{pkg}=={package_version(pkg)}" for pkg in CRITICAL_PACKAGES
-]
+] + QT_BACKENDS_PIN
 
 # dev or rc versions might not be available in public channels
 # but only installed locally - if we try to pin those, mamba
@@ -48,7 +61,7 @@ CRITICAL_PACKAGES_PIN = [
 CRITICAL_PACKAGES_PIN_CONDA = [
     f"{pkg}={parse_version(package_version(pkg)).base_version}"
     for pkg in CRITICAL_PACKAGES
-]
+]  # + QT_BACKENDS_PIN
 
 
 def _get_python_exe():
