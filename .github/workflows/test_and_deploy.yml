@@ -58,6 +58,8 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: "true"
           python-version: ${{ matrix.python-version }}
 
       - uses: tlambert03/setup-qt-libs@v1
@@ -92,9 +94,7 @@ jobs:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
           FORCE_COLOR: 1
-          TOX_SKIP_ENV: |
-            ${{ (matrix.platform == 'macos-latest' && '.*PySide2.*') || '.*py3(11|12|13)-PySide2.*'  }}
-
+          
       - name: Test with tox - conda
         if: matrix.tool == 'conda'
         uses: aganders3/headless-gui@v2
@@ -105,8 +105,7 @@ jobs:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
           FORCE_COLOR: 1
-          TOX_SKIP_ENV:  ${{ (matrix.platform == 'macos-latest' && '.*py3(10|13)-PySide2.*') || '.*py313-PySide2.*'  }}
-
+          
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
