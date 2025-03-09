@@ -10,6 +10,7 @@ and `cancel`.
 """
 
 import contextlib
+import logging
 import os
 import sys
 from collections import deque
@@ -21,7 +22,7 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import call
 from tempfile import gettempdir
-from typing import Deque, Tuple, TypedDict
+from typing import TypedDict
 
 from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
@@ -49,7 +50,7 @@ class ProcessFinishedData(TypedDict):
     exit_code: int
     exit_status: int
     action: InstallerActions
-    pkgs: Tuple[str, ...]
+    pkgs: tuple[str, ...]
 
 
 class InstallerTools(StringEnum):
@@ -62,8 +63,8 @@ class InstallerTools(StringEnum):
 @dataclass(frozen=True)
 class AbstractInstallerTool:
     action: InstallerActions
-    pkgs: Tuple[str, ...]
-    origins: Tuple[str, ...] = ()
+    pkgs: tuple[str, ...]
+    origins: tuple[str, ...] = ()
     prefix: str | None = None
     process: QProcess = None
 
@@ -111,7 +112,7 @@ class PipInstallerTool(AbstractInstallerTool):
     def available(cls):
         return call([cls.executable(), "-m", "pip", "--version"]) == 0
 
-    def arguments(self) -> Tuple[str, ...]:
+    def arguments(self) -> tuple[str, ...]:
         args = ['-m', 'pip']
         if self.action == InstallerActions.INSTALL:
             args += ['install', '-c', self._constraints_file()]
@@ -172,7 +173,7 @@ class CondaInstallerTool(AbstractInstallerTool):
         except FileNotFoundError:  # pragma: no cover
             return False
 
-    def arguments(self) -> Tuple[str, ...]:
+    def arguments(self) -> tuple[str, ...]:
         prefix = self.prefix or self._default_prefix()
         if self.action == InstallerActions.UPGRADE:
             args = ['update', '-y', '--prefix', prefix]
@@ -250,7 +251,7 @@ class InstallerQueue(QObject):
         self, parent: QObject | None = None, prefix: str | None = None
     ) -> None:
         super().__init__(parent)
-        self._queue: Deque[AbstractInstallerTool] = deque()
+        self._queue: deque[AbstractInstallerTool] = deque()
         self._current_process: QProcess = None
         self._prefix = prefix
         self._output_widget = None
@@ -619,9 +620,15 @@ class InstallerQueue(QObject):
 
     def _on_stdout_ready(self):
         if self._current_process is not None:
-            text = (
-                self._current_process.readAllStandardOutput().data().decode()
-            )
+            try:
+                text = (
+                    self._current_process.readAllStandardOutput()
+                    .data()
+                    .decode()
+                )
+            except UnicodeDecodeError:
+                logging.exception("Could not decode stdout")
+                return
             if text:
                 self._log(text)
 

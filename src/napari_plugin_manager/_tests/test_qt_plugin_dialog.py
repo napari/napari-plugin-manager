@@ -2,8 +2,7 @@ import importlib.metadata
 import os
 import sys
 from collections.abc import Generator
-from typing import Tuple
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import napari.plugins
 import npe2
@@ -34,7 +33,7 @@ N_MOCKED_PLUGINS = 2
 def _iter_napari_pypi_plugin_info(
     conda_forge: bool = True,
 ) -> Generator[
-    Tuple[npe2.PackageMetadata | None, bool], None, None
+    tuple[npe2.PackageMetadata | None, bool], None, None
 ]:  # pragma: no cover  (this function is used in thread and codecov has a problem with the collection of coverage in such cases)
     """Mock the pypi method to collect available plugins.
 
@@ -338,7 +337,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 InstallerActions.INSTALL,
                 version='3',
             )
-            mock.assert_called_with(
+            mock.assert_called_once_with(
                 trans._("installing..."), InstallerActions.INSTALL
             )
 
@@ -348,7 +347,10 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 InstallerActions.CANCEL,
                 version='3',
             )
-            mock.assert_called_with("", InstallerActions.CANCEL)
+            assert mock.call_count >= 2
+            assert mock.call_args_list[1] == call(
+                "cancelling...", InstallerActions.CANCEL
+            )
 
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 

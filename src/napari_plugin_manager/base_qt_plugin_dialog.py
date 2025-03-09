@@ -6,12 +6,9 @@ from collections.abc import Sequence
 from functools import partial
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
     NamedTuple,
     Protocol,
-    Tuple,
 )
 
 from packaging.version import parse as parse_version
@@ -113,8 +110,8 @@ class BasePackageMetadata(NamedTuple):
 class BaseProjectInfoVersions(NamedTuple):
     metadata: BasePackageMetadata
     display_name: str
-    pypi_versions: List[str]
-    conda_versions: List[str]
+    pypi_versions: list[str]
+    conda_versions: list[str]
 
 
 class BasePluginListItem(QFrame):
@@ -151,8 +148,8 @@ class BasePluginListItem(QFrame):
         enabled: bool = True,
         installed: bool = False,
         plugin_api_version=1,
-        versions_conda: List[str] | None = None,
-        versions_pypi: List[str] | None = None,
+        versions_conda: list[str] | None = None,
+        versions_pypi: list[str] | None = None,
         prefix=None,
     ) -> None:
         super().__init__(parent)
@@ -1667,7 +1664,7 @@ class BaseQtPluginDialog(QDialog):
 
         self._update_plugin_count()
 
-    def _handle_yield(self, data: Tuple[PackageMetadataProtocol, bool, Dict]):
+    def _handle_yield(self, data: tuple[PackageMetadataProtocol, bool, dict]):
         """Output from a worker process.
 
         Includes information about the plugin, including available versions on conda and pypi.
