@@ -41,7 +41,10 @@ jobs:
             tool: pip
             python-version: "3.13"
         exclude:
-        # skip repo install on mac and windows
+        # skip repo install on conda
+        - platform: ubuntu-latest
+          napari: repo
+          tool: conda
         - platform: windows-latest
           napari: repo
         - platform: macos-13
@@ -116,7 +119,7 @@ jobs:
           FORCE_COLOR: 1
           # Only supported pyside6 is not supported on py312, py313
           # no Qt backends supported by conda-forge on py313
-          TOX_SKIP_ENV: ".*py31[23].*PySide6 | .*py313.*conda"
+          TOX_SKIP_ENV: ".*py31[23].*PySide6|.*py313.*conda"
 
           
       - name: Upload coverage data
