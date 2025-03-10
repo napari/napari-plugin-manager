@@ -31,27 +31,23 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-13, macos-latest]
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
         napari: ["latest", "repo"]
         tool: ["pip", "conda"]
         include:
-        # run more checks on ubuntu as smoke tests
-          - platform: ubuntu-latest
-            python-version: "3.11"
-          - platform: ubuntu-latest
+          # add 3.13 on ubuntu
+          - platform: ubuntu
+            napari: repo
+            tool: pip
             python-version: "3.13"
         exclude:
-        # no Qt backends on conda-forge for py313
-          - python-version: "3.13"
-            tool: "conda"
-          # just do the release install on mac/windows
-          - platform: macos-13
-            napari: repo
-          - platform: macos-latest
-            napari: repo
-          - platform: windows-latest
-            napari: repo
-
+        # skip repo install on mac and windows
+        - platform: windows-latest
+          napari: repo
+        - platform: macos-13
+          napari: repo
+        - platform: macos-latest
+          napari: repo
 
     steps:
       - uses: actions/checkout@v4
@@ -105,7 +101,7 @@ jobs:
           TOOL: ${{ matrix.tool }}
           FORCE_COLOR: 1
           # Only supported pyside6 is not supported on py312, py313
-          TOX_SKIP_ENV: "pip-py31[23].*PySide6"
+          TOX_SKIP_ENV: ".*py31[23].*PySide6"
           
       - name: Test with tox - conda
         if: matrix.tool == 'conda'
@@ -118,6 +114,10 @@ jobs:
           NAPARI: ${{ matrix.napari }}
           TOOL: ${{ matrix.tool }}
           FORCE_COLOR: 1
+          # Only supported pyside6 is not supported on py312, py313
+          # no Qt backends supported by conda-forge on py313
+          TOX_SKIP_ENV: ".*py31[23].*PySide6 | .*py313.*conda"
+
           
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
