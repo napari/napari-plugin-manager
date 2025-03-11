@@ -278,7 +278,7 @@ def test_visible_widgets(request, plugin_dialog):
     """
     Test that the direct entry button and textbox are visible
     """
-    if "no-constructor" not in request.node.name:
+    if "constructor" in request.node.name:
         pytest.skip(
             reason="Tested functionality not available in constructor-based installs"
         )
@@ -472,7 +472,7 @@ def test_drop_event(plugin_dialog, tmp_path):
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -524,7 +524,7 @@ def test_install_pypi_constructor(
 def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -548,7 +548,7 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
 def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -575,7 +575,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
 def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="The tested functionality is not available in constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
