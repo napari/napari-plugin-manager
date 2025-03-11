@@ -25,7 +25,7 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     )
 
 from napari_plugin_manager import qt_plugin_dialog
-from napari_plugin_manager.base_qt_package_installer import InstallerActions
+from napari_plugin_manager.base_qt_package_installer import InstallerActions, InstallerTools
 
 N_MOCKED_PLUGINS = 2
 
@@ -496,12 +496,15 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     [QMessageBox.StandardButton.Cancel, QMessageBox.StandardButton.Ok],
 )
 def test_install_pypi_constructor(
-    qtbot, tmp_virtualenv, plugin_dialog, request, message_return
+    qtbot, tmp_virtualenv, plugin_dialog, request, message_return, monkeypatch
 ):
-    if "no-constructor" in request.node.name:
+    if "constructor" not in request.node.name:
         pytest.skip(
             reason="This test is only relevant for constructor-based installs"
         )
+    # ensure pip is the installer tool, so that the warning will trigger
+    monkeypatch.setattr(qt_plugin_dialog.PluginListItem, 'get_installer_tool', lambda self: InstallerTools.PIP)
+    monkeypatch.setattr(qt_plugin_dialog.PluginListItem, 'get_installer_source', lambda self: "PIP")
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
     plugin_dialog.search('requests')
