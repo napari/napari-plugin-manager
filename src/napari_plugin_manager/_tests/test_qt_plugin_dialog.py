@@ -501,9 +501,9 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
 def test_install_pypi_constructor(
     qtbot, tmp_virtualenv, plugin_dialog, request, message_return, monkeypatch
 ):
-    if "constructor" not in request.node.name:
+    if "no-constructor" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is to test pip in constructor-based installs"
         )
     # ensure pip is the installer tool, so that the warning will trigger
     monkeypatch.setattr(
