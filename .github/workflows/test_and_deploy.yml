@@ -36,7 +36,7 @@ jobs:
         tool: ["pip", "conda"]
         include:
           # add 3.13 on ubuntu
-          - platform: ubuntu
+          - platform: ubuntu-latest
             napari: repo
             tool: pip
             python-version: "3.13"
