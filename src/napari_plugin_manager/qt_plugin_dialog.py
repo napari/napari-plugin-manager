@@ -45,8 +45,8 @@ DISMISS_WARN_PYPI_INSTALL_DLG = False
 
 def _show_message(widget):
     message = trans._(
-        'When installing/uninstalling npe2 plugins, '
-        'you must restart napari for UI changes to take effect.'
+        'Restart napari to activate changes. This is required when'
+        'installing/uninstalling npe2 plugins for the changes to take effect.'
     )
     if widget.isVisible():
         button = widget.action_button
