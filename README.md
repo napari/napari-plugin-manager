@@ -153,10 +153,15 @@ You can export the list of install plugins by clicking on the `Export` button lo
 corner of the UI. This will prompt a dialog to select the location and name of the text file where
 the installed plugin list will be saved.
 
+The file is plain text and plugins are listed in the [requirements.txt](https://pip.pypa.io/en/stable/reference/requirements-file-format/) format:
+```
+plugin_name==0.1.2
+```
+
 This file can be shared and then imported by clicking on the `Import` button located on the top right
 corner of the UI. This will prompt a dialog to select the location of the text file to import.
 
-After selecting the file, the plugin will dialog will attempt to install all the listed plugins.
+After selecting the file, the plugin manager will attempt to install all the listed plugins using the auto-detected default installer.
 
 ![Screenshot of the napari-plugin-manager showing the process of import/export](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/import-export.png)
 
