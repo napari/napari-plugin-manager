@@ -31,18 +31,26 @@ jobs:
       fail-fast: false
       matrix:
         platform: [ubuntu-latest, windows-latest, macos-13, macos-latest]
-        python-version: ["3.10", "3.13"]
+        python-version: ["3.10", "3.11", "3.12"]
         napari: ["latest", "repo"]
         tool: ["pip", "conda"]
         include:
+          # add 3.13 on ubuntu
           - platform: ubuntu-latest
-            python-version: "3.11"
-            napari: "latest"
-            tool: "pip"
-          - platform: ubuntu-latest
-            python-version: "3.12"
-            napari: "latest"
-            tool: "pip"
+            napari: repo
+            tool: pip
+            python-version: "3.13"
+        exclude:
+        # skip repo install on conda
+        - platform: ubuntu-latest
+          napari: repo
+          tool: conda
+        - platform: windows-latest
+          napari: repo
+        - platform: macos-13
+          napari: repo
+        - platform: macos-latest
+          napari: repo
 
     steps:
       - uses: actions/checkout@v4
@@ -58,6 +66,8 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: "true"
           python-version: ${{ matrix.python-version }}
 
       - uses: tlambert03/setup-qt-libs@v1
@@ -91,10 +101,11 @@ jobs:
         env:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
+          TOOL: ${{ matrix.tool }}
           FORCE_COLOR: 1
-          TOX_SKIP_ENV: |
-            ${{ (matrix.platform == 'macos-latest' && '.*PySide2.*') || '.*py3(11|12|13)-PySide2.*'  }}
-
+          # Only supported pyside6 is not supported on py312, py313
+          TOX_SKIP_ENV: ".*py31[23].*PySide6"
+          
       - name: Test with tox - conda
         if: matrix.tool == 'conda'
         uses: aganders3/headless-gui@v2
@@ -104,9 +115,13 @@ jobs:
         env:
           PYVISTA_OFF_SCREEN: True  # required for opengl on windows
           NAPARI: ${{ matrix.napari }}
+          TOOL: ${{ matrix.tool }}
           FORCE_COLOR: 1
-          TOX_SKIP_ENV:  ${{ (matrix.platform == 'macos-latest' && '.*py3(10|13)-PySide2.*') || '.*py313-PySide2.*'  }}
+          # Only supported pyside2 and pyside6 are not supported on py312, py313
+          # no Qt backends supported by conda-forge on py313
+          TOX_SKIP_ENV: ".*py31[23].*PySide[26]|.*py313.*conda"
 
+          
       - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
