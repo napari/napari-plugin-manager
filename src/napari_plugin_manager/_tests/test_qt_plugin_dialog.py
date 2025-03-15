@@ -25,7 +25,10 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
     )
 
 from napari_plugin_manager import qt_plugin_dialog
-from napari_plugin_manager.base_qt_package_installer import InstallerActions
+from napari_plugin_manager.base_qt_package_installer import (
+    InstallerActions,
+    InstallerTools,
+)
 
 N_MOCKED_PLUGINS = 2
 
@@ -278,7 +281,7 @@ def test_visible_widgets(request, plugin_dialog):
     """
     Test that the direct entry button and textbox are visible
     """
-    if "no-constructor" not in request.node.name:
+    if "constructor" in request.node.name:
         pytest.skip(
             reason="Tested functionality not available in constructor-based installs"
         )
@@ -472,7 +475,7 @@ def test_drop_event(plugin_dialog, tmp_path):
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -496,12 +499,23 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     [QMessageBox.StandardButton.Cancel, QMessageBox.StandardButton.Ok],
 )
 def test_install_pypi_constructor(
-    qtbot, tmp_virtualenv, plugin_dialog, request, message_return
+    qtbot, tmp_virtualenv, plugin_dialog, request, message_return, monkeypatch
 ):
     if "no-constructor" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is to test pip in constructor-based installs"
         )
+    # ensure pip is the installer tool, so that the warning will trigger
+    monkeypatch.setattr(
+        qt_plugin_dialog.PluginListItem,
+        'get_installer_tool',
+        lambda self: InstallerTools.PIP,
+    )
+    monkeypatch.setattr(
+        qt_plugin_dialog.PluginListItem,
+        'get_installer_source',
+        lambda self: "PIP",
+    )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
     plugin_dialog.search('requests')
@@ -524,7 +538,7 @@ def test_install_pypi_constructor(
 def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -548,7 +562,7 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
 def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -575,7 +589,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
 def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="The tested functionality is not available in constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
