@@ -844,8 +844,6 @@ class BaseQPluginList(QListWidget):
         if not item.text().startswith(self._SORT_ORDER_PREFIX):
             item.setText(f"{self._SORT_ORDER_PREFIX}{item.text()}")
 
-        self._before_handle_action(widget, action_name)
-
         if action_name == InstallerActions.INSTALL:
             if version:
                 pkg_name += (
