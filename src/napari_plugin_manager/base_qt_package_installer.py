@@ -50,6 +50,7 @@ class InstallerActions(StringEnum):
 
 class ProcessFinishedData(TypedDict):
     """Data about a finished process."""
+
     exit_code: int
     exit_status: int
     action: InstallerActions
@@ -66,6 +67,7 @@ class InstallerTools(StringEnum):
 @dataclass(frozen=True)
 class AbstractInstallerTool:
     """Abstract base class for installer tools."""
+
     action: InstallerActions
     pkgs: Tuple[str, ...]
     origins: Tuple[str, ...] = ()
@@ -113,7 +115,7 @@ class AbstractInstallerTool:
 
 class PipInstallerTool(AbstractInstallerTool):
     """Pip installer tool for the plugin manager.
-    
+
     This class is used to install and uninstall packages using pip.
     """
 
@@ -146,7 +148,7 @@ class PipInstallerTool(AbstractInstallerTool):
 
         else:
             raise ValueError(f"Action '{self.action}' not supported!")
-        
+
         if log.getEffectiveLevel() < 30:  # DEBUG and INFOlevel
             args.append('-vvv')
 
@@ -171,13 +173,14 @@ class PipInstallerTool(AbstractInstallerTool):
 
 class CondaInstallerTool(AbstractInstallerTool):
     """Conda installer tool for the plugin manager.
-    
+
     This class is used to install and uninstall packages using conda or conda-like executable.
     """
+
     @classmethod
     def executable(cls):
         """Find a path to the executable.
-        
+
         This method assumes that if no environment variable is set that conda is available in the PATH.
         """
         bat = ".bat" if os.name == "nt" else ""
@@ -192,7 +195,7 @@ class CondaInstallerTool(AbstractInstallerTool):
                 return str(path)
         # Otherwise, we assume that conda is available in the PATH
         return f'conda{bat}'
-    
+
     @classmethod
     def available(cls):
         """Check if the executable is available by checking if it can output its version."""
@@ -304,7 +307,7 @@ class InstallerQueue(QObject):
         **kwargs,
     ) -> JobId:
         """Install packages in the installer queue.
-        
+
         This installs packages in `pkgs` into `prefix` using `tool` with additional
         `origins` as source for `pkgs`.
 
@@ -345,7 +348,7 @@ class InstallerQueue(QObject):
         **kwargs,
     ) -> JobId:
         """Upgrade packages in the installer queue.
-        
+
         Upgrade in `pkgs` into `prefix` using `tool` with additional
         `origins` as source for `pkgs`.
 
@@ -385,7 +388,7 @@ class InstallerQueue(QObject):
         **kwargs,
     ) -> JobId:
         """Uninstall packages in the installer queue.
-        
+
         Uninstall packages in `pkgs` from `prefix` using `tool`.
 
         Parameters
@@ -414,7 +417,7 @@ class InstallerQueue(QObject):
 
     def cancel(self, job_id: JobId):
         """Cancel a job.
-        
+
         Cancel the process, if it is running, referenced by `job_id`.
         If `job_id` does not exist int the queue, a ValueError is raised.
 
