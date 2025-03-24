@@ -1,10 +1,11 @@
-"""
-A tool-agnostic installation logic for the plugin manager.
+"""Package tool-agnostic installation logic for the plugin manager.
 
 The main object is `InstallerQueue`, a `QProcess` subclass
-with the notion of a job queue. The queued jobs are represented
-by a `deque` of `*InstallerTool` dataclasses that contain the
-executable path, arguments and environment modifications.
+with the notion of a job queue.
+
+The queued jobs are represented by a `deque` of `*InstallerTool` dataclasses
+that contain the executable path, arguments and environment modifications.
+
 Available actions for each tool are `install`, `uninstall`
 and `cancel`.
 """
@@ -31,7 +32,9 @@ from npe2 import PluginManager
 from qtpy.QtCore import QObject, QProcess, QProcessEnvironment, Signal
 from qtpy.QtWidgets import QTextEdit
 
+# Alias for int type to represent a job idenfifier in the installer queue
 JobId = int
+
 log = getLogger(__name__)
 
 
@@ -46,6 +49,7 @@ class InstallerActions(StringEnum):
 
 
 class ProcessFinishedData(TypedDict):
+    """Data about a finished process."""
     exit_code: int
     exit_status: int
     action: InstallerActions
@@ -53,7 +57,7 @@ class ProcessFinishedData(TypedDict):
 
 
 class InstallerTools(StringEnum):
-    "Available tools for InstallerQueue jobs"
+    "Installer tools selectable by InstallerQueue jobs"
 
     CONDA = auto()
     PIP = auto()
@@ -61,6 +65,7 @@ class InstallerTools(StringEnum):
 
 @dataclass(frozen=True)
 class AbstractInstallerTool:
+    """Abstract base class for installer tools."""
     action: InstallerActions
     pkgs: Tuple[str, ...]
     origins: Tuple[str, ...] = ()
@@ -107,16 +112,25 @@ class AbstractInstallerTool:
 
 
 class PipInstallerTool(AbstractInstallerTool):
+    """Pip installer tool for the plugin manager.
+    
+    This class is used to install and uninstall packages using pip.
+    """
+
     @classmethod
     def available(cls):
+        """Check if pip is available."""
         return call([cls.executable(), "-m", "pip", "--version"]) == 0
 
     def arguments(self) -> Tuple[str, ...]:
+        """Compose arguments for the pip command."""
         args = ['-m', 'pip']
+
         if self.action == InstallerActions.INSTALL:
             args += ['install', '-c', self._constraints_file()]
             for origin in self.origins:
                 args += ['--extra-index-url', origin]
+
         elif self.action == InstallerActions.UPGRADE:
             args += [
                 'install',
@@ -126,14 +140,19 @@ class PipInstallerTool(AbstractInstallerTool):
             ]
             for origin in self.origins:
                 args += ['--extra-index-url', origin]
+
         elif self.action == InstallerActions.UNINSTALL:
             args += ['uninstall', '-y']
+
         else:
             raise ValueError(f"Action '{self.action}' not supported!")
-        if 10 <= log.getEffectiveLevel() < 30:  # DEBUG level
+        
+        if log.getEffectiveLevel() < 30:  # DEBUG and INFOlevel
             args.append('-vvv')
+
         if self.prefix is not None:
             args.extend(['--prefix', str(self.prefix)])
+
         return (*args, *self.pkgs)
 
     def environment(
@@ -151,8 +170,16 @@ class PipInstallerTool(AbstractInstallerTool):
 
 
 class CondaInstallerTool(AbstractInstallerTool):
+    """Conda installer tool for the plugin manager.
+    
+    This class is used to install and uninstall packages using conda or conda-like executable.
+    """
     @classmethod
     def executable(cls):
+        """Find a path to the executable.
+        
+        This method assumes that if no environment variable is set that conda is available in the PATH.
+        """
         bat = ".bat" if os.name == "nt" else ""
         for path in (
             Path(os.environ.get('MAMBA_EXE', '')),
@@ -161,11 +188,14 @@ class CondaInstallerTool(AbstractInstallerTool):
             Path(os.environ.get('CONDA', '')) / 'condabin' / f'conda{bat}',
         ):
             if path.is_file():
+                # return the path to the executable
                 return str(path)
-        return f'conda{bat}'  # cross our fingers 'conda' is in PATH
-
+        # Otherwise, we assume that conda is available in the PATH
+        return f'conda{bat}'
+    
     @classmethod
     def available(cls):
+        """Check if the executable is available by checking if it can output its version."""
         executable = cls.executable()
         try:
             return call([executable, "--version"]) == 0
@@ -173,14 +203,18 @@ class CondaInstallerTool(AbstractInstallerTool):
             return False
 
     def arguments(self) -> Tuple[str, ...]:
+        """Compose arguments for the conda command."""
         prefix = self.prefix or self._default_prefix()
+
         if self.action == InstallerActions.UPGRADE:
             args = ['update', '-y', '--prefix', prefix]
         else:
             args = [self.action.value, '-y', '--prefix', prefix]
+
         args.append('--override-channels')
         for channel in (*self.origins, *self._default_channels()):
             args.extend(["-c", channel])
+
         return (*args, *self.pkgs)
 
     def environment(
@@ -208,6 +242,7 @@ class CondaInstallerTool(AbstractInstallerTool):
     def _add_constraints_to_env(
         self, env: QProcessEnvironment
     ) -> QProcessEnvironment:
+        """Add constraints to the environment."""
         PINNED = 'CONDA_PINNED_PACKAGES'
         constraints = self.constraints()
         if env.contains(PINNED):
@@ -216,9 +251,11 @@ class CondaInstallerTool(AbstractInstallerTool):
         return env
 
     def _default_channels(self):
+        """Default channels for conda installations."""
         return ('conda-forge',)
 
     def _default_prefix(self):
+        """Default prefix for conda installations."""
         if (Path(sys.prefix) / "conda-meta").is_dir():
             return sys.prefix
         raise ValueError("Prefix has not been specified!")
@@ -266,7 +303,9 @@ class InstallerQueue(QObject):
         origins: Sequence[str] = (),
         **kwargs,
     ) -> JobId:
-        """Install packages in `pkgs` into `prefix` using `tool` with additional
+        """Install packages in the installer queue.
+        
+        This installs packages in `pkgs` into `prefix` using `tool` with additional
         `origins` as source for `pkgs`.
 
         Parameters
@@ -283,7 +322,7 @@ class InstallerQueue(QObject):
         Returns
         -------
         JobId : int
-            ID that can be used to cancel the process.
+            An ID to reference the job. Use to cancel the process.
         """
         item = self._build_queue_item(
             tool=tool,
@@ -305,7 +344,9 @@ class InstallerQueue(QObject):
         origins: Sequence[str] = (),
         **kwargs,
     ) -> JobId:
-        """Upgrade packages in `pkgs` into `prefix` using `tool` with additional
+        """Upgrade packages in the installer queue.
+        
+        Upgrade in `pkgs` into `prefix` using `tool` with additional
         `origins` as source for `pkgs`.
 
         Parameters
@@ -322,7 +363,7 @@ class InstallerQueue(QObject):
         Returns
         -------
         JobId : int
-            ID that can be used to cancel the process.
+            An ID to reference the job. Use to cancel the process.
         """
         item = self._build_queue_item(
             tool=tool,
@@ -343,7 +384,9 @@ class InstallerQueue(QObject):
         prefix: Optional[str] = None,
         **kwargs,
     ) -> JobId:
-        """Uninstall packages in `pkgs` from `prefix` using `tool`.
+        """Uninstall packages in the installer queue.
+        
+        Uninstall packages in `pkgs` from `prefix` using `tool`.
 
         Parameters
         ----------
@@ -357,7 +400,7 @@ class InstallerQueue(QObject):
         Returns
         -------
         JobId : int
-            ID that can be used to cancel the process.
+            An ID to reference the job. Use to cancel the process.
         """
         item = self._build_queue_item(
             tool=tool,
@@ -370,8 +413,10 @@ class InstallerQueue(QObject):
         return self._queue_item(item)
 
     def cancel(self, job_id: JobId):
-        """Cancel `job_id` if it is running. If `job_id` does not exist int the queue,
-        a ValueError is raised.
+        """Cancel a job.
+        
+        Cancel the process, if it is running, referenced by `job_id`.
+        If `job_id` does not exist int the queue, a ValueError is raised.
 
         Parameters
         ----------
@@ -394,7 +439,7 @@ class InstallerQueue(QObject):
 
                     self._end_process(item.process)
                 else:
-                    # still pending, just remove from queue
+                    # job is still pending, just remove it from the queue
                     self._queue.remove(item)
 
                 self.processFinished.emit(
@@ -405,6 +450,7 @@ class InstallerQueue(QObject):
                         'pkgs': item.pkgs,
                     }
                 )
+                # continue processing the queue
                 self._process_queue()
                 return
 
@@ -418,7 +464,7 @@ class InstallerQueue(QObject):
         raise ValueError(msg)
 
     def cancel_all(self):
-        """Terminate all process in the queue and emit the `processFinished` signal."""
+        """Terminate all processes in the queue and emit the `processFinished` signal."""
         all_pkgs = []
         for item in deque(self._queue):
             all_pkgs.extend(item.pkgs)
@@ -465,6 +511,7 @@ class InstallerQueue(QObject):
         return len(self._queue)
 
     def set_output_widget(self, output_widget: QTextEdit):
+        """Set the output widget for text output."""
         if output_widget:
             self._output_widget = output_widget
 
