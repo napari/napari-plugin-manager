@@ -260,7 +260,8 @@ class QtPluginDialog(BaseQtPluginDialog):
                 break
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
-        get_settings()
+        settings = get_settings()
+        use_npe2_adaptor = settings.plugins.use_npe2_adaptor
 
         if clear_cache:
             cache_clear()
@@ -274,7 +275,7 @@ class QtPluginDialog(BaseQtPluginDialog):
         self.worker.start()
 
         pm2 = npe2.PluginManager.instance()
-        pm2.discover()
+        pm2.discover(include_npe1=use_npe2_adaptor)
 
     def _loading_gif(self):
         load_gif = str(Path(napari.resources.__file__).parent / "loading.gif")
