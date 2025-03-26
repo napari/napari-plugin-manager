@@ -222,6 +222,7 @@ class QtPluginDialog(BaseQtPluginDialog):
             if widget.name == pkg_name:
                 self.installed_list.scrollToItem(item)
                 self.installed_list.setCurrentItem(item)
+                self.needs_restart = True
                 break
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
