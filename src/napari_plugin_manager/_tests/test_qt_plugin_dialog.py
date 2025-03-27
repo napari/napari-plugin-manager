@@ -2,7 +2,7 @@ import importlib.metadata
 import os
 import sys
 from typing import Generator, Optional, Tuple
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 import napari.plugins
 import npe2
@@ -24,7 +24,7 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
         allow_module_level=True,
     )
 
-from napari_plugin_manager import qt_plugin_dialog
+from napari_plugin_manager import base_qt_plugin_dialog, qt_plugin_dialog
 from napari_plugin_manager.base_qt_package_installer import (
     InstallerActions,
     InstallerTools,
@@ -323,6 +323,24 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 "cancelling...", InstallerActions.CANCEL
             )
 
+    qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
+
+
+def test_plugin_uninstall_restart_warning(plugin_dialog, qtbot, monkeypatch):
+    dialog_mock = MagicMock()
+    monkeypatch.setattr(
+        base_qt_plugin_dialog, 'RestartWarningDialog', dialog_mock
+    )
+    item = plugin_dialog.installed_list.item(0)
+    with patch.object(qt_plugin_dialog.PluginListItem, "set_busy"):
+        plugin_dialog.installed_list.handle_action(
+            item,
+            'my-plugin',
+            InstallerActions.UNINSTALL,
+        )
+        assert plugin_dialog.needs_restart
+        plugin_dialog.hide()
+        dialog_mock.assert_called_once()
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
 
