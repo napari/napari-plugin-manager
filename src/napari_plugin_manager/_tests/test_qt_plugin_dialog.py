@@ -333,11 +333,12 @@ def test_plugin_uninstall_restart_warning(plugin_dialog, qtbot, monkeypatch):
     )
     item = plugin_dialog.installed_list.item(0)
     with patch.object(qt_plugin_dialog.PluginListItem, "set_busy"):
-        plugin_dialog.installed_list.handle_action(
-            item,
-            'my-plugin',
-            InstallerActions.UNINSTALL,
-        )
+        with patch.object(plugin_dialog.installed_list.installer, 'uninstall'):
+            plugin_dialog.installed_list.handle_action(
+                item,
+                'my-plugin',
+                InstallerActions.UNINSTALL,
+            )
         assert plugin_dialog.needs_restart
         plugin_dialog.hide()
         dialog_mock.assert_called_once()
