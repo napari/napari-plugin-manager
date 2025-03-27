@@ -126,6 +126,10 @@ def plugin_dialog(
     old_plugins,
 ):
     """Fixture that provides a plugin dialog for a normal napari install."""
+    from napari.settings import get_settings
+
+    original_setting = get_settings().plugins.use_npe2_adaptor
+    get_settings().plugins.use_npe2_adaptor = False
 
     class PluginManagerMock:
         def instance(self):
@@ -144,7 +148,7 @@ def plugin_dialog(
         def is_disabled(self, name):
             return False
 
-        def discover(self):
+        def discover(self, include_npe1=False):
             return ['plugin']
 
         def enable(self, plugin):
@@ -218,6 +222,7 @@ def plugin_dialog(
     widget.hide()
     widget._add_items_timer.stop()
     assert not widget._add_items_timer.isActive()
+    get_settings().plugins.use_npe2_adaptor = original_setting
 
 
 def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
