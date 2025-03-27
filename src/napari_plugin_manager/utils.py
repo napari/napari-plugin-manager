@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from qtpy.QtWidgets import QDialog, QWidget
+
 
 def is_conda_package(pkg: str, prefix: Optional[str] = None) -> bool:
     """Determines if plugin was installed through conda.
@@ -20,3 +22,25 @@ def is_conda_package(pkg: str, prefix: Optional[str] = None) -> bool:
         re.match(rf"{pkg}-[^-]+-[^-]+.json", p.name)
         for p in conda_meta_dir.glob(f"{pkg}-*-*.json")
     )
+
+
+def get_dialog_from_widget(widget: QWidget) -> QDialog | None:
+    """Returns the parent dialog of the given widget.
+
+    Parameters
+    ----------
+    widget : QWidget
+        Widget to find parent for.
+
+    Returns
+    -------
+    QtPluginDialog | None
+        The dialog containing the given widget, if available
+    """
+    from napari_plugin_manager.qt_plugin_dialog import QtPluginDialog
+
+    while widget is not None:
+        if isinstance(widget, QtPluginDialog):
+            return widget
+        widget = widget.parent()
+    return None

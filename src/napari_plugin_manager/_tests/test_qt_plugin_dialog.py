@@ -2,7 +2,7 @@ import importlib.metadata
 import os
 import sys
 from typing import Generator, Optional, Tuple
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 import napari.plugins
 import npe2
@@ -24,7 +24,7 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
         allow_module_level=True,
     )
 
-from napari_plugin_manager import qt_plugin_dialog
+from napari_plugin_manager import base_qt_plugin_dialog, qt_plugin_dialog
 from napari_plugin_manager.base_qt_package_installer import (
     InstallerActions,
     InstallerTools,
@@ -91,29 +91,6 @@ def old_plugins(qtbot):
 @pytest.fixture
 def plugins(qtbot):
     return PluginsMock()
-
-
-class WarnPopupMock:
-    def __init__(self, text):
-        self._is_visible = False
-
-    def show(self):
-        self._is_visible = True
-
-    def exec_(self):
-        self._is_visible = True
-
-    def move(self, pos):
-        return False
-
-    def isVisible(self):
-        return self._is_visible
-
-    def close(self):
-        self._is_visible = False
-
-    def width(self):
-        return 100
 
 
 @pytest.fixture(params=[True, False], ids=["constructor", "no-constructor"])
@@ -188,7 +165,6 @@ def plugin_dialog(
         "iter_napari_plugin_info",
         _iter_napari_pypi_plugin_info,
     )
-    monkeypatch.setattr(qt_plugin_dialog, 'WarnPopup', WarnPopupMock)
 
     # This is patching `napari.utils.misc.running_as_constructor_app` function
     # to mock a normal napari install.
@@ -320,14 +296,6 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
             trans._("updating..."), InstallerActions.UPGRADE
         )
 
-    with patch.object(qt_plugin_dialog.WarnPopup, "exec_") as mock:
-        plugin_dialog.installed_list.handle_action(
-            item,
-            'my-test-old-plugin-1',
-            InstallerActions.UNINSTALL,
-        )
-        assert mock.called
-
     plugin_dialog.search("requests")
     qtbot.wait(500)
     item = plugin_dialog.available_list.item(0)
@@ -355,6 +323,25 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 "cancelling...", InstallerActions.CANCEL
             )
 
+    qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
+
+
+def test_plugin_uninstall_restart_warning(plugin_dialog, qtbot, monkeypatch):
+    dialog_mock = MagicMock()
+    monkeypatch.setattr(
+        base_qt_plugin_dialog, 'RestartWarningDialog', dialog_mock
+    )
+    item = plugin_dialog.installed_list.item(0)
+    with patch.object(qt_plugin_dialog.PluginListItem, "set_busy"):
+        with patch.object(plugin_dialog.installed_list.installer, 'uninstall'):
+            plugin_dialog.installed_list.handle_action(
+                item,
+                'my-plugin',
+                InstallerActions.UNINSTALL,
+            )
+        assert plugin_dialog.needs_restart
+        plugin_dialog.hide()
+        dialog_mock.assert_called_once()
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
 
