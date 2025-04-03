@@ -57,9 +57,7 @@ from napari_plugin_manager.base_qt_package_installer import (
 )
 from napari_plugin_manager.qt_warning_dialog import RestartWarningDialog
 from napari_plugin_manager.qt_widgets import ClickableLabel
-from napari_plugin_manager.utils import (
-    is_conda_package,
-)
+from napari_plugin_manager.utils import is_conda_package
 
 CONDA = 'Conda'
 PYPI = 'PyPI'
