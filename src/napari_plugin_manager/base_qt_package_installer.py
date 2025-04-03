@@ -419,7 +419,7 @@ class InstallerQueue(QObject):
         """Cancel a job.
 
         Cancel the process, if it is running, referenced by `job_id`.
-        If `job_id` does not exist int the queue, a ValueError is raised.
+        If `job_id` does not exist in the queue, a ValueError is raised.
 
         Parameters
         ----------
