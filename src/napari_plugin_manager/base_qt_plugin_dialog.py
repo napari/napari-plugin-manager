@@ -58,7 +58,6 @@ from napari_plugin_manager.base_qt_package_installer import (
 from napari_plugin_manager.qt_warning_dialog import RestartWarningDialog
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import (
-    get_dialog_from_widget,
     is_conda_package,
 )
 
@@ -892,13 +891,6 @@ class BaseQPluginList(QListWidget):
                 # origins="TODO",
                 # upgrade=False,
             )
-            if (
-                widget.plugin_api_version == 2
-                or widget.plugin_api_version == 'shim'
-            ):
-                parent_dialog = get_dialog_from_widget(widget)
-                if parent_dialog is not None:
-                    parent_dialog.needs_restart = True
             widget.setProperty("current_job_id", job_id)
             if self._warn_dialog:
                 self._warn_dialog.exec_()
@@ -1056,7 +1048,6 @@ class BaseQtPluginDialog(QDialog):
         self.available_set = set()
         self._prefix = prefix
         self._first_open = True
-        self.needs_restart = False
         self._plugin_queue = []  # Store plugin data to be added
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
@@ -1756,15 +1747,18 @@ class BaseQtPluginDialog(QDialog):
 
         plugin_dialog.setModal(True)
         plugin_dialog.show()
+        plugin_dialog._installed_on_show = set(plugin_dialog.already_installed)
 
         if self._first_open:
             self._update_theme(None)
             self._first_open = False
 
     def hideEvent(self, event):
-        if self.needs_restart:
+        if (
+            hasattr(self, '_installed_on_show')
+            and self._installed_on_show != self.already_installed
+        ):
             RestartWarningDialog(self).exec_()
-        self.needs_restart = False
         self.packages_search.clear()
         self.toggle_status(False)
         super().hideEvent(event)
