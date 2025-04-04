@@ -55,6 +55,7 @@ from napari_plugin_manager.base_qt_package_installer import (
     InstallerTools,
     ProcessFinishedData,
 )
+from napari_plugin_manager.qt_warning_dialog import RestartWarningDialog
 from napari_plugin_manager.qt_widgets import ClickableLabel
 from napari_plugin_manager.utils import is_conda_package
 
@@ -843,8 +844,6 @@ class BaseQPluginList(QListWidget):
         self._warn_dialog = None
         if not item.text().startswith(self._SORT_ORDER_PREFIX):
             item.setText(f"{self._SORT_ORDER_PREFIX}{item.text()}")
-
-        self._before_handle_action(widget, action_name)
 
         if action_name == InstallerActions.INSTALL:
             if version:
@@ -1746,12 +1745,18 @@ class BaseQtPluginDialog(QDialog):
 
         plugin_dialog.setModal(True)
         plugin_dialog.show()
+        plugin_dialog._installed_on_show = set(plugin_dialog.already_installed)
 
         if self._first_open:
             self._update_theme(None)
             self._first_open = False
 
     def hideEvent(self, event):
+        if (
+            hasattr(self, '_installed_on_show')
+            and self._installed_on_show != self.already_installed
+        ):
+            RestartWarningDialog(self).exec_()
         self.packages_search.clear()
         self.toggle_status(False)
         super().hideEvent(event)
