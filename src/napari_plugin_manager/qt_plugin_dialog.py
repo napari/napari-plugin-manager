@@ -6,7 +6,6 @@ import napari.resources
 import npe2
 from napari._qt.qt_resources import QColoredSVGIcon, get_current_stylesheet
 from napari._qt.qthreading import create_worker
-from napari._qt.widgets.qt_message_popup import WarnPopup
 from napari._qt.widgets.qt_tooltip import QtToolTipLabel
 from napari.plugins.utils import normalized_name
 from napari.settings import get_settings
@@ -15,7 +14,7 @@ from napari.utils.misc import (
 )
 from napari.utils.notifications import show_info, show_warning
 from napari.utils.translations import trans
-from qtpy.QtCore import QPoint, QSize
+from qtpy.QtCore import QSize
 from qtpy.QtGui import (
     QMovie,
 )
@@ -41,24 +40,6 @@ from napari_plugin_manager.utils import is_conda_package
 # Scaling factor for each list widget item when expanding.
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
 DISMISS_WARN_PYPI_INSTALL_DLG = False
-
-
-def _show_message(widget):
-    message = trans._(
-        'When installing/uninstalling npe2 plugins, '
-        'you must restart napari for UI changes to take effect.'
-    )
-    if widget.isVisible():
-        button = widget.action_button
-        warn_dialog = WarnPopup(text=message)
-        global_point = widget.action_button.mapToGlobal(
-            button.rect().topRight()
-        )
-        global_point = QPoint(
-            global_point.x() - button.width(), global_point.y()
-        )
-        warn_dialog.move(global_point)
-        warn_dialog.exec_()
 
 
 class ProjectInfoVersions(BaseProjectInfoVersions):
@@ -182,13 +163,6 @@ class QPluginList(BaseQPluginList):
     def _trans(self, text, **kwargs):
         return trans._(text, **kwargs)
 
-    def _before_handle_action(self, widget, action_name):
-        if (
-            widget.plugin_api_version != 1
-            and action_name == InstallerActions.UNINSTALL
-        ):
-            _show_message(widget)
-
 
 class QtPluginDialog(BaseQtPluginDialog):
 
@@ -206,8 +180,9 @@ class QtPluginDialog(BaseQtPluginDialog):
         self.setStyleSheet(stylesheet)
 
     def _add_installed(self, pkg_name=None):
+        use_npe2_adaptor = get_settings().plugins.use_npe2_adaptor
         pm2 = npe2.PluginManager.instance()
-        pm2.discover()
+        pm2.discover(include_npe1=use_npe2_adaptor)
         for manifest in pm2.iter_manifests():
             distname = normalized_name(manifest.name or '')
             if distname in self.already_installed or distname == 'napari':
@@ -220,26 +195,32 @@ class QtPluginDialog(BaseQtPluginDialog):
                     distname, enabled, distname, plugin_api_version=npev
                 )
 
-        napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
-        for (
-            plugin_name,
-            _,
-            distname,
-        ) in napari.plugins.plugin_manager.iter_available():
-            # not showing these in the plugin dialog
-            if plugin_name in (
-                'napari_plugin_engine',
-                'napari_plugin_manager',
-            ):
-                continue
-            if normalized_name(distname or '') in self.already_installed:
-                continue
-            if normalized_name(distname or '') == pkg_name or pkg_name is None:
-                self._add_to_installed(
-                    distname,
-                    not napari.plugins.plugin_manager.is_blocked(plugin_name),
-                    normalized_name(distname or ''),
-                )
+        if not use_npe2_adaptor:
+            napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
+            for (
+                plugin_name,
+                _,
+                distname,
+            ) in napari.plugins.plugin_manager.iter_available():
+                # not showing these in the plugin dialog
+                if plugin_name in (
+                    'napari_plugin_engine',
+                    'napari_plugin_manager',
+                ):
+                    continue
+                if normalized_name(distname or '') in self.already_installed:
+                    continue
+                if (
+                    normalized_name(distname or '') == pkg_name
+                    or pkg_name is None
+                ):
+                    self._add_to_installed(
+                        distname,
+                        not napari.plugins.plugin_manager.is_blocked(
+                            plugin_name
+                        ),
+                        normalized_name(distname or ''),
+                    )
         self._update_plugin_count()
 
         for i in range(self.installed_list.count()):
@@ -248,12 +229,11 @@ class QtPluginDialog(BaseQtPluginDialog):
             if widget.name == pkg_name:
                 self.installed_list.scrollToItem(item)
                 self.installed_list.setCurrentItem(item)
-                if widget.plugin_api_version != 1:
-                    _show_message(widget)
                 break
 
     def _fetch_available_plugins(self, clear_cache: bool = False):
-        get_settings()
+        settings = get_settings()
+        use_npe2_adaptor = settings.plugins.use_npe2_adaptor
 
         if clear_cache:
             cache_clear()
@@ -267,7 +247,7 @@ class QtPluginDialog(BaseQtPluginDialog):
         self.worker.start()
 
         pm2 = npe2.PluginManager.instance()
-        pm2.discover()
+        pm2.discover(include_npe1=use_npe2_adaptor)
 
     def _loading_gif(self):
         load_gif = str(Path(napari.resources.__file__).parent / "loading.gif")
