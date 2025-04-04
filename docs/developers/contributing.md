@@ -17,7 +17,7 @@ git clone https://github.com/your-username/napari-plugin-manager.git
 cd napari-plugin-manager
 ```
 
-Set the `upstream` remote to the base `napari` repository:
+Set the `upstream` remote to the base `napari-plugin-manager` repository:
 ```sh
 git remote add upstream https://github.com/napari/napari-plugin-manager.git
 ```
@@ -39,9 +39,9 @@ in your environment as follows:
 pre-commit install
 ```
 
-Upon committing, your code will be formatted and linted according to our [`ruff`
-configuration](https://github.com/napari/napari-plugin-manager/blob/main/pyproject.toml). To learn
-more, see [`ruff`'s documentation](https://docs.astral.sh/ruff/).
+Upon committing, your code will be formatted and linted according to our
+[`ruff` configuration](https://github.com/napari/napari-plugin-manager/blob/main/pyproject.toml).
+To learn more, see [`ruff`'s documentation](https://docs.astral.sh/ruff/).
 
 You can also execute `pre-commit` at any moment by running the following:
 
