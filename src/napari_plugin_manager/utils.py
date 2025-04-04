@@ -1,10 +1,9 @@
 import re
 import sys
 from pathlib import Path
-from typing import Optional
 
 
-def is_conda_package(pkg: str, prefix: Optional[str] = None) -> bool:
+def is_conda_package(pkg: str, prefix: str | None = None) -> bool:
     """Determines if plugin was installed through conda.
 
     Returns

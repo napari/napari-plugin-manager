@@ -10,10 +10,10 @@ by a `deque` of `*InstallerTool` dataclasses (`NapariPipInstallerTool` and
 import atexit
 import os
 import sys
+from collections.abc import Sequence
 from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Sequence
 
 from napari._version import version as _napari_version
 from napari._version import version_tuple as _napari_version_tuple
@@ -48,7 +48,7 @@ class NapariPipInstallerTool(PipInstallerTool):
         """
         Version constraints to limit unwanted changes in installation.
         """
-        return [f"napari=={_napari_version}", "numpy<2"]
+        return [f"napari=={_napari_version}"]
 
     @classmethod
     @lru_cache(maxsize=0)
@@ -75,7 +75,7 @@ class NapariCondaInstallerTool(CondaInstallerTool):
         pin_level = 2 if is_dev else 3
         version = ".".join([str(x) for x in _napari_version_tuple[:pin_level]])
 
-        return [f"napari={version}", "numpy<2.0a0"]
+        return [f"napari={version}"]
 
 
 class NapariInstallerQueue(InstallerQueue):

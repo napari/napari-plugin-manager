@@ -1,8 +1,8 @@
 import importlib.metadata
 import os
 import sys
-from typing import Generator, Optional, Tuple
-from unittest.mock import call, patch
+from collections.abc import Generator
+from unittest.mock import MagicMock, call, patch
 
 import napari.plugins
 import npe2
@@ -24,8 +24,11 @@ if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
         allow_module_level=True,
     )
 
-from napari_plugin_manager import qt_plugin_dialog
-from napari_plugin_manager.base_qt_package_installer import InstallerActions
+from napari_plugin_manager import base_qt_plugin_dialog, qt_plugin_dialog
+from napari_plugin_manager.base_qt_package_installer import (
+    InstallerActions,
+    InstallerTools,
+)
 
 N_MOCKED_PLUGINS = 2
 
@@ -33,7 +36,7 @@ N_MOCKED_PLUGINS = 2
 def _iter_napari_pypi_plugin_info(
     conda_forge: bool = True,
 ) -> Generator[
-    Tuple[Optional[npe2.PackageMetadata], bool], None, None
+    tuple[npe2.PackageMetadata | None, bool], None, None
 ]:  # pragma: no cover  (this function is used in thread and codecov has a problem with the collection of coverage in such cases)
     """Mock the pypi method to collect available plugins.
 
@@ -90,29 +93,6 @@ def plugins(qtbot):
     return PluginsMock()
 
 
-class WarnPopupMock:
-    def __init__(self, text):
-        self._is_visible = False
-
-    def show(self):
-        self._is_visible = True
-
-    def exec_(self):
-        self._is_visible = True
-
-    def move(self, pos):
-        return False
-
-    def isVisible(self):
-        return self._is_visible
-
-    def close(self):
-        self._is_visible = False
-
-    def width(self):
-        return 100
-
-
 @pytest.fixture(params=[True, False], ids=["constructor", "no-constructor"])
 def plugin_dialog(
     request,
@@ -123,6 +103,10 @@ def plugin_dialog(
     old_plugins,
 ):
     """Fixture that provides a plugin dialog for a normal napari install."""
+    from napari.settings import get_settings
+
+    original_setting = get_settings().plugins.use_npe2_adaptor
+    get_settings().plugins.use_npe2_adaptor = False
 
     class PluginManagerMock:
         def instance(self):
@@ -141,7 +125,7 @@ def plugin_dialog(
         def is_disabled(self, name):
             return False
 
-        def discover(self):
+        def discover(self, include_npe1=False):
             return ['plugin']
 
         def enable(self, plugin):
@@ -185,7 +169,6 @@ def plugin_dialog(
         "iter_napari_plugin_info",
         _iter_napari_pypi_plugin_info,
     )
-    monkeypatch.setattr(qt_plugin_dialog, 'WarnPopup', WarnPopupMock)
 
     # This is patching `napari.utils.misc.running_as_constructor_app` function
     # to mock a normal napari install.
@@ -215,6 +198,7 @@ def plugin_dialog(
     widget.hide()
     widget._add_items_timer.stop()
     assert not widget._add_items_timer.isActive()
+    get_settings().plugins.use_npe2_adaptor = original_setting
 
 
 def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
@@ -278,7 +262,7 @@ def test_visible_widgets(request, plugin_dialog):
     """
     Test that the direct entry button and textbox are visible
     """
-    if "no-constructor" not in request.node.name:
+    if "constructor" in request.node.name:
         pytest.skip(
             reason="Tested functionality not available in constructor-based installs"
         )
@@ -317,14 +301,6 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
             trans._("updating..."), InstallerActions.UPGRADE
         )
 
-    with patch.object(qt_plugin_dialog.WarnPopup, "exec_") as mock:
-        plugin_dialog.installed_list.handle_action(
-            item,
-            'my-test-old-plugin-1',
-            InstallerActions.UNINSTALL,
-        )
-        assert mock.called
-
     plugin_dialog.search("requests")
     qtbot.wait(500)
     item = plugin_dialog.available_list.item(0)
@@ -353,6 +329,28 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
             )
 
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
+
+
+def test_plugin_install_restart_warning(plugin_dialog, monkeypatch):
+    dialog_mock = MagicMock()
+    monkeypatch.setattr(
+        base_qt_plugin_dialog, 'RestartWarningDialog', dialog_mock
+    )
+    plugin_dialog.exec_()
+    plugin_dialog.already_installed.add('brand-new-plugin')
+    plugin_dialog.hide()
+    dialog_mock.assert_called_once()
+
+
+def test_plugin_uninstall_restart_warning(plugin_dialog, monkeypatch):
+    dialog_mock = MagicMock()
+    monkeypatch.setattr(
+        base_qt_plugin_dialog, 'RestartWarningDialog', dialog_mock
+    )
+    plugin_dialog.exec_()
+    plugin_dialog.already_installed.remove('my-plugin')
+    plugin_dialog.hide()
+    dialog_mock.assert_called_once()
 
 
 def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
@@ -472,7 +470,7 @@ def test_drop_event(plugin_dialog, tmp_path):
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -496,12 +494,23 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     [QMessageBox.StandardButton.Cancel, QMessageBox.StandardButton.Ok],
 )
 def test_install_pypi_constructor(
-    qtbot, tmp_virtualenv, plugin_dialog, request, message_return
+    qtbot, tmp_virtualenv, plugin_dialog, request, message_return, monkeypatch
 ):
     if "no-constructor" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is to test pip in constructor-based installs"
         )
+    # ensure pip is the installer tool, so that the warning will trigger
+    monkeypatch.setattr(
+        qt_plugin_dialog.PluginListItem,
+        'get_installer_tool',
+        lambda self: InstallerTools.PIP,
+    )
+    monkeypatch.setattr(
+        qt_plugin_dialog.PluginListItem,
+        'get_installer_source',
+        lambda self: "PIP",
+    )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
     plugin_dialog.search('requests')
@@ -524,7 +533,7 @@ def test_install_pypi_constructor(
 def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -548,7 +557,7 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
 def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="This test is only relevant for non-constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
@@ -575,7 +584,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
 def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
-            reason="This test is only relevant for constructor-based installs"
+            reason="The tested functionality is not available in constructor-based installs"
         )
 
     plugin_dialog.set_prefix(str(tmp_virtualenv))
