@@ -467,6 +467,11 @@ def test_drop_event(plugin_dialog, tmp_path):
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
 
 
+@pytest.mark.skipif(
+    'napari_latest' in os.getenv('TOX_ENV_NAME')
+    and 'PySide2' in os.getenv('TOX_ENV_NAME'),
+    reason='PySide2 flaky with latest released napari',
+)
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
