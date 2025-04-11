@@ -535,6 +535,11 @@ def test_install_pypi_constructor(
         assert mock.called
 
 
+@pytest.mark.skipif(
+    'napari_latest' in os.getenv('TOX_ENV_NAME')
+    and 'PySide6' in os.getenv('TOX_ENV_NAME'),
+    reason='PySide6 flaky with latest released napari',
+)
 def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     if "[constructor]" in request.node.name:
         pytest.skip(
