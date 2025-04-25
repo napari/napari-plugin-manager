@@ -184,18 +184,18 @@ class CondaInstallerTool(AbstractInstallerTool):
 
         This method assumes that if no environment variable is set that conda is available in the PATH.
         """
-        bat = ".bat" if os.name == "nt" else ""
+        suffix = ".exe" if os.name == "nt" else ""
         for path in (
             Path(os.environ.get('MAMBA_EXE', '')),
             Path(os.environ.get('CONDA_EXE', '')),
             # $CONDA is usually only available on GitHub Actions
-            Path(os.environ.get('CONDA', '')) / 'condabin' / f'conda{bat}',
+            Path(os.environ.get('CONDA', '')) / 'condabin' / f'conda{suffix}',
         ):
             if path.is_file():
                 # return the path to the executable
                 return str(path)
         # Otherwise, we assume that conda is available in the PATH
-        return f'conda{bat}'
+        return f'conda{suffix}'
 
     @classmethod
     def available(cls):
