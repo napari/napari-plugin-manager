@@ -23,7 +23,7 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import call
 from tempfile import gettempdir
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
@@ -636,8 +636,8 @@ class InstallerQueue(QObject):
     def _on_process_done(
         self,
         exit_code: int | None = None,
-        exit_status: QProcess.ExitStatus | None = None,
-        error: QProcess.ProcessError | None = None,
+        exit_status: Optional[QProcess.ExitStatus] = None,
+        error: Optional[QProcess.ProcessError] = None,
     ):
         item = None
         with contextlib.suppress(IndexError):
