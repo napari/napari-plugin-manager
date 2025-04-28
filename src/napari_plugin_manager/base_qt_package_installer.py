@@ -23,7 +23,7 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import call
 from tempfile import gettempdir
-from typing import Optional, TypedDict  # noqa
+from typing import Optional, TypedDict
 
 from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
