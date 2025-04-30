@@ -19,6 +19,8 @@ from napari.utils.notifications import show_warning
 from npe2 import PackageMetadata
 from typing_extensions import NotRequired
 
+from napari_plugin_manager.utils import get_homepage_url
+
 PyPIname = str
 
 
@@ -98,12 +100,15 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
 
     conda_set = {normalized_name(x) for x in conda}
     for info in data_set:
-        info_copy = dict(info)
+        info_copy: dict[str, str | list[str]] = dict(info)
         info_copy.pop('display_name', None)
         pypi_versions = info_copy.pop('pypi_versions')
         conda_versions = info_copy.pop('conda_versions')
         info_ = cast(_ShortSummaryDict, info_copy)
-
+        home_page = get_homepage_url(info_copy)
+        # this URL is used for the widget, so we have to replace the home_page
+        # link here as well as returning it in extra_info
+        info_['home_page'] = home_page
         # TODO: use this better.
         # this would require changing the api that qt_plugin_dialog expects to
         # receive
@@ -111,7 +116,7 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         # TODO: once the new version of npe2 is out, this can be refactored
         # to all the metadata includes the conda and pypi versions.
         extra_info = {
-            'home_page': info_.get('home_page', ''),
+            'home_page': home_page,
             'display_name': info.get('display_name', ''),
             'pypi_versions': pypi_versions,
             'conda_versions': conda_versions,
