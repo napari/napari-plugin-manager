@@ -27,6 +27,7 @@ def test_plugin_summaries():
         "home_page",
         "pypi_versions",
         "conda_versions",
+        "project_url",
     ]
     try:
         data = plugin_summaries()
