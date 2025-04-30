@@ -53,7 +53,7 @@ from napari_plugin_manager.base_qt_package_installer import (
 )
 from napari_plugin_manager.qt_warning_dialog import RestartWarningDialog
 from napari_plugin_manager.qt_widgets import ClickableLabel
-from napari_plugin_manager.utils import is_conda_package
+from napari_plugin_manager.utils import get_homepage_url, is_conda_package
 
 CONDA = 'Conda'
 PYPI = 'PyPI'
@@ -1225,7 +1225,8 @@ class BaseQtPluginDialog(QDialog):
             self.already_installed.add(norm_name)
         else:
             meta = {}
-
+        meta_dict = meta if isinstance(meta, dict) else meta.json
+        home_page = get_homepage_url(meta_dict)
         self.installed_list.addItem(
             self.PROJECT_INFO_VERSION_CLASS(
                 display_name=norm_name,
@@ -1236,7 +1237,7 @@ class BaseQtPluginDialog(QDialog):
                     name=norm_name,
                     version=meta.get('version', ''),
                     summary=meta.get('summary', ''),
-                    home_page=meta.get('Home-page', ''),
+                    home_page=home_page,
                     author=meta.get('author', ''),
                     license=meta.get('license', ''),
                 ),
