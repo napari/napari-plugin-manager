@@ -33,7 +33,7 @@ def normalize_label(label: str) -> str:
     return label.translate(removal_map).lower()
 
 
-def get_homepage_url(metadata: dict[str, str | list[str]]) -> str:
+def get_homepage_url(metadata: dict[str, str | list[str] | None]) -> str:
     """Get URL for package homepage, if available.
 
     Checks metadata first for `Home-page` field before
@@ -42,7 +42,7 @@ def get_homepage_url(metadata: dict[str, str | list[str]]) -> str:
 
     Parameters
     ----------
-    metadata : dict[str, str | list[str]]
+    metadata : dict[str, str | list[str] | None]
         Package metadata information.
 
     Returns
