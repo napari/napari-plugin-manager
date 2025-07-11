@@ -179,7 +179,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/_tests/*.py" = ["B011", "INP001", "TRY301", "B018", "RUF012"]
+"**/_tests/*.py" = ["B011", "INP001", "TRY301", "B018", "RUF012", "T20"]
 
 [tool.ruff.lint.flake8-builtins]
 builtins-allowed-modules = ["io", "types", "threading"]

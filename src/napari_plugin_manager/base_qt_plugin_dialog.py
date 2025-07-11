@@ -4,6 +4,7 @@ import os
 import webbrowser
 from collections.abc import Sequence
 from functools import partial
+from logging import getLogger
 from typing import (
     Any,
     Literal,
@@ -57,6 +58,7 @@ from napari_plugin_manager.utils import get_homepage_url, is_conda_package
 
 CONDA = 'Conda'
 PYPI = 'PyPI'
+log = getLogger(__name__)
 
 
 class PackageMetadataProtocol(Protocol):
@@ -1861,7 +1863,7 @@ class BaseQtPluginDialog(QDialog):
         with open(fpath) as f:
             plugins = f.read().split('\n')
 
-        print(plugins)
+        log.info(plugins)
 
         plugins = [p for p in plugins if p]
         self._install_packages(plugins)

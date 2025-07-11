@@ -11,7 +11,6 @@ and `cancel`.
 """
 
 import contextlib
-import logging
 import os
 import sys
 from collections import deque
@@ -677,7 +676,7 @@ class InstallerQueue(QObject):
                     .decode()
                 )
             except UnicodeDecodeError:
-                logging.exception('Could not decode stdout')
+                log.exception('Could not decode stdout')
                 return
             if text:
                 self._log(text)
