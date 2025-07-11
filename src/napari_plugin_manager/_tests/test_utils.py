@@ -7,14 +7,14 @@ from napari_plugin_manager.utils import get_homepage_url, is_conda_package
 
 
 @pytest.mark.parametrize(
-    "pkg_name,expected",
+    'pkg_name,expected',
     [
-        ("some-package", True),
-        ("some-other-package", False),
-        ("some-package-other", False),
-        ("other-some-package", False),
-        ("package", False),
-        ("some", False),
+        ('some-package', True),
+        ('some-other-package', False),
+        ('some-package-other', False),
+        ('other-some-package', False),
+        ('package', False),
+        ('some', False),
     ],
 )
 def test_is_conda_package(pkg_name, expected, tmp_path):
