@@ -13,7 +13,7 @@ write_to = "src/napari_plugin_manager/_version.py"
 where = ["src"]
 include = ["napari_plugin_manager"]
 exclude = []
-namespaces = false  
+namespaces = false
 
 [project]
 name = "napari-plugin-manager"
@@ -100,7 +100,6 @@ ignore = [
 
 [tool.ruff]
 line-length = 79
-
 exclude = [
     ".bzr",
     ".direnv",
@@ -123,8 +122,10 @@ exclude = [
     "*_vendor*",
 ]
 
-target-version = "py310"
 fix = true
+
+[tool.ruff.format]
+quote-style = "single"
 
 [tool.ruff.lint]
 select = [
@@ -132,7 +133,7 @@ select = [
     "UP", # pyupgrade
     "I", # isort
     "YTT", #flake8-2020
-    "TCH", # flake8-type-checing
+    "TC", # flake8-type-checing
     "BLE", # flake8-blind-exception
     "B", # flake8-bugbear
     "A", # flake8-builtins
@@ -143,42 +144,61 @@ select = [
     "COM", # flake8-commas
     "SIM", # flake8-simplify
     "INP", # flake8-no-pep420
+    "PYI", # flake8-pyi
     "Q", # flake8-quotes
+    "RSE", # flake8-raise
     "RET", # flake8-return
     "TID",  # flake8-tidy-imports # replace absolutify import
     "TRY", # tryceratops
     "ICN", # flake8-import-conventions
     "RUF", # ruff specyfic rules
+    "NPY201", # checks compatibility with numpy version 2.0
+    "ASYNC", # flake8-async
+    "EXE", # flake8-executable
+    "FA", # flake8-future-annotations
+    "LOG", # flake8-logging
+    "SLOT", # flake8-slots
+    "PT", # flake8-pytest-style
+    "T20", # flake8-print
 ]
-
 ignore = [
-    "E501", "UP006", "TCH001", "TCH002", "TCH003",
+    "E501", "TC001", "TC002", "TC003",
     "A003", # flake8-builtins - we have class attributes violating these rule
     "COM812", # flake8-commas - we don't like adding comma on single line of arguments
+    "COM819", # conflicts with ruff-format
     "SIM117", # flake8-simplify - we some of merged with statements are not looking great with black, reanble after drop python 3.9
-    "Q000",
     "RET504", # not fixed yet https://github.com/charliermarsh/ruff/issues/2950
     "TRY003", # require implement multiple exception class
     "RUF005", # problem with numpy compatybility, see https://github.com/charliermarsh/ruff/issues/2142#issuecomment-1451038741
-
+    "B028", # need to be fixed
+    "PYI015", # it produces bad looking files (@jni opinion)
+    "W191", "Q000", "Q001", "Q002", "Q003", "ISC001", # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "UP007", # temporary disable migrtion form Union[X, Y] to X | Y
+    "UP045", # temporary disable migrtion from Optional[X] to X | None
+    "TC006", # put types in quotes in typing.cast
 ]
 
-[tool.ruff.per-file-ignores]
-"**/_tests/*.py" = ["B011", "INP001", "TRY301"]
+[tool.ruff.lint.per-file-ignores]
+"**/_tests/*.py" = ["B011", "INP001", "TRY301", "B018", "RUF012"]
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-builtins]
+builtins-allowed-modules = ["io", "types", "threading"]
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
+inline-quotes = "single"
+multiline-quotes = "double"
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports.
 ban-relative-imports = "all"
 
-[tool.ruff.pyupgrade]
-# Preserve types, even if a file imports `from __future__ import annotations`.
-keep-runtime-typing = true
-
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party=['napari_plugin_manager']
+combine-as-imports = true
 
 [tool.pytest.ini_options]
 # These follow standard library warnings filters syntax.  See more here:
