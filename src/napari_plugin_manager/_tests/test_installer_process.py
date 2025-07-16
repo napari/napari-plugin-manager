@@ -117,7 +117,9 @@ def test_pip_installer_tasks(
     assert not installer.hasJobs()
 
     # Test new signals
-    with qtbot.waitSignal(installer.processFinished, timeout=30_000) as blocker:
+    with qtbot.waitSignal(
+        installer.processFinished, timeout=30_000
+    ) as blocker:
         installer.install(
             tool=InstallerTools.PIP,
             pkgs=['pydantic'],
