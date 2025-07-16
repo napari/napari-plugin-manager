@@ -19,6 +19,7 @@ def test_user_agent():
 def test_plugin_summaries():
     keys = [
         "name",
+        "normalized_name",
         "version",
         "display_name",
         "summary",
