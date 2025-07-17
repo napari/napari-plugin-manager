@@ -49,6 +49,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+  "napari",  # FUTURE: Fully decouple from napari
   "npe2",
   "qtpy",
   "superqt",
@@ -69,7 +70,7 @@ testing = [
   "coverage",
   "flaky",
   "pytest",
-  "pytest-qt",
+  "pytest-qt<4.5",  # FUTURE: Unpin once pyside2 is dropped
   "virtualenv"
 ]
 
