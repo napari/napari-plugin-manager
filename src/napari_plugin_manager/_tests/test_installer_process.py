@@ -75,7 +75,7 @@ def test_pip_installer_tasks(
         "origins",
         ("https://pypi.org/simple",),
     )
-    with qtbot.waitSignal(installer.allFinished, timeout=20000):
+    with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         installer.install(
             tool=InstallerTools.PIP,
             pkgs=['pip-install-test'],
@@ -104,7 +104,7 @@ def test_pip_installer_tasks(
 
     assert pkgs >= 2, 'package was not installed'
 
-    with qtbot.waitSignal(installer.allFinished, timeout=10000):
+    with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         job_id = installer.uninstall(
             tool=InstallerTools.PIP,
             pkgs=['pip-install-test'],
@@ -117,7 +117,9 @@ def test_pip_installer_tasks(
     assert not installer.hasJobs()
 
     # Test new signals
-    with qtbot.waitSignal(installer.processFinished, timeout=20000) as blocker:
+    with qtbot.waitSignal(
+        installer.processFinished, timeout=30_000
+    ) as blocker:
         installer.install(
             tool=InstallerTools.PIP,
             pkgs=['pydantic'],
@@ -127,7 +129,7 @@ def test_pip_installer_tasks(
     assert process_finished_data['pkgs'] == ["pydantic"]
 
     # Test upgrade
-    with qtbot.waitSignal(installer.allFinished, timeout=20000):
+    with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         installer.install(
             tool=InstallerTools.PIP,
             pkgs=['requests==2.30.0'],
@@ -169,7 +171,7 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     )
 
     # CHECK 1) Errors should trigger finished and allFinished too
-    with qtbot.waitSignal(installer.allFinished, timeout=10000):
+    with qtbot.waitSignal(installer.allFinished, timeout=10_000):
         installer.install(
             tool=InstallerTools.PIP,
             pkgs=[f'this-package-does-not-exist-{hash(time.time())}'],
@@ -184,7 +186,7 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
         "_on_process_done",
         MethodType(_assert_exit_code_not_zero, installer),
     )
-    with qtbot.waitSignal(installer.allFinished, timeout=10000):
+    with qtbot.waitSignal(installer.allFinished, timeout=10_000):
         installer.install(
             tool=InstallerTools.PIP,
             pkgs=[f'this-package-does-not-exist-{hash(time.time())}'],
@@ -197,7 +199,7 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
         MethodType(_assert_error_used, installer),
     )
     monkeypatch.setattr(installer, "_get_tool", lambda *a: _NonExistingTool)
-    with qtbot.waitSignal(installer.allFinished, timeout=10000):
+    with qtbot.waitSignal(installer.allFinished, timeout=10_000):
         installer.install(
             tool=_NonExistingTool,
             pkgs=[f'this-package-does-not-exist-{hash(time.time())}'],
@@ -206,7 +208,7 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
 
 def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
     installer = NapariInstallerQueue()
-    with qtbot.waitSignal(installer.allFinished, timeout=20000):
+    with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         job_id = installer.install(
             tool=InstallerTools.PIP,
             pkgs=['requests'],
@@ -335,7 +337,7 @@ def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
             pkgs=['pyzenhub'],
             prefix=tmp_conda_env,
         )
-        installer.waitForFinished(20000)
+        installer.waitForFinished(30_000)
 
 
 def test_constraints_are_in_sync():
