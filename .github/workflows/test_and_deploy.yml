@@ -105,7 +105,7 @@ jobs:
           FORCE_COLOR: 1
           # Only supported pyside6 is not supported on py312, py313
           TOX_SKIP_ENV: ".*py31[23].*PySide6"
-          
+
       - name: Test with tox - conda
         if: matrix.tool == 'conda'
         uses: aganders3/headless-gui@f85dd6316993505dfc5f21839d520ae440c84816 # v2.2
@@ -121,7 +121,7 @@ jobs:
           # no Qt backends supported by conda-forge on py313
           TOX_SKIP_ENV: ".*py31[23].*PySide[26]|.*py313.*conda"
 
-          
+
       - name: Upload coverage data
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

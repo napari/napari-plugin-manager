@@ -17,7 +17,7 @@ The `napari-plugin-manager` used to be part of the [napari] codebase before the 
 series. It's now maintained as a separate project and package to allow uncoupled iterations outside
 of the `napari` release cycle.
 
-Future work will allow other applications with a plugin ecosytem to customize and 
+Future work will allow other applications with a plugin ecosytem to customize and
 use the `plugin-manager`. This package remains under active development and contributions
 are very welcome. Please [open an issue] to discuss potential improvements.
 
@@ -106,7 +106,7 @@ a restart to be properly configured.
 
 ### Installing a plugin via direct entry
 
-You can also install a napari plugin or any other package via the direct entry option. The following steps 
+You can also install a napari plugin or any other package via the direct entry option. The following steps
 correspond to the options and buttons located at the **bottom of the dialog**.
 
 1. You can type either the name of the package, a url to the resource or drag and drop a compressed file

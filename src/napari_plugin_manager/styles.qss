@@ -1,5 +1,5 @@
 /* ------------ Plugin Dialog ------------ */
-/* 
+/*
 
 To be able to use this custom qss, we must use the `get_current_stylesheet` helper that napari provides.
 By using that function we can replace the variables that are used in this stylesheet, e.g. `foreground`.

@@ -4,6 +4,7 @@ import os
 import webbrowser
 from collections.abc import Sequence
 from functools import partial
+from logging import getLogger
 from typing import (
     Any,
     Literal,
@@ -57,6 +58,7 @@ from napari_plugin_manager.utils import get_homepage_url, is_conda_package
 
 CONDA = 'Conda'
 PYPI = 'PyPI'
+log = getLogger(__name__)
 
 
 class PackageMetadataProtocol(Protocol):
@@ -142,7 +144,7 @@ class BasePluginListItem(QFrame):
         url: str = '',
         summary: str = '',
         author: str = '',
-        license: str = "UNKNOWN",  # noqa: A002
+        license: str = 'UNKNOWN',  # noqa: A002
         *,
         plugin_name: str | None = None,
         parent: QWidget = None,
@@ -167,7 +169,7 @@ class BasePluginListItem(QFrame):
         if package_name == display_name:
             name = package_name
         else:
-            name = f"{display_name} <small>({package_name})</small>"
+            name = f'{display_name} <small>({package_name})</small>'
 
         self.plugin_name.setText(name)
 
@@ -264,15 +266,15 @@ class BasePluginListItem(QFrame):
                 self.source.setText(CONDA)
 
             self.enabled_checkbox.show()
-            self.action_button.setText(self._trans("Uninstall"))
-            self.action_button.setObjectName("remove_button")
+            self.action_button.setText(self._trans('Uninstall'))
+            self.action_button.setObjectName('remove_button')
             self.info_choice_wdg.hide()
             self.install_info_button.addWidget(self.info_widget)
             self.info_widget.show()
         else:
             self.enabled_checkbox.hide()
-            self.action_button.setText(self._trans("Install"))
-            self.action_button.setObjectName("install_button")
+            self.action_button.setText(self._trans('Install'))
+            self.action_button.setObjectName('install_button')
             self.info_widget.hide()
             self.install_info_button.addWidget(self.info_choice_wdg)
             self.info_choice_wdg.show()
@@ -332,7 +334,7 @@ class BasePluginListItem(QFrame):
             self.action_button.setDisabled(False)
             self.cancel_btn.setVisible(False)
         else:  # pragma: no cover
-            raise ValueError(f"Not supported {action_name}")
+            raise ValueError(f'Not supported {action_name}')
 
     def is_busy(self):
         return bool(self.item_status.text())
@@ -342,8 +344,8 @@ class BasePluginListItem(QFrame):
         # Enabled checkbox
         self.enabled_checkbox = QCheckBox(self)
         self.enabled_checkbox.setChecked(enabled)
-        self.enabled_checkbox.setToolTip(self._trans("enable/disable"))
-        self.enabled_checkbox.setText("")
+        self.enabled_checkbox.setToolTip(self._trans('enable/disable'))
+        self.enabled_checkbox.setText('')
         self.enabled_checkbox.stateChanged.connect(self._on_enabled_checkbox)
 
         sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -391,7 +393,7 @@ class BasePluginListItem(QFrame):
 
         # Item status
         self.item_status = QLabel(self)
-        self.item_status.setObjectName("small_italic_text")
+        self.item_status.setObjectName('small_italic_text')
         self.item_status.setSizePolicy(sizePolicy)
 
         # Summary
@@ -417,7 +419,7 @@ class BasePluginListItem(QFrame):
 
         # Update button
         self.update_btn = QPushButton('Update', self)
-        self.update_btn.setObjectName("install_button")
+        self.update_btn.setObjectName('install_button')
         self.update_btn.setVisible(False)
         self.update_btn.clicked.connect(self._update_requested)
         sizePolicy.setRetainSizeWhenHidden(True)
@@ -433,8 +435,8 @@ class BasePluginListItem(QFrame):
         self.action_button.clicked.connect(self._action_requested)
 
         # Cancel
-        self.cancel_btn = QPushButton("Cancel", self)
-        self.cancel_btn.setObjectName("remove_button")
+        self.cancel_btn = QPushButton('Cancel', self)
+        self.cancel_btn.setObjectName('remove_button')
         self.cancel_btn.setSizePolicy(sizePolicy)
         self.cancel_btn.setFixedWidth(70)
         self.cancel_btn.clicked.connect(self._cancel_requested)
@@ -444,12 +446,12 @@ class BasePluginListItem(QFrame):
         exp_icon = self._expanded_icon()
 
         self.install_info_button = QCollapsible(
-            "Installation Info", collapsedIcon=coll_icon, expandedIcon=exp_icon
+            'Installation Info', collapsedIcon=coll_icon, expandedIcon=exp_icon
         )
         self.install_info_button.setLayoutDirection(
             Qt.RightToLeft
         )  # Make icon appear on the right
-        self.install_info_button.setObjectName("install_info_button")
+        self.install_info_button.setObjectName('install_info_button')
         self.install_info_button.setFixedWidth(180)
         self.install_info_button.content().layout().setContentsMargins(
             0, 0, 0, 0
@@ -485,7 +487,7 @@ class BasePluginListItem(QFrame):
         # Information widget for installed packages
         self.info_widget = QWidget(self)
         self.info_widget.setLayoutDirection(Qt.LeftToRight)
-        self.info_widget.setObjectName("info_widget")
+        self.info_widget.setObjectName('info_widget')
         self.info_widget.setFixedWidth(180)
 
         self.source_text = QLabel('Source:')
@@ -505,7 +507,7 @@ class BasePluginListItem(QFrame):
 
         # Error indicator
         self.error_indicator = QPushButton()
-        self.error_indicator.setObjectName("warning_icon")
+        self.error_indicator.setObjectName('warning_icon')
         self.error_indicator.setCursor(Qt.CursorShape.PointingHandCursor)
         self.error_indicator.hide()
 
@@ -568,10 +570,10 @@ class BasePluginListItem(QFrame):
 
         self.info_choice_wdg.setLayout(info_layout)
         self.info_choice_wdg.setLayoutDirection(Qt.LeftToRight)
-        self.info_choice_wdg.setObjectName("install_choice_widget")
+        self.info_choice_wdg.setObjectName('install_choice_widget')
         self.info_choice_wdg.hide()
 
-    def _populate_version_dropdown(self, source: Literal["PyPI", "Conda"]):
+    def _populate_version_dropdown(self, source: Literal['PyPI', 'Conda']):
         """Display the versions available after selecting a source: pypi or conda."""
         if source == PYPI:
             versions = self._versions_pypi
@@ -639,7 +641,7 @@ class BasePluginListItem(QFrame):
             self.item, self.name, InstallerActions.UPGRADE, version, tool
         )
 
-    def show_warning(self, message: str = ""):
+    def show_warning(self, message: str = ''):
         """Show warning icon and tooltip."""
         self.warning_tooltip.setVisible(bool(message))
         self.warning_tooltip.setToolTip(message)
@@ -733,7 +735,7 @@ class BaseQPluginList(QListWidget):
             return
 
         # including summary here for sake of filtering below.
-        searchable_text = f"{pkg_name} {project_info.display_name} {project_info.metadata.summary}"
+        searchable_text = f'{pkg_name} {project_info.display_name} {project_info.metadata.summary}'
         item = QListWidgetItem(searchable_text, self)
         item.version = project_info.metadata.version
         super().addItem(item)
@@ -839,30 +841,30 @@ class BaseQPluginList(QListWidget):
         self._remove_list.append((pkg_name, item))
         self._warn_dialog = None
         if not item.text().startswith(self._SORT_ORDER_PREFIX):
-            item.setText(f"{self._SORT_ORDER_PREFIX}{item.text()}")
+            item.setText(f'{self._SORT_ORDER_PREFIX}{item.text()}')
 
         if action_name == InstallerActions.INSTALL:
             if version:
                 pkg_name += (
-                    f"=={item.widget.version_choice_dropdown.currentText()}"
+                    f'=={item.widget.version_choice_dropdown.currentText()}'
                 )
-            widget.set_busy(self._trans("installing..."), action_name)
+            widget.set_busy(self._trans('installing...'), action_name)
 
             job_id = self.installer.install(
                 tool=tool,
                 pkgs=[pkg_name],
                 # origins="TODO",
             )
-            widget.setProperty("current_job_id", job_id)
+            widget.setProperty('current_job_id', job_id)
             if self._warn_dialog:
                 self._warn_dialog.exec_()
             self.scrollToTop()
 
         if action_name == InstallerActions.UPGRADE:
             if hasattr(item, 'latest_version'):
-                pkg_name += f"=={item.latest_version}"
+                pkg_name += f'=={item.latest_version}'
 
-            widget.set_busy(self._trans("updating..."), action_name)
+            widget.set_busy(self._trans('updating...'), action_name)
             widget.update_btn.setDisabled(True)
             widget.action_button.setDisabled(True)
 
@@ -871,13 +873,13 @@ class BaseQPluginList(QListWidget):
                 pkgs=[pkg_name],
                 # origins="TODO",
             )
-            widget.setProperty("current_job_id", job_id)
+            widget.setProperty('current_job_id', job_id)
             if self._warn_dialog:
                 self._warn_dialog.exec_()
             self.scrollToTop()
 
         elif action_name == InstallerActions.UNINSTALL:
-            widget.set_busy(self._trans("uninstalling..."), action_name)
+            widget.set_busy(self._trans('uninstalling...'), action_name)
             widget.update_btn.setDisabled(True)
             job_id = self.installer.uninstall(
                 tool=tool,
@@ -885,17 +887,17 @@ class BaseQPluginList(QListWidget):
                 # origins="TODO",
                 # upgrade=False,
             )
-            widget.setProperty("current_job_id", job_id)
+            widget.setProperty('current_job_id', job_id)
             if self._warn_dialog:
                 self._warn_dialog.exec_()
             self.scrollToTop()
         elif action_name == InstallerActions.CANCEL:
-            widget.set_busy(self._trans("cancelling..."), action_name)
+            widget.set_busy(self._trans('cancelling...'), action_name)
             try:
-                job_id = widget.property("current_job_id")
+                job_id = widget.property('current_job_id')
                 self.installer.cancel(job_id)
             finally:
-                widget.setProperty("current_job_id", None)
+                widget.setProperty('current_job_id', None)
 
     def set_data(self, data):
         self._data = data
@@ -940,7 +942,7 @@ class BaseQPluginList(QListWidget):
             widg = self.itemWidget(item)
             widg.update_btn.setVisible(True)
             widg.update_btn.setText(
-                self._trans("update (v{latest})", latest=latest)
+                self._trans('update (v{latest})', latest=latest)
             )
 
     def tag_unavailable(self, metadata: PackageMetadataProtocol):
@@ -956,10 +958,10 @@ class BaseQPluginList(QListWidget):
             widget = self.itemWidget(item)
             widget.show_warning(
                 self._trans(
-                    "Plugin not yet available for installation within the bundle application"
+                    'Plugin not yet available for installation within the bundle application'
                 )
             )
-            widget.setObjectName("unavailable")
+            widget.setObjectName('unavailable')
             widget.style().unpolish(widget)
             widget.style().polish(widget)
             widget.action_button.setEnabled(False)
@@ -1233,7 +1235,7 @@ class BaseQtPluginDialog(QDialog):
                 pypi_versions=[],
                 conda_versions=[],
                 metadata=self.PACKAGE_METADATA_CLASS(
-                    metadata_version="1.0",
+                    metadata_version='1.0',
                     name=norm_name,
                     version=meta.get('version', ''),
                     summary=meta.get('summary', ''),
@@ -1366,15 +1368,15 @@ class BaseQtPluginDialog(QDialog):
         installed = QWidget(self.v_splitter)
         lay = QVBoxLayout(installed)
         lay.setContentsMargins(0, 2, 0, 2)
-        self.installed_label = QLabel(self._trans("Installed Plugins"))
+        self.installed_label = QLabel(self._trans('Installed Plugins'))
         self.packages_search = QLineEdit()
         self.packages_search.setPlaceholderText(
-            self._trans("Type here to start searching for plugins...")
+            self._trans('Type here to start searching for plugins...')
         )
         self.packages_search.setToolTip(
             self._trans(
-                "The search text will filter currently installed plugins "
-                "while also being used to search for plugins on the {package_name} hub",
+                'The search text will filter currently installed plugins '
+                'while also being used to search for plugins on the {package_name} hub',
                 package_name=self.BASE_PACKAGE_NAME,
             )
         )
@@ -1383,19 +1385,19 @@ class BaseQtPluginDialog(QDialog):
         self.packages_search.textChanged.connect(self.search)
 
         self.import_button = QPushButton(self._trans('Import'), self)
-        self.import_button.setObjectName("import_button")
+        self.import_button.setObjectName('import_button')
         self.import_button.setToolTip(self._trans('Import plugins from file'))
         self.import_button.clicked.connect(self._import_plugins)
 
         self.export_button = QPushButton(self._trans('Export'), self)
-        self.export_button.setObjectName("export_button")
+        self.export_button.setObjectName('export_button')
         self.export_button.setToolTip(
             self._trans('Export installed plugins list')
         )
         self.export_button.clicked.connect(self._export_plugins)
 
         self.refresh_button = QPushButton(self._trans('Refresh'), self)
-        self.refresh_button.setObjectName("refresh_button")
+        self.refresh_button.setObjectName('refresh_button')
         self.refresh_button.setToolTip(
             self._trans(
                 'This will clear and refresh the available and installed plugins lists.'
@@ -1422,7 +1424,7 @@ class BaseQtPluginDialog(QDialog):
         uninstalled = QWidget(self.v_splitter)
         lay = QVBoxLayout(uninstalled)
         lay.setContentsMargins(0, 2, 0, 2)
-        self.avail_label = QLabel(self._trans("Available Plugins"))
+        self.avail_label = QLabel(self._trans('Available Plugins'))
         mid_layout = QHBoxLayout()
         mid_layout.addWidget(self.avail_label)
         mid_layout.addStretch()
@@ -1434,19 +1436,19 @@ class BaseQtPluginDialog(QDialog):
 
         self.stdout_text = QTextEdit(self.v_splitter)
         self.stdout_text.setReadOnly(True)
-        self.stdout_text.setObjectName("plugin_manager_process_status")
+        self.stdout_text.setObjectName('plugin_manager_process_status')
         self.stdout_text.hide()
 
         buttonBox = QHBoxLayout()
-        self.working_indicator = QLabel(self._trans("loading ..."), self)
+        self.working_indicator = QLabel(self._trans('loading ...'), self)
         sp = self.working_indicator.sizePolicy()
         sp.setRetainSizeWhenHidden(True)
         self.working_indicator.setSizePolicy(sp)
         self.process_error_indicator = QLabel(self)
-        self.process_error_indicator.setObjectName("error_label")
+        self.process_error_indicator.setObjectName('error_label')
         self.process_error_indicator.hide()
         self.process_success_indicator = QLabel(self)
-        self.process_success_indicator.setObjectName("success_label")
+        self.process_success_indicator.setObjectName('success_label')
         self.process_success_indicator.hide()
         mov = self._loading_gif()
         self.working_indicator.setMovie(mov)
@@ -1460,7 +1462,7 @@ class BaseQtPluginDialog(QDialog):
         self.direct_entry_btn = QToolButton(self)
         self.direct_entry_btn.setVisible(visibility_direct_entry)
         self.direct_entry_btn.clicked.connect(self._install_packages)
-        self.direct_entry_btn.setText(self._trans("Install"))
+        self.direct_entry_btn.setText(self._trans('Install'))
 
         self._action_conda = QAction(self._trans('Conda'), self)
         self._action_conda.setCheckable(True)
@@ -1484,19 +1486,19 @@ class BaseQtPluginDialog(QDialog):
             self._action_conda.setChecked(True)
             self.direct_entry_btn.setMenu(self._menu)
 
-        self.show_status_btn = QPushButton(self._trans("Show Status"), self)
+        self.show_status_btn = QPushButton(self._trans('Show Status'), self)
         self.show_status_btn.setFixedWidth(100)
 
         self.cancel_all_btn = QPushButton(
-            self._trans("cancel all actions"), self
+            self._trans('cancel all actions'), self
         )
-        self.cancel_all_btn.setObjectName("remove_button")
+        self.cancel_all_btn.setObjectName('remove_button')
         self.cancel_all_btn.setVisible(False)
         self.cancel_all_btn.clicked.connect(self.installer.cancel_all)
 
-        self.close_btn = QPushButton(self._trans("Close"), self)
+        self.close_btn = QPushButton(self._trans('Close'), self)
         self.close_btn.clicked.connect(self.accept)
-        self.close_btn.setObjectName("close_button")
+        self.close_btn.setObjectName('close_button')
 
         buttonBox.addWidget(self.show_status_btn)
         buttonBox.addWidget(self.working_indicator)
@@ -1544,14 +1546,14 @@ class BaseQtPluginDialog(QDialog):
         if installed_count == installed_count_visible:
             self.installed_label.setText(
                 self._trans(
-                    "Installed Plugins ({amount})",
+                    'Installed Plugins ({amount})',
                     amount=installed_count,
                 )
             )
         else:
             self.installed_label.setText(
                 self._trans(
-                    "Installed Plugins ({count}/{amount})",
+                    'Installed Plugins ({count}/{amount})',
                     count=installed_count_visible,
                     amount=installed_count,
                 )
@@ -1563,14 +1565,14 @@ class BaseQtPluginDialog(QDialog):
         if self._plugins_found == 0:
             self.avail_label.setText(
                 self._trans(
-                    "{amount} plugins available on the napari hub",
+                    '{amount} plugins available on the napari hub',
                     amount=available_count,
                 )
             )
         elif self._plugins_found > self.MAX_PLUGIN_SEARCH_ITEMS:
             self.avail_label.setText(
                 self._trans(
-                    "Found {found} out of {amount} plugins on the napari hub. Displaying the first {max_count}...",
+                    'Found {found} out of {amount} plugins on the napari hub. Displaying the first {max_count}...',
                     found=self._plugins_found,
                     amount=available_count,
                     max_count=self.MAX_PLUGIN_SEARCH_ITEMS,
@@ -1579,7 +1581,7 @@ class BaseQtPluginDialog(QDialog):
         else:
             self.avail_label.setText(
                 self._trans(
-                    "Found {found} out of {amount} plugins on the napari hub",
+                    'Found {found} out of {amount} plugins on the napari hub',
                     found=self._plugins_found,
                     amount=available_count,
                 )
@@ -1678,7 +1680,7 @@ class BaseQtPluginDialog(QDialog):
         """
         self._plugin_data.append(data)
         self._filter_texts = [
-            f"{i[0].name} {i[-1].get('display_name', '')} {i[0].summary}".lower()
+            f'{i[0].name} {i[-1].get("display_name", "")} {i[0].summary}'.lower()
             for i in self._plugin_data
         ]
         metadata, _, _ = data
@@ -1699,12 +1701,12 @@ class BaseQtPluginDialog(QDialog):
         self.refresh(clear_cache=True)
 
     def _import_plugins(self):
-        fpath, _ = getopenfilename(filters="Text files (*.txt)")
+        fpath, _ = getopenfilename(filters='Text files (*.txt)')
         if fpath:
             self.import_plugins(fpath)
 
     def _export_plugins(self):
-        fpath, _ = getsavefilename(filters="Text files (*.txt)")
+        fpath, _ = getsavefilename(filters='Text files (*.txt)')
         if fpath:
             self.export_plugins(fpath)
 
@@ -1823,10 +1825,10 @@ class BaseQtPluginDialog(QDialog):
     def toggle_status(self, show=None):
         show = not self.stdout_text.isVisible() if show is None else show
         if show:
-            self.show_status_btn.setText(self._trans("Hide Status"))
+            self.show_status_btn.setText(self._trans('Hide Status'))
             self.stdout_text.show()
         else:
-            self.show_status_btn.setText(self._trans("Show Status"))
+            self.show_status_btn.setText(self._trans('Show Status'))
             self.stdout_text.hide()
 
     def set_prefix(self, prefix):
@@ -1849,7 +1851,7 @@ class BaseQtPluginDialog(QDialog):
                 if item:
                     name = item.widget.name
                     version = item.widget._version  # Make public attr?
-                    plugins.append(f"{name}=={version}\n")
+                    plugins.append(f'{name}=={version}\n')
 
         with open(fpath, 'w') as f:
             f.writelines(plugins)
@@ -1861,7 +1863,7 @@ class BaseQtPluginDialog(QDialog):
         with open(fpath) as f:
             plugins = f.read().split('\n')
 
-        print(plugins)
+        log.info(plugins)
 
         plugins = [p for p in plugins if p]
         self._install_packages(plugins)
