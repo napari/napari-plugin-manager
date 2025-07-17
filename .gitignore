@@ -8,6 +8,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+.venv/
 env/
 build/
 develop-eggs/
@@ -118,3 +119,6 @@ target/
 
 # Images
 docs/images/
+
+# UV Lockfiles
+uv.lock
