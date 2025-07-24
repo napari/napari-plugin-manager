@@ -46,7 +46,7 @@ def _iter_napari_pypi_plugin_info(
     list (the bottom one).
     """
     # This mock `base_data`` will be the same for both fake plugins.
-    packages = ['pyzenhub', 'requests', 'my-plugin', 'my-test-old-plugin-1']
+    packages = ['packaging', 'requests', 'my-plugin', 'my-test-old-plugin-1']
     base_data = {
         "metadata_version": "1.0",
         "version": "0.1.0",
@@ -70,7 +70,7 @@ class PluginsMock:
     def __init__(self):
         self.plugins = {
             'requests': True,
-            'pyzenhub': True,
+            'packaging': True,
             'my-plugin': True,
         }
 
@@ -569,7 +569,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     plugin_dialog.search('requests')
     qtbot.wait(500)
     item_1 = plugin_dialog.available_list.item(0)
-    plugin_dialog.search('pyzenhub')
+    plugin_dialog.search('packaging')
     qtbot.wait(500)
     item_2 = plugin_dialog.available_list.item(0)
     widget_1 = plugin_dialog.available_list.itemWidget(item_1)
@@ -665,6 +665,6 @@ def test_import_plugins_button(plugin_dialog):
 
 def test_import_plugins(plugin_dialog, tmp_path, qtbot):
     path = tmp_path / 'plugins.txt'
-    path.write_text('requests\npyzenhub\n')
+    path.write_text('requests\npackaging\n')
     with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
         plugin_dialog.import_plugins(str(path))
