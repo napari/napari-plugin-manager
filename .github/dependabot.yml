@@ -1,9 +1,11 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: ".github/workflows/"
+    directory: "/"
     schedule:
       interval: "monthly"
+    commit-message:
+      prefix: "ci(dependabot):"
     groups:
       github-actions:
         patterns:
