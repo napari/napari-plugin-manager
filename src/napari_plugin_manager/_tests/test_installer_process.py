@@ -34,7 +34,7 @@ def _assert_exit_code_not_zero(
     if error is not None:
         errors.append("- 'error' should have been None!")
     if errors:
-        raise AssertionError("\n".join(errors))
+        raise AssertionError('\n'.join(errors))
     return self._on_process_done_original(exit_code, exit_status, error)
 
 
@@ -45,13 +45,13 @@ def _assert_error_used(self, exit_code=None, exit_status=None, error=None):
     if exit_code is not None:
         errors.append("- 'exit_code' should not have been populated!")
     if errors:
-        raise AssertionError("\n".join(errors))
+        raise AssertionError('\n'.join(errors))
     return self._on_process_done_original(exit_code, exit_status, error)
 
 
 class _NonExistingTool(AbstractInstallerTool):
     def executable(self):
-        return f"this-tool-does-not-exist-{hash(time.time())}"
+        return f'this-tool-does-not-exist-{hash(time.time())}'
 
     def arguments(self):
         return ()
@@ -67,13 +67,13 @@ def test_pip_installer_tasks(
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         NapariPipInstallerTool,
-        "executable",
+        'executable',
         lambda *a: tmp_virtualenv.creator.exe,
     )
     monkeypatch.setattr(
         NapariPipInstallerTool,
-        "origins",
-        ("https://pypi.org/simple",),
+        'origins',
+        ('https://pypi.org/simple',),
     )
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         installer.install(
@@ -111,9 +111,9 @@ def test_pip_installer_tasks(
         )
 
     for pth in tmp_virtualenv.creator.libs:
-        assert not (
-            pth / 'pip_install_test'
-        ).exists(), 'pip_install_test still installed'
+        assert not (pth / 'pip_install_test').exists(), (
+            'pip_install_test still installed'
+        )
     assert not installer.hasJobs()
 
     # Test new signals
@@ -126,7 +126,7 @@ def test_pip_installer_tasks(
         )
     process_finished_data = blocker.args[0]
     assert process_finished_data['action'] == InstallerActions.INSTALL
-    assert process_finished_data['pkgs'] == ["pydantic"]
+    assert process_finished_data['pkgs'] == ['pydantic']
 
     # Test upgrade
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):
@@ -144,7 +144,7 @@ def test_pip_installer_invalid_action(tmp_virtualenv: 'Session', monkeypatch):
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         NapariPipInstallerTool,
-        "executable",
+        'executable',
         lambda *a: tmp_virtualenv.creator.exe,
     )
     invalid_action = 'Invalid Action'
@@ -166,7 +166,7 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         NapariPipInstallerTool,
-        "executable",
+        'executable',
         lambda *a: tmp_virtualenv.creator.exe,
     )
 
@@ -183,7 +183,7 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     # CHECK 2) Non-existing packages should return non-zero
     monkeypatch.setattr(
         installer,
-        "_on_process_done",
+        '_on_process_done',
         MethodType(_assert_exit_code_not_zero, installer),
     )
     with qtbot.waitSignal(installer.allFinished, timeout=10_000):
@@ -195,10 +195,10 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     # CHECK 3) Non-existing tools should fail to start
     monkeypatch.setattr(
         installer,
-        "_on_process_done",
+        '_on_process_done',
         MethodType(_assert_error_used, installer),
     )
-    monkeypatch.setattr(installer, "_get_tool", lambda *a: _NonExistingTool)
+    monkeypatch.setattr(installer, '_get_tool', lambda *a: _NonExistingTool)
     with qtbot.waitSignal(installer.allFinished, timeout=10_000):
         installer.install(
             tool=_NonExistingTool,
@@ -218,16 +218,16 @@ def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
 
 
 @pytest.mark.skipif(
-    not NapariCondaInstallerTool.available(), reason="Conda is not available."
+    not NapariCondaInstallerTool.available(), reason='Conda is not available.'
 )
 def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
-    if sys.platform == "darwin":
+    if sys.platform == 'darwin':
         # check  handled for `PYTHONEXECUTABLE` env definition on macOS
-        monkeypatch.setenv("PYTHONEXECUTABLE", sys.executable)
+        monkeypatch.setenv('PYTHONEXECUTABLE', sys.executable)
     caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
-    conda_meta = tmp_conda_env / "conda-meta"
-    glob_pat = "typing-extensions-*.json"
-    glob_pat_2 = "packaging-*.json"
+    conda_meta = tmp_conda_env / 'conda-meta'
+    glob_pat = 'typing-extensions-*.json'
+    glob_pat_2 = 'packaging-*.json'
     installer = NapariInstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
@@ -310,7 +310,7 @@ def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         NapariPipInstallerTool,
-        "executable",
+        'executable',
         lambda *a: 'not-a-real-executable',
     )
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
@@ -321,7 +321,7 @@ def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
 
 
 @pytest.mark.skipif(
-    not NapariCondaInstallerTool.available(), reason="Conda is not available."
+    not NapariCondaInstallerTool.available(), reason='Conda is not available.'
 )
 def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
     installer = NapariInstallerQueue()
@@ -346,7 +346,7 @@ def test_constraints_are_in_sync():
 
     assert len(conda_constraints) == len(pip_constraints)
 
-    name_re = re.compile(r"([a-z0-9_\-]+).*")
+    name_re = re.compile(r'([a-z0-9_\-]+).*')
     for conda_constraint, pip_constraint in zip(
         conda_constraints, pip_constraints, strict=False
     ):

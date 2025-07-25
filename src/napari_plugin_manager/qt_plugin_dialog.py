@@ -58,8 +58,8 @@ class PluginListItem(BasePluginListItem):
         # red. Code example:
         # theme_name = get_settings().appearance.theme
         # napari.utils.theme.get_theme(theme_name, as_dict=False).warning.as_hex()
-        return QColoredSVGIcon.from_resources("warning").colored(
-            color="#E3B617"
+        return QColoredSVGIcon.from_resources('warning').colored(
+            color='#E3B617'
         )
 
     def _collapsed_icon(self):
@@ -157,7 +157,6 @@ class PluginListItem(BasePluginListItem):
 
 
 class QPluginList(BaseQPluginList):
-
     PLUGIN_LIST_ITEM_CLASS = PluginListItem
 
     def _trans(self, text, **kwargs):
@@ -165,7 +164,6 @@ class QPluginList(BaseQPluginList):
 
 
 class QtPluginDialog(BaseQtPluginDialog):
-
     PACKAGE_METADATA_CLASS = npe2.PackageMetadata
     PROJECT_INFO_VERSION_CLASS = ProjectInfoVersions
     PLUGIN_LIST_CLASS = QPluginList
@@ -250,7 +248,7 @@ class QtPluginDialog(BaseQtPluginDialog):
         pm2.discover(include_npe1=use_npe2_adaptor)
 
     def _loading_gif(self):
-        load_gif = str(Path(napari.resources.__file__).parent / "loading.gif")
+        load_gif = str(Path(napari.resources.__file__).parent / 'loading.gif')
         mov = QMovie(load_gif)
         mov.setScaledSize(QSize(18, 18))
         return mov
@@ -268,7 +266,7 @@ class QtPluginDialog(BaseQtPluginDialog):
         return trans._(text, **kwargs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     from qtpy.QtWidgets import QApplication
 
     app = QApplication([])
