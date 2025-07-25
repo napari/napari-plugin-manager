@@ -225,9 +225,9 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         # check  handled for `PYTHONEXECUTABLE` env definition on macOS
         monkeypatch.setenv('PYTHONEXECUTABLE', sys.executable)
     caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
-    conda_meta = tmp_conda_env / 'conda-meta'
-    glob_pat = 'typing-extensions-*.json'
-    glob_pat_2 = 'pyzenhub-*.json'
+    conda_meta = tmp_conda_env / "conda-meta"
+    glob_pat = "typing-extensions-*.json"
+    glob_pat_2 = "packaging-*.json"
     installer = NapariInstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
@@ -259,7 +259,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         )
         installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['pyzenhub'],
+            pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
@@ -278,7 +278,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         )
         job_id_2 = installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['pyzenhub'],
+            pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
@@ -296,7 +296,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         )
         job_id_2 = installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['pyzenhub'],
+            pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
@@ -334,7 +334,7 @@ def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
         )
         installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['pyzenhub'],
+            pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
         installer.waitForFinished(30_000)
