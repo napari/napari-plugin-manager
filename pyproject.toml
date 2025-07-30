@@ -70,8 +70,7 @@ testing = [
   "coverage",
   "flaky",
   "pytest",
-  "pytest-qt<4.5; python_version<'3.11'",  # FUTURE: Unpin once pyside2 is dropped
-  "pytest-qt; python_version>='3.11'",
+  "pytest-qt<4.5",  # FUTURE: Unpin once pyside2 is dropped
   "virtualenv"
 ]
 
