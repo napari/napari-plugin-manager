@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    commit-message:
+      prefix: "ci(dependabot):"
     groups:
       github-actions:
         patterns:

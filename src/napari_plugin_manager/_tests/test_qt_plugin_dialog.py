@@ -46,7 +46,7 @@ def _iter_napari_pypi_plugin_info(
     list (the bottom one).
     """
     # This mock `base_data`` will be the same for both fake plugins.
-    packages = ['pyzenhub', 'requests', 'my-plugin', 'my-test-old-plugin-1']
+    packages = ['packaging', 'requests', 'my-plugin', 'my-test-old-plugin-1']
     base_data = {
         "metadata_version": "1.0",
         "version": "0.1.0",
@@ -70,7 +70,7 @@ class PluginsMock:
     def __init__(self):
         self.plugins = {
             'requests': True,
-            'pyzenhub': True,
+            'packaging': True,
             'my-plugin': True,
         }
 
@@ -188,15 +188,18 @@ def plugin_dialog(
         widget, '_is_main_app_conda_package', lambda: request.param
     )
     # monkeypatch.setattr(widget, '_tag_outdated_plugins', lambda: None)
-    widget.show()
-    qtbot.waitUntil(widget.isVisible, timeout=300)
+    with qtbot.waitExposed(widget):
+        widget.show()
 
+    assert widget.isVisible()
     assert widget.available_list.count_visible() == 0
     assert widget.available_list.count() == 0
     qtbot.add_widget(widget)
     yield widget
     widget.hide()
     widget._add_items_timer.stop()
+    if widget.worker is not None:
+        widget.worker.quit()
     assert not widget._add_items_timer.isActive()
     get_settings().plugins.use_npe2_adaptor = original_setting
 
@@ -468,8 +471,8 @@ def test_drop_event(plugin_dialog, tmp_path):
 
 
 @pytest.mark.skipif(
-    'napari_latest' in os.getenv('TOX_ENV_NAME')
-    and 'PySide2' in os.getenv('TOX_ENV_NAME'),
+    'napari_latest' in os.getenv('TOX_ENV_NAME', '')
+    and 'PySide2' in os.getenv('TOX_ENV_NAME', ''),
     reason='PySide2 flaky with latest released napari',
 )
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
@@ -569,7 +572,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     plugin_dialog.search('requests')
     qtbot.wait(500)
     item_1 = plugin_dialog.available_list.item(0)
-    plugin_dialog.search('pyzenhub')
+    plugin_dialog.search('packaging')
     qtbot.wait(500)
     item_2 = plugin_dialog.available_list.item(0)
     widget_1 = plugin_dialog.available_list.itemWidget(item_1)
@@ -665,6 +668,6 @@ def test_import_plugins_button(plugin_dialog):
 
 def test_import_plugins(plugin_dialog, tmp_path, qtbot):
     path = tmp_path / 'plugins.txt'
-    path.write_text('requests\npyzenhub\n')
+    path.write_text('requests\npackaging\n')
     with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
         plugin_dialog.import_plugins(str(path))
