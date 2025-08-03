@@ -1740,7 +1740,6 @@ class BaseQtPluginDialog(QDialog):
         if plugin_dialog != self:
             self.close()
 
-        plugin_dialog.setModal(True)
         plugin_dialog.show()
         plugin_dialog._installed_on_show = set(plugin_dialog.already_installed)
 
