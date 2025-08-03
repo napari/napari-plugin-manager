@@ -148,17 +148,17 @@ def test_pip_installer_invalid_action(tmp_virtualenv: 'Session', monkeypatch):
         lambda *a: tmp_virtualenv.creator.exe,
     )
     invalid_action = 'Invalid Action'
+    item = installer._build_queue_item(
+        tool=InstallerTools.PIP,
+        action=invalid_action,
+        pkgs=['pip-install-test'],
+        prefix=None,
+        origins=(),
+        process=installer._create_process(),
+    )
     with pytest.raises(
         ValueError, match=f"Action '{invalid_action}' not supported!"
     ):
-        item = installer._build_queue_item(
-            tool=InstallerTools.PIP,
-            action=invalid_action,
-            pkgs=['pip-install-test'],
-            prefix=None,
-            origins=(),
-            process=installer._create_process(),
-        )
         installer._queue_item(item)
 
 
@@ -213,7 +213,7 @@ def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
             tool=InstallerTools.PIP,
             pkgs=['requests'],
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=f'No job with id {job_id + 1}.'):
             installer.cancel(job_id + 1)
 
 
@@ -366,5 +366,7 @@ def test_available():
 
 
 def test_unrecognized_tool():
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match='InstallerTool shrug not recognized!'
+    ):
         NapariInstallerQueue().install(tool='shrug', pkgs=[])
