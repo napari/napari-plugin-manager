@@ -188,15 +188,18 @@ def plugin_dialog(
         widget, '_is_main_app_conda_package', lambda: request.param
     )
     # monkeypatch.setattr(widget, '_tag_outdated_plugins', lambda: None)
-    widget.show()
-    qtbot.waitUntil(widget.isVisible, timeout=300)
+    with qtbot.waitExposed(widget):
+        widget.show()
 
+    assert widget.isVisible()
     assert widget.available_list.count_visible() == 0
     assert widget.available_list.count() == 0
     qtbot.add_widget(widget)
     yield widget
     widget.hide()
     widget._add_items_timer.stop()
+    if widget.worker is not None:
+        widget.worker.quit()
     assert not widget._add_items_timer.isActive()
     get_settings().plugins.use_npe2_adaptor = original_setting
 
