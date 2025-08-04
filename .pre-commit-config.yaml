@@ -14,11 +14,6 @@ repos:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
-  - repo: https://github.com/seddonym/import-linter
-    rev: v2.3
-    hooks:
-    - id: import-linter
-      stages: [manual]
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.33.2
     hooks:
