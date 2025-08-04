@@ -104,7 +104,7 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         info_copy.pop('display_name', None)
         pypi_versions = info_copy.pop('pypi_versions')
         conda_versions = info_copy.pop('conda_versions')
-        info_ = cast(_ShortSummaryDict, info_copy)
+        info_ = cast('_ShortSummaryDict', info_copy)
         home_page = get_homepage_url(info_copy)
         # this URL is used for the widget, so we have to replace the home_page
         # link here as well as returning it in extra_info
