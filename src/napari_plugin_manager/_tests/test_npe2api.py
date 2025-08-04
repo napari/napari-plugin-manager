@@ -18,17 +18,17 @@ def test_user_agent():
 @flaky(max_runs=4, min_passes=2)
 def test_plugin_summaries():
     keys = [
-        "name",
-        "normalized_name",
-        "version",
-        "display_name",
-        "summary",
-        "author",
-        "license",
-        "home_page",
-        "pypi_versions",
-        "conda_versions",
-        "project_url",
+        'name',
+        'normalized_name',
+        'version',
+        'display_name',
+        'summary',
+        'author',
+        'license',
+        'home_page',
+        'pypi_versions',
+        'conda_versions',
+        'project_url',
     ]
     try:
         data = plugin_summaries()
@@ -43,7 +43,7 @@ def test_plugin_summaries():
 
 
 def test_conda_map():
-    pkgs = ["napari-svg"]
+    pkgs = ['napari-svg']
     try:
         data = conda_map()
         for pkg in pkgs:

@@ -17,8 +17,8 @@ def is_conda_package(pkg: str, prefix: str | None = None) -> bool:
     # saved within a ``conda-meta`` folder within the given environment of interest.
     conda_meta_dir = Path(prefix or sys.prefix) / 'conda-meta'
     return any(
-        re.match(rf"{pkg}-[^-]+-[^-]+.json", p.name)
-        for p in conda_meta_dir.glob(f"{pkg}-*-*.json")
+        re.match(rf'{pkg}-[^-]+-[^-]+.json', p.name)
+        for p in conda_meta_dir.glob(f'{pkg}-*-*.json')
     )
 
 
@@ -29,7 +29,7 @@ def normalize_label(label: str) -> str:
     https://packaging.python.org/en/latest/specifications/well-known-project-urls/#label-normalization
     """
     chars_to_remove = string.punctuation + string.whitespace
-    removal_map = str.maketrans("", "", chars_to_remove)
+    removal_map = str.maketrans('', '', chars_to_remove)
     return label.translate(removal_map).lower()
 
 
