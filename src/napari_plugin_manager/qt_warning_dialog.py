@@ -7,7 +7,7 @@ class RestartWarningDialog(QDialog):
         self.setWindowTitle('Restart napari')
         okay_btn = QPushButton('Okay')
         self.restart_warning_text = """
-Plugins have been installed or uninstalled. If you notice any
+Plugins have been installed, uninstalled or updated. If you notice any
 issues with plugin functionality, you may need to restart napari.
         """
 
