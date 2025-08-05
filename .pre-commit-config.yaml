@@ -9,7 +9,7 @@ repos:
       - id: trailing-whitespace
         exclude: ^constructor-manager-ui/src/constructor_manager_ui/style/images.py
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.2
+    rev: v0.12.7
     hooks:
       - id: ruff-check
         args: [--fix]
