@@ -211,6 +211,13 @@ QtPluginDialog QSplitter{
   padding-right: 2;
 }
 
+QtPluginDialog QSplitter::handle {
+  width: 4px;
+  height: 4px;
+  border: none;
+  background-color: {{ background }};
+  image: url("theme_{{ id }}:/horizontal_separator.svg");
+}
 
 QtPluginSorter {
   padding: 20px;

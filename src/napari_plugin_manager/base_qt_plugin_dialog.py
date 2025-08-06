@@ -1519,7 +1519,7 @@ class BaseQtPluginDialog(QDialog):
         self.show_status_btn.setChecked(False)
         self.show_status_btn.toggled.connect(self.toggle_status)
 
-        self.v_splitter.setStretchFactor(1, 2)
+        self.v_splitter.setStretchFactor(0, 2)
         self.h_splitter.setStretchFactor(0, 2)
 
         self.packages_search.setFocus()
