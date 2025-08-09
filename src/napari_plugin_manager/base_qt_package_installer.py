@@ -62,6 +62,7 @@ class InstallerTools(StringEnum):
 
     CONDA = auto()
     PIP = auto()
+    RATTLER = auto()
 
 
 @dataclass(frozen=True)
@@ -262,6 +263,75 @@ class CondaInstallerTool(AbstractInstallerTool):
         if (Path(sys.prefix) / 'conda-meta').is_dir():
             return sys.prefix
         raise ValueError('Prefix has not been specified!')
+
+
+class RattlerInstallerTool(AbstractInstallerTool):
+    @classmethod
+    def executable(cls):
+        return sys.executable
+
+    def arguments(self):
+        prefix = self.prefix or self._default_prefix()
+
+        if self.action == InstallerActions.UPGRADE:
+            args = ['--action', 'update', '--prefix', prefix]
+        else:
+            args = ['--action', self.action.value, '--prefix', prefix]
+
+        for channel in (*self.origins, *self._default_channels()):
+            args.extend(['--channel', channel])
+        if 10 <= log.getEffectiveLevel() < 30:  # DEBUG level
+            args.append('--verbose')
+        for constraint in self.constraints():
+            args.extend(['--constraint', constraint])
+        return (
+            '-m',
+            'napari_plugin_manager._rattler_installer',
+            *args,
+            *self.pkgs,
+        )
+
+    def _default_channels(self):
+        """Default channels for conda installations."""
+        return ('conda-forge',)
+
+    def _default_prefix(self):
+        """Default prefix for conda installations."""
+        if (Path(sys.prefix) / 'conda-meta').is_dir():
+            return sys.prefix
+        raise ValueError('Prefix has not been specified!')
+
+    def environment(
+        self, env: QProcessEnvironment | None = None
+    ) -> QProcessEnvironment:
+        if env is None:
+            env = QProcessEnvironment.systemEnvironment()
+        if os.name == 'nt':
+            if not env.contains('TEMP'):
+                temp = gettempdir()
+                env.insert('TMP', temp)
+                env.insert('TEMP', temp)
+            if not env.contains('USERPROFILE'):
+                env.insert('HOME', os.path.expanduser('~'))
+                env.insert('USERPROFILE', os.path.expanduser('~'))
+        if sys.platform == 'darwin' and env.contains('PYTHONEXECUTABLE'):
+            # Fix for macOS when napari launched from terminal
+            # related to https://github.com/napari/napari/pull/5531
+            env.remove('PYTHONEXECUTABLE')
+        return env
+
+    @staticmethod
+    def constraints() -> Sequence[str]:
+        return []
+
+    @classmethod
+    def available(cls) -> bool:
+        try:
+            from napari_plugin_manager import _rattler_installer  # noqa
+        except ImportError:
+            return False
+        else:
+            return True
 
 
 class InstallerQueue(QObject):
