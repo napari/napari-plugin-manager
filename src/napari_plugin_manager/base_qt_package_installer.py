@@ -266,6 +266,7 @@ class CondaInstallerTool(AbstractInstallerTool):
 
 
 class RattlerInstallerTool(AbstractInstallerTool):
+    @classmethod
     def executable(cls):
         return sys.executable
 
@@ -319,9 +320,11 @@ class RattlerInstallerTool(AbstractInstallerTool):
             env.remove('PYTHONEXECUTABLE')
         return env
 
+    @staticmethod
     def constraints() -> Sequence[str]:
-        return ()
+        return []
 
+    @classmethod
     def available(cls) -> bool:
         try:
             from napari_plugin_manager import _rattler_installer  # noqa

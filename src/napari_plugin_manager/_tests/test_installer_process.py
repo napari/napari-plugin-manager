@@ -19,6 +19,7 @@ from napari_plugin_manager.qt_package_installer import (
     NapariCondaInstallerTool,
     NapariInstallerQueue,
     NapariPipInstallerTool,
+    NapariRattlerInstallerTool,
 )
 
 if TYPE_CHECKING:
@@ -371,10 +372,12 @@ def test_constraints_are_in_sync():
 def test_executables():
     assert NapariCondaInstallerTool.executable()
     assert NapariPipInstallerTool.executable()
+    assert NapariRattlerInstallerTool.executable()
 
 
 def test_available():
     assert str(NapariCondaInstallerTool.available())
+    assert NapariPipInstallerTool.available()
     assert NapariPipInstallerTool.available()
 
 

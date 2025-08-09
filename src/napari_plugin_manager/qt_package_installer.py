@@ -24,6 +24,7 @@ from napari_plugin_manager.base_qt_package_installer import (
     CondaInstallerTool,
     InstallerQueue,
     PipInstallerTool,
+    RattlerInstallerTool,
 )
 
 
@@ -64,6 +65,23 @@ class NapariPipInstallerTool(PipInstallerTool):
 
 
 class NapariCondaInstallerTool(CondaInstallerTool):
+    @staticmethod
+    def constraints() -> Sequence[str]:
+        # FIXME
+        # dev or rc versions might not be available in public channels
+        # but only installed locally - if we try to pin those, mamba
+        # will fail to pin it because there's no record of that version
+        # in the remote index, only locally; to work around this bug
+        # we will have to pin to e.g. 0.4.* instead of 0.4.17.* for now
+        version_lower = _napari_version.lower()
+        is_dev = 'rc' in version_lower or 'dev' in version_lower
+        pin_level = 2 if is_dev else 3
+        version = '.'.join([str(x) for x in _napari_version_tuple[:pin_level]])
+
+        return [f'napari={version}']
+
+
+class NapariRattlerInstallerTool(RattlerInstallerTool):
     @staticmethod
     def constraints() -> Sequence[str]:
         # FIXME
