@@ -62,6 +62,7 @@ class InstallerTools(StringEnum):
 
     CONDA = auto()
     PIP = auto()
+    RATTLER = auto()
 
 
 @dataclass(frozen=True)
