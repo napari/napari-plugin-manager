@@ -31,8 +31,8 @@ def cli() -> argparse.ArgumentParser:
     )
     p.add_argument(
         '--action',
-        choices=('install', 'remove', 'update'),
-        help='Action to perform',
+        choices=('install', 'remove', 'update', 'uninstall', 'upgrade'),
+        help='Action to perform: install (also creates), remove/uninstall, update/upgrade.',
     )
     p.add_argument(
         '-p',
@@ -78,7 +78,7 @@ def _installed(prefix: Path) -> list[rattler.prefix.PrefixRecord]:
 
 
 async def solve_records(
-    action: Literal['install', 'update', 'remove'],
+    action: Literal['install', 'update', 'upgrade', 'remove', 'uninstall'],
     specs: Iterable[rattler.MatchSpec],
     channels: Iterable[str] = (),
     constraints: Iterable[rattler.MatchSpec | str] = (),
@@ -90,18 +90,18 @@ async def solve_records(
     locked = installed.copy()
     channels = channels or ('conda-forge',)
     constraints = constraints or []
-    if action == 'remove':
+    if action in ('remove', 'uninstall'):
         specs = [
             record.requested_spec
             for record in installed
             if record.requested_spec and record.name not in names
         ]
         constraints.extend([f'{name.source}<0' for name in names])
-    elif action in ('install', 'update'):
+    elif action in ('install', 'update', 'upgrade'):
         for record in installed:
             if record.requested_spec and record.name not in names:
                 specs.append(record.requested_spec)
-        if action == 'update':
+        if action in ('update', 'upgrade'):
             locked = [record for record in locked if record.name not in names]
     else:
         raise ValueError("'action' must be 'install', 'update', or 'remove'.")
