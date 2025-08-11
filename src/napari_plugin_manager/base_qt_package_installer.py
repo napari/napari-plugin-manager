@@ -352,6 +352,7 @@ class InstallerQueue(QObject):
     # classes to manage pip and conda installations
     PIP_INSTALLER_TOOL_CLASS = PipInstallerTool
     CONDA_INSTALLER_TOOL_CLASS = CondaInstallerTool
+    RATTLER_INSTALLER_TOOL_CLASS = RattlerInstallerTool
     # This should be set to the name of package that handles plugins
     # e.g `napari` for napari
     BASE_PACKAGE_NAME = ''
@@ -608,6 +609,8 @@ class InstallerQueue(QObject):
             return self.PIP_INSTALLER_TOOL_CLASS
         if tool == InstallerTools.CONDA:
             return self.CONDA_INSTALLER_TOOL_CLASS
+        if tool == InstallerTools.RATTLER:
+            return self.RATTLER_INSTALLER_TOOL_CLASS
         raise ValueError(f'InstallerTool {tool} not recognized!')
 
     def _build_queue_item(
