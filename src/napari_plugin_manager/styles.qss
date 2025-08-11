@@ -11,6 +11,12 @@ from napari._qt.qt_resources import get_current_stylesheet
 ```
 
 */
+
+QLineEdit {
+  border: 1px solid white;
+  font-size: 16px;
+}
+
 QCollapsible#install_info_button {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
@@ -358,7 +364,7 @@ QToolButton {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
   padding: 3 12px;
-  font: 14px;
+  font-size: 16px;
 }
 
 QToolButton:hover {
