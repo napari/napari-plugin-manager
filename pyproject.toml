@@ -55,6 +55,7 @@ dependencies = [
   "superqt",
   "pip",
   "packaging",
+  "uv",
 ]
 dynamic = [
   "version"
