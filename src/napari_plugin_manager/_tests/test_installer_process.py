@@ -68,7 +68,9 @@ def test_pip_installer_tasks(
     qtbot, tool, tmp_virtualenv: 'Session', monkeypatch, caplog
 ):
     caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
-    monkeypatch.setattr(NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool)
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         tool,
@@ -154,7 +156,9 @@ def test_pip_installer_tasks(
 def test_pip_installer_invalid_action(
     tool, tmp_virtualenv: 'Session', monkeypatch
 ):
-    monkeypatch.setattr(NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool)
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     monkeypatch.setattr(
         tool,
         'executable'
@@ -184,7 +188,9 @@ def test_pip_installer_invalid_action(
 def test_installer_failures(
     tool, qtbot, tmp_virtualenv: 'Session', monkeypatch
 ):
-    monkeypatch.setattr(NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool)
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         tool,
@@ -234,7 +240,9 @@ def test_installer_failures(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
 def test_cancel_incorrect_job_id(tool, qtbot, monkeypatch):
-    monkeypatch.setattr(NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool)
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         job_id = installer.install(
@@ -338,7 +346,9 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
 def test_installer_error(qtbot, tool, monkeypatch):
-    monkeypatch.setattr(NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool)
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
         tool,

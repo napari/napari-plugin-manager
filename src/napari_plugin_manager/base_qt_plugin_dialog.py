@@ -1533,7 +1533,7 @@ class BaseQtPluginDialog(QDialog):
         )
         self.direct_entry_edit.setPlaceholderText(
             self._trans(
-                "install from {tool} by name/url, or drop file...", tool=tool
+                'install from {tool} by name/url, or drop file...', tool=tool
             )
         )
 
