@@ -79,12 +79,12 @@ def _installed(prefix: Path) -> list[rattler.prefix.PrefixRecord]:
 
 async def solve_records(
     action: Literal['install', 'update', 'remove'],
-    specs: Iterable[str],
+    specs: Iterable[rattler.MatchSpec],
     channels: Iterable[str] = (),
-    constraints: Iterable[str] = (),
+    constraints: Iterable[rattler.MatchSpec | str] = (),
     installed: Iterable[rattler.prefix.PrefixRecord] = (),
-):
-    specs = [rattler.match_spec.MatchSpec(s) for s in specs]
+) -> tuple[list[rattler.RepoDataRecord], list[rattler.MatchSpec]]:
+    specs = list(specs)
     names = {spec.name for spec in specs}
     installed = list(installed)
     locked = installed.copy()
@@ -112,7 +112,6 @@ async def solve_records(
     for constraint in constraints:
         log.info('Constraint: %s', constraint)
 
-    specs = [rattler.match_spec.MatchSpec(spec) for spec in specs]
     return await rattler.solve(
         channels,
         specs,
@@ -136,7 +135,7 @@ async def main(argv: Iterable[str] | None = None) -> int:
         level=logging.INFO if args.verbose else logging.WARNING
     )
 
-    specs = [rattler.match_spec.MatchSpec(spec) for spec in args.specs]
+    specs = [rattler.MatchSpec(spec) for spec in args.specs]
     installed = _installed(args.prefix)
     installed_names = {record.name.normalized for record in installed}
     if args.action in ('remove', 'update'):

@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING
 import pytest
 from qtpy.QtWidgets import QDialog, QInputDialog, QMessageBox
 
-from napari_plugin_manager.qt_package_installer import CondaInstallerTool
-
 
 @pytest.fixture(autouse=True)
 def _block_message_box(monkeypatch, request):
@@ -37,27 +35,21 @@ def tmp_virtualenv(tmp_path) -> 'Session':
 
 @pytest.fixture
 def tmp_conda_env(tmp_path):
-    import subprocess
+    import asyncio
 
-    try:
-        subprocess.check_output(
+    from napari_plugin_manager._rattler_installer import main
+
+    asyncio.run(
+        main(
             [
-                CondaInstallerTool.executable(),
-                'create',
-                '-yq',
-                '-p',
+                '--action',
+                'install',
+                '--prefix',
                 str(tmp_path),
-                '--override-channels',
-                '-c',
-                'conda-forge',
+                '--verbose',
                 f'python={sys.version_info.major}.{sys.version_info.minor}',
-            ],
-            stderr=subprocess.STDOUT,
-            text=True,
-            timeout=300,
+            ]
         )
-    except subprocess.CalledProcessError as exc:
-        print(exc.output)
-        raise
+    )
 
     return tmp_path
