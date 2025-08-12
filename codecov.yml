@@ -1,0 +1,24 @@
+ignore:
+  - napari_plugin_manager/_version.py
+coverage:
+  status:
+    project:
+      default: false
+      library:
+        target: auto
+        paths: ['!.*/_tests/.*']
+        threshold: 1%
+      tests:
+        target: auto
+        paths: ['.*/_tests/.*']
+        threshold: 1%  # coverage can drop by up to 1% while still posting success
+    patch:
+      default:
+        threshold: 1%
+        target: 0%
+codecov:
+  notify:
+    after_n_builds: 1
+comment:
+  require_changes: true  # if true: only post the PR comment if coverage changes
+  after_n_builds: 1
