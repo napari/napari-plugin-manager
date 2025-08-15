@@ -410,7 +410,7 @@ class BasePluginListItem(QFrame):
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
         self.summary.setSizePolicy(sizePolicy)
-        self.summary.setContentsMargins(0, -2, 0, -2)
+        self.summary.setContentsMargins(0, 0, 0, 0)
 
         # Package author
         self.package_author = QElidingLabel(self)
