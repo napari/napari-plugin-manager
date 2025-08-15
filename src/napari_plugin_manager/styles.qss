@@ -17,6 +17,10 @@ QLineEdit {
   font-size: 16px;
 }
 
+QLineEdit:focus {
+  border: 1px solid {{ current }};
+}
+
 QCollapsible#install_info_button {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
@@ -36,6 +40,9 @@ QElidingLabel#summary_text {
   color: {{ darken(text, 35) }};
 }
 
+QLabel#available_message {
+  background-color: {{ console }};
+}
 
 QLabel#install_choice {
   background-color: {{ current }};
