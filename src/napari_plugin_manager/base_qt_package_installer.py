@@ -478,6 +478,7 @@ class InstallerQueue(QObject):
                 process.errorOccurred.disconnect(self._on_error_occurred)
 
             self._end_process(process)
+            process.waitForFinished()
 
         self._queue.clear()
         self._current_process = None
