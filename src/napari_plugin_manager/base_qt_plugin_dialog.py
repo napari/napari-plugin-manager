@@ -1141,10 +1141,14 @@ class BaseQtPluginDialog(QDialog):
         raise NotImplementedError
 
     def _register_task_status(self):
-        if self._task_status_id is not None:
-            self._update_task_status(self._task_status_id)
-
         status, description = self.query_status()
+
+        if self._task_status_id is not None:
+            self._update_task_status(
+                self._task_status_id, status, description=description
+            )
+            return
+
         self._task_status_id = self.register_task_status(
             status, description, cancel_callback=self.installer.cancel_all
         )
@@ -1156,8 +1160,6 @@ class BaseQtPluginDialog(QDialog):
             self.update_task_status(
                 self._task_status_id, status, description=description
             )
-
-        self._task_status_id = None
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
