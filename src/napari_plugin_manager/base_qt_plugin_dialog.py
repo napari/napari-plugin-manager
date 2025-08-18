@@ -3,7 +3,7 @@ import importlib.metadata
 import os
 import uuid
 import webbrowser
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from enum import Enum, auto
 from functools import partial
 from logging import getLogger
@@ -63,9 +63,11 @@ PYPI = 'PyPI'
 log = getLogger(__name__)
 
 
-class ProcessStatus(Enum):
+class Status(Enum):
+    PENDING = auto()
     BUSY = auto()
-    IDLE = auto()
+    DONE = auto()
+    FAILED = auto()
 
 
 class PackageMetadataProtocol(Protocol):
@@ -1055,7 +1057,7 @@ class BaseQtPluginDialog(QDialog):
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
         self._filter_idxs_cache = set()
-        self._process_status_id = None
+        self._task_status_id = None
         self.worker = None
         self._plugin_data_map = {}
         self._add_items_timer = QTimer(self)
@@ -1138,20 +1140,24 @@ class BaseQtPluginDialog(QDialog):
         """
         raise NotImplementedError
 
-    def _register_process_status(self):
-        if self._process_status_id is not None:
-            self._unregister_process_status(self._process_status_id)
+    def _register_task_status(self):
+        if self._task_status_id is not None:
+            self._update_task_status(self._task_status_id)
 
         status, description = self.query_status()
-        self._process_status_id = self.register_process_status(
-            status, description
+        self._task_status_id = self.register_task_status(
+            status, description, cancel_callback=self.installer.cancel_all
         )
 
-    def _unregister_process_status(self):
-        if self._process_status_id is not None:
-            self.unregister_process_status(self._process_status_id)
+    def _update_task_status(
+        self, status: Status = Status.DONE, description: str = ''
+    ):
+        if self._task_status_id is not None:
+            self.update_task_status(
+                self._task_status_id, status, description=description
+            )
 
-        self._process_status_id = None
+        self._task_status_id = None
 
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
@@ -1161,8 +1167,8 @@ class BaseQtPluginDialog(QDialog):
         self.process_error_indicator.hide()
         self.refresh_button.setDisabled(True)
 
-        if self._process_status_id is None:
-            self._register_process_status()
+        if self._task_status_id is None:
+            self._register_task_status()
 
     def _on_process_finished(self, process_finished_data: ProcessFinishedData):
         action = process_finished_data['action']
@@ -1236,7 +1242,7 @@ class BaseQtPluginDialog(QDialog):
                     self._trans('Plugin Manager: process completed\n')
                 )
 
-        self._unregister_process_status()
+        self._update_task_status()
         self.search()
 
     def _add_to_installed(
@@ -1801,7 +1807,7 @@ class BaseQtPluginDialog(QDialog):
         if len(text.strip()) == 0:
             self.installed_list.filter('')
             self.available_list.hideAll()
-            self._plugin_queue = None
+            self._plugin_queue = []
             self._add_items_timer.stop()
             self._plugins_found = 0
         else:
@@ -1819,7 +1825,7 @@ class BaseQtPluginDialog(QDialog):
                 self._plugins_found = len(items)
                 self._add_items_timer.start()
             else:
-                self._plugin_queue = None
+                self._plugin_queue = []
                 self._add_items_timer.stop()
                 self._plugins_found = 0
 
@@ -1896,25 +1902,37 @@ class BaseQtPluginDialog(QDialog):
         plugins = [p for p in plugins if p]
         self._install_packages(plugins)
 
-    def register_process_status(
-        self, status: ProcessStatus, description: str
+    def register_task_status(
+        self,
+        status: Status,
+        description: str,
+        cancel_callback: Callable | None = None,
     ) -> uuid.UUID:
-        """Register a process status for the plugin manager."""
+        """Register a task status for the plugin manager."""
         raise NotImplementedError
 
-    def unregister_process_status(self, process_status_id: uuid.UUID) -> bool:
-        """Unregister a process status for the plugin manager."""
+    def update_task_status(
+        self, task_status_id: uuid.UUID, status: Status, description: str = ''
+    ) -> bool:
+        """Unregister a task status for the plugin manager."""
         raise NotImplementedError
 
-    def query_status(self) -> tuple[ProcessStatus, str]:
+    def query_status(self) -> tuple[Status, str]:
         """
         Return the current status of plugins installations.
 
         Returns
         -------
-        A tuple containing the current status (`ProcessStatus`) and a description.
+        A tuple containing the current status (`Status`) and a description.
 
         """
-        raise NotImplementedError
+        if self.installer.hasJobs():
+            task_status = Status.BUSY
+            description = self.trans('The plugin manager is currently busy')
+        else:
+            task_status = Status.DONE
+            description = ''
+
+        return task_status, description
 
     # endregion - Public methods

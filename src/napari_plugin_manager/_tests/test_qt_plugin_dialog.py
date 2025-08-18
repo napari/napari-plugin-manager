@@ -29,7 +29,6 @@ from napari_plugin_manager.base_qt_package_installer import (
     InstallerActions,
     InstallerTools,
 )
-from napari_plugin_manager.base_qt_plugin_dialog import ProcessStatus
 
 N_MOCKED_PLUGINS = 2
 
@@ -677,7 +676,7 @@ def test_import_plugins(plugin_dialog, tmp_path, qtbot):
 
 def test_query_status(plugin_dialog, monkeypatch):
     status, description = plugin_dialog.query_status()
-    assert status == ProcessStatus.IDLE
+    assert status == qt_plugin_dialog.Status.DONE
     assert not description
 
     monkeypatch.setattr(
@@ -686,7 +685,7 @@ def test_query_status(plugin_dialog, monkeypatch):
         ['mock'],
     )
     status, description = plugin_dialog.query_status()
-    assert status == ProcessStatus.BUSY
+    assert status == qt_plugin_dialog.Status.BUSY
     assert description
 
     monkeypatch.setattr(
@@ -694,5 +693,5 @@ def test_query_status(plugin_dialog, monkeypatch):
         '_queue',
         ['mock', 'other-mock'],
     )
-    assert status == ProcessStatus.BUSY
+    assert status == qt_plugin_dialog.Status.BUSY
     assert description

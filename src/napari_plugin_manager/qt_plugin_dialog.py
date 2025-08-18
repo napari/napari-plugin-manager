@@ -1,5 +1,6 @@
 import sys
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 import napari.plugins
@@ -39,20 +40,27 @@ from napari_plugin_manager.qt_package_installer import NapariInstallerQueue
 from napari_plugin_manager.utils import is_conda_package
 
 try:
-    from napari.utils.processes import (
-        ProcessStatus,
-        register_process_status,
-        unregister_process_status,
+    from napari.utils.task_status import (
+        Status,
+        register_task_status,
+        update_task_status,
     )
 except ImportError:
-    from napari_plugin_manager.base_qt_plugin_dialog import ProcessStatus
+    from napari_plugin_manager.base_qt_plugin_dialog import Status
 
-    def register_process_status(
-        status: ProcessStatus, description: str
+    def register_task_status(
+        provider: str,
+        task_status: Status,
+        description: str,
+        cancel_callback: Callable | None = None,
     ) -> uuid.UUID:
         pass
 
-    def unregister_process_status(process_status_id: uuid.UUID) -> bool:
+    def update_task_status(
+        task_status_id: uuid.UUID,
+        status: Status,
+        description: str = '',
+    ) -> bool:
         pass
 
 
@@ -284,27 +292,42 @@ class QtPluginDialog(BaseQtPluginDialog):
     def _trans(self, text, **kwargs):
         return trans._(text, **kwargs)
 
-    def register_process_status(
-        self, status: ProcessStatus, description: str
+    def register_task_status(
+        self,
+        task_status: Status,
+        description: str,
+        cancel_callback: Callable | None = None,
     ) -> uuid.UUID:
-        return register_process_status(status, description)
+        return register_task_status(
+            'napari-plugin-manager',
+            task_status,
+            description,
+            cancel_callback=cancel_callback,
+        )
 
-    def unregister_process_status(self, process_status_id: uuid.UUID) -> bool:
-        return unregister_process_status(process_status_id)
+    def update_task_status(
+        self,
+        task_status_id: uuid.UUID,
+        status: Status,
+        description: str = '',
+    ) -> bool:
+        return update_task_status(
+            task_status_id, status, description=description
+        )
 
-    def query_status(self) -> tuple[ProcessStatus, str]:
+    def query_status(self) -> tuple[Status, str]:
         if self.installer.hasJobs():
-            process_status = ProcessStatus.BUSY
+            task_status = Status.BUSY
             description = trans._n(
                 'The plugin manager is currently busy with {n} task.',
                 'The plugin manager is currently busy with {n} tasks.',
                 n=self.installer.currentJobs(),
             )
         else:
-            process_status = ProcessStatus.IDLE
+            task_status = Status.DONE
             description = ''
 
-        return process_status, description
+        return task_status, description
 
 
 if __name__ == '__main__':
