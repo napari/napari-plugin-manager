@@ -1916,7 +1916,7 @@ class BaseQtPluginDialog(QDialog):
     def update_task_status(
         self, task_status_id: uuid.UUID, status: Status, description: str = ''
     ) -> bool:
-        """Unregister a task status for the plugin manager."""
+        """Update task status for the plugin manager."""
         raise NotImplementedError
 
     def query_status(self) -> tuple[Status, str]:
@@ -1928,13 +1928,6 @@ class BaseQtPluginDialog(QDialog):
         A tuple containing the current status (`Status`) and a description.
 
         """
-        if self.installer.hasJobs():
-            task_status = Status.BUSY
-            description = self.trans('The plugin manager is currently busy')
-        else:
-            task_status = Status.DONE
-            description = ''
-
-        return task_status, description
+        raise NotImplementedError
 
     # endregion - Public methods
