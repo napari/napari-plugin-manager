@@ -67,6 +67,7 @@ class Status(Enum):
     PENDING = auto()
     BUSY = auto()
     DONE = auto()
+    CANCELLED = auto()
     FAILED = auto()
 
 
