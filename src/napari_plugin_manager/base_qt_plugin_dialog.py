@@ -1145,9 +1145,7 @@ class BaseQtPluginDialog(QDialog):
         status, description = self.query_status()
 
         if self._task_status_id is not None:
-            self._update_task_status(
-                self._task_status_id, status, description=description
-            )
+            self._update_task_status(status, description=description)
             return
 
         self._task_status_id = self.register_task_status(
@@ -1169,9 +1167,7 @@ class BaseQtPluginDialog(QDialog):
         self.process_success_indicator.hide()
         self.process_error_indicator.hide()
         self.refresh_button.setDisabled(True)
-
-        if self._task_status_id is None:
-            self._register_task_status()
+        self._register_task_status()
 
     def _on_process_finished(self, process_finished_data: ProcessFinishedData):
         action = process_finished_data['action']
