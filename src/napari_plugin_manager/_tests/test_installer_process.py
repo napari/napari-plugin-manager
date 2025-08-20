@@ -273,12 +273,12 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         job_id_1 = installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['packaging'],
+            pkgs=['typing-extensions'],
             prefix=tmp_conda_env,
         )
         job_id_2 = installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['typing-extensions'],
+            pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
