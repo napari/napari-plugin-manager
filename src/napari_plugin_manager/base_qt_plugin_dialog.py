@@ -1231,17 +1231,17 @@ class BaseQtPluginDialog(QDialog):
 
         if not self.isVisible():
             if sum(exit_codes) > 0:
-                self._show_warning(
-                    self._trans(
-                        'Plugin Manager: process completed with errors\n'
-                    )
+                message = self._trans(
+                    'Plugin Manager: process completed with errors\n'
                 )
+                status = Status.FAILED
+                self._show_warning(message)
             else:
-                self._show_info(
-                    self._trans('Plugin Manager: process completed\n')
-                )
+                message = self._trans('Plugin Manager: process completed\n')
+                status = Status.DONE
+                self._show_info(message)
 
-        self._update_task_status()
+        self._update_task_status(status=status, description=message)
         self.search()
 
     def _add_to_installed(
