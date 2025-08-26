@@ -657,6 +657,10 @@ class InstallerQueue(QObject):
             )
 
         if item is not None:
+            if not isinstance(exit_code, int):
+                exit_code = 0
+                if error:
+                    exit_code = 1
             self.processFinished.emit(
                 {
                     'exit_code': exit_code,
