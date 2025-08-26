@@ -1229,17 +1229,19 @@ class BaseQtPluginDialog(QDialog):
         self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
 
+        if sum(exit_codes) > 0:
+            message = self._trans(
+                'Plugin Manager: process completed with errors\n'
+            )
+            status = Status.FAILED
+            show_message = self._show_warning
+        else:
+            message = self._trans('Plugin Manager: process completed\n')
+            status = Status.DONE
+            show_message = self._show_info
+
         if not self.isVisible():
-            if sum(exit_codes) > 0:
-                message = self._trans(
-                    'Plugin Manager: process completed with errors\n'
-                )
-                status = Status.FAILED
-                self._show_warning(message)
-            else:
-                message = self._trans('Plugin Manager: process completed\n')
-                status = Status.DONE
-                self._show_info(message)
+            show_message(message)
 
         self._update_task_status(status=status, description=message)
         self.search()
