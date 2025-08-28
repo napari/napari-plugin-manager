@@ -324,7 +324,7 @@ class QtPluginDialog(BaseQtPluginDialog):
                 n=self.installer.currentJobs(),
             )
         else:
-            task_status = Status.DONE
+            task_status = Status.COMPLETED
             description = ''
 
         return task_status, description

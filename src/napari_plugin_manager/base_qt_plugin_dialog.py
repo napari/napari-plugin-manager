@@ -66,9 +66,10 @@ log = getLogger(__name__)
 class Status(Enum):
     PENDING = auto()
     BUSY = auto()
-    DONE = auto()
+    COMPLETED = auto()
     CANCELLED = auto()
     FAILED = auto()
+    STARTED_FAILED = auto()
 
 
 class PackageMetadataProtocol(Protocol):
@@ -1153,7 +1154,7 @@ class BaseQtPluginDialog(QDialog):
         )
 
     def _update_task_status(
-        self, status: Status = Status.DONE, description: str = ''
+        self, status: Status = Status.COMPLETED, description: str = ''
     ):
         if self._task_status_id is not None:
             self.update_task_status(
@@ -1237,7 +1238,7 @@ class BaseQtPluginDialog(QDialog):
             show_message = self._show_warning
         else:
             message = self._trans('Plugin Manager: process completed\n')
-            status = Status.DONE
+            status = Status.COMPLETED
             show_message = self._show_info
 
         if not self.isVisible():

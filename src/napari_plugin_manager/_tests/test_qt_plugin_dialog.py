@@ -676,7 +676,7 @@ def test_import_plugins(plugin_dialog, tmp_path, qtbot):
 
 def test_query_status(plugin_dialog, monkeypatch):
     status, description = plugin_dialog.query_status()
-    assert status == qt_plugin_dialog.Status.DONE
+    assert status == qt_plugin_dialog.Status.COMPLETED
     assert not description
 
     monkeypatch.setattr(
