@@ -120,7 +120,7 @@ class PipInstallerTool(AbstractInstallerTool):
     """
 
     @classmethod
-    def available(cls):
+    def available(cls) -> bool:
         """Check if pip is available."""
         process = run(
             [cls.executable(), '-m', 'pip', '--version'], capture_output=True
@@ -181,14 +181,14 @@ class UvInstallerTool(AbstractInstallerTool):
     """
 
     @classmethod
-    def executable(cls):
+    def executable(cls) -> str:
         "Path to the executable that will run the task"
         if sys.platform == 'win32':
             return os.path.join(sys.prefix, 'Scripts', 'uv.exe')
         return os.path.join(sys.prefix, 'bin', 'uv')
 
     @classmethod
-    def available(cls):
+    def available(cls) -> bool:
         """Check if uv is available."""
         try:
             process = run([cls.executable(), '--version'], capture_output=True)
