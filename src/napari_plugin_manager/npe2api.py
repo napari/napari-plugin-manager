@@ -122,12 +122,12 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
             'conda_versions': conda_versions,
         }
         info_['name'] = normalized_name(info_['name'])
-        meta = PackageMetadata(**info_)  # type:ignore[call-arg]
+        meta = PackageMetadata(**info_)
 
         yield meta, (info_['name'] in conda_set), extra_info
 
 
-def cache_clear():
+def cache_clear() -> None:
     """Clear the cache for all cached functions in this module."""
     plugin_summaries.cache_clear()
     conda_map.cache_clear()
