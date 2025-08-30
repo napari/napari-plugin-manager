@@ -1,8 +1,10 @@
 import contextlib
 import importlib.metadata
 import os
+import uuid
 import webbrowser
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from enum import Enum, auto
 from functools import partial
 from logging import getLogger
 from typing import (
@@ -60,6 +62,15 @@ from napari_plugin_manager.utils import get_homepage_url, is_conda_package
 CONDA = 'Conda'
 PYPI = 'PyPI'
 log = getLogger(__name__)
+
+
+class Status(Enum):
+    PENDING = auto()
+    BUSY = auto()
+    COMPLETED = auto()
+    CANCELLED = auto()
+    FAILED = auto()
+    STARTED_FAILED = auto()
 
 
 class PackageMetadataProtocol(Protocol):
@@ -1049,6 +1060,7 @@ class BaseQtPluginDialog(QDialog):
         self._plugin_data = []  # Store all plugin data
         self._filter_texts = []
         self._filter_idxs_cache = set()
+        self._task_status_id = None
         self.worker = None
         self._plugin_data_map = {}
         self._add_items_timer = QTimer(self)
@@ -1131,6 +1143,25 @@ class BaseQtPluginDialog(QDialog):
         """
         raise NotImplementedError
 
+    def _register_task_status(self):
+        status, description = self.query_status()
+
+        if self._task_status_id is not None:
+            self._update_task_status(status, description=description)
+            return
+
+        self._task_status_id = self.register_task_status(
+            status, description, cancel_callback=self.installer.cancel_all
+        )
+
+    def _update_task_status(
+        self, status: Status = Status.COMPLETED, description: str = ''
+    ):
+        if self._task_status_id is not None:
+            self.update_task_status(
+                self._task_status_id, status, description=description
+            )
+
     def _on_installer_start(self):
         """Updates dialog buttons and status when installing a plugin."""
         self.cancel_all_btn.setVisible(True)
@@ -1138,6 +1169,7 @@ class BaseQtPluginDialog(QDialog):
         self.process_success_indicator.hide()
         self.process_error_indicator.hide()
         self.refresh_button.setDisabled(True)
+        self._register_task_status()
 
     def _on_process_finished(self, process_finished_data: ProcessFinishedData):
         action = process_finished_data['action']
@@ -1199,18 +1231,21 @@ class BaseQtPluginDialog(QDialog):
         self.close_btn.setDisabled(False)
         self.refresh_button.setDisabled(False)
 
-        if not self.isVisible():
-            if sum(exit_codes) > 0:
-                self._show_warning(
-                    self._trans(
-                        'Plugin Manager: process completed with errors\n'
-                    )
-                )
-            else:
-                self._show_info(
-                    self._trans('Plugin Manager: process completed\n')
-                )
+        if sum(exit_codes) > 0:
+            message = self._trans(
+                'Plugin Manager: process completed with errors\n'
+            )
+            status = Status.FAILED
+            show_message = self._show_warning
+        else:
+            message = self._trans('Plugin Manager: process completed\n')
+            status = Status.COMPLETED
+            show_message = self._show_info
 
+        if not self.isVisible():
+            show_message(message)
+
+        self._update_task_status(status=status, description=message)
         self.search()
 
     def _add_to_installed(
@@ -1781,7 +1816,7 @@ class BaseQtPluginDialog(QDialog):
         if len(text.strip()) == 0:
             self.installed_list.filter('')
             self.available_widget.setCurrentWidget(self.available_message)
-            self._plugin_queue = None
+            self._plugin_queue = []
             self._add_items_timer.stop()
             self._plugins_found = 0
         else:
@@ -1800,7 +1835,7 @@ class BaseQtPluginDialog(QDialog):
                 self._plugins_found = len(items)
                 self._add_items_timer.start()
             else:
-                self._plugin_queue = None
+                self._plugin_queue = []
                 self._add_items_timer.stop()
                 self._plugins_found = 0
 
@@ -1819,6 +1854,7 @@ class BaseQtPluginDialog(QDialog):
         self._plugin_queue = []
         self._plugin_data = []
         self._plugin_data_map = {}
+        self._latest_status = None
 
         self.installed_list.clear()
         self.available_list.clear()
@@ -1875,5 +1911,31 @@ class BaseQtPluginDialog(QDialog):
 
         plugins = [p for p in plugins if p]
         self._install_packages(plugins)
+
+    def register_task_status(
+        self,
+        status: Status,
+        description: str,
+        cancel_callback: Callable | None = None,
+    ) -> uuid.UUID:
+        """Register a task status for the plugin manager."""
+        raise NotImplementedError
+
+    def update_task_status(
+        self, task_status_id: uuid.UUID, status: Status, description: str = ''
+    ) -> bool:
+        """Update task status for the plugin manager."""
+        raise NotImplementedError
+
+    def query_status(self) -> tuple[Status, str]:
+        """
+        Return the current status of plugins installations.
+
+        Returns
+        -------
+        A tuple containing the current status (`Status`) and a description.
+
+        """
+        raise NotImplementedError
 
     # endregion - Public methods
