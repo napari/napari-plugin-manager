@@ -136,7 +136,7 @@ def test_pip_installer_tasks(
         )
     process_finished_data = blocker.args[0]
     assert process_finished_data['action'] == InstallerActions.INSTALL
-    assert process_finished_data['pkgs'] == ['pydantic']
+    assert process_finished_data['pkgs'] == ('pydantic',)
 
     # Test upgrade
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):

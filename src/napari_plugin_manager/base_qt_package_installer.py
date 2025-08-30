@@ -14,7 +14,7 @@ import contextlib
 import os
 import sys
 from collections import deque
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import auto
 from functools import lru_cache
@@ -75,19 +75,19 @@ class AbstractInstallerTool:
     process: QProcess = None
 
     @property
-    def ident(self):
+    def ident(self) -> JobId:
         return hash(
             (self.action, *self.pkgs, *self.origins, self.prefix, self.process)
         )
 
     # abstract method
     @classmethod
-    def executable(cls):
+    def executable(cls) -> str:
         "Path to the executable that will run the task"
         raise NotImplementedError
 
     # abstract method
-    def arguments(self):
+    def arguments(self) -> list[str]:
         "Arguments supplied to the executable"
         raise NotImplementedError
 
@@ -99,7 +99,7 @@ class AbstractInstallerTool:
         raise NotImplementedError
 
     @staticmethod
-    def constraints() -> Sequence[str]:
+    def constraints() -> list[str]:
         """
         Version constraints to limit unwanted changes in installation.
         """
@@ -127,7 +127,7 @@ class PipInstallerTool(AbstractInstallerTool):
         )
         return process.returncode == 0
 
-    def arguments(self) -> tuple[str, ...]:
+    def arguments(self) -> list[str]:
         """Compose arguments for the pip command."""
         args = ['-m', 'pip']
 
@@ -158,7 +158,7 @@ class PipInstallerTool(AbstractInstallerTool):
         if self.prefix is not None:
             args.extend(['--prefix', str(self.prefix)])
 
-        return (*args, *self.pkgs)
+        return [*args, *self.pkgs]
 
     def environment(
         self, env: QProcessEnvironment = None
@@ -254,7 +254,7 @@ class CondaInstallerTool(AbstractInstallerTool):
     """
 
     @classmethod
-    def executable(cls):
+    def executable(cls) -> str:
         """Find a path to the executable.
 
         This method assumes that if no environment variable is set that conda is available in the PATH.
@@ -273,7 +273,7 @@ class CondaInstallerTool(AbstractInstallerTool):
         return f'conda{bat}'
 
     @classmethod
-    def available(cls):
+    def available(cls) -> bool:
         """Check if the executable is available by checking if it can output its version."""
         try:
             process = run([cls.executable(), '--version'], capture_output=True)
@@ -282,7 +282,7 @@ class CondaInstallerTool(AbstractInstallerTool):
         else:
             return process.returncode == 0
 
-    def arguments(self) -> tuple[str, ...]:
+    def arguments(self) -> list[str]:
         """Compose arguments for the conda command."""
         prefix = self.prefix or self._default_prefix()
 
@@ -295,7 +295,7 @@ class CondaInstallerTool(AbstractInstallerTool):
         for channel in (*self.origins, *self._default_channels()):
             args.extend(['-c', channel])
 
-        return (*args, *self.pkgs)
+        return [*args, *self.pkgs]
 
     def environment(
         self, env: QProcessEnvironment = None
@@ -330,11 +330,11 @@ class CondaInstallerTool(AbstractInstallerTool):
         env.insert(PINNED, '&'.join(constraints))
         return env
 
-    def _default_channels(self):
+    def _default_channels(self) -> list[str]:
         """Default channels for conda installations."""
-        return ('conda-forge',)
+        return ['conda-forge']
 
-    def _default_prefix(self):
+    def _default_prefix(self) -> str:
         """Default prefix for conda installations."""
         if (Path(sys.prefix) / 'conda-meta').is_dir():
             return sys.prefix
@@ -371,7 +371,7 @@ class InstallerQueue(QObject):
         self._current_process: QProcess = None
         self._prefix = prefix
         self._output_widget = None
-        self._exit_codes = []
+        self._exit_codes: list[int] = []
 
     # -------------------------- Public API ------------------------------
     def install(
@@ -492,7 +492,7 @@ class InstallerQueue(QObject):
         )
         return self._queue_item(item)
 
-    def cancel(self, job_id: JobId):
+    def cancel(self, job_id: JobId) -> None:
         """Cancel a job.
 
         Cancel the process, if it is running, referenced by `job_id`.
@@ -543,9 +543,9 @@ class InstallerQueue(QObject):
         )
         raise ValueError(msg)
 
-    def cancel_all(self):
+    def cancel_all(self) -> None:
         """Terminate all processes in the queue and emit the `processFinished` signal."""
-        all_pkgs = []
+        all_pkgs: list[str] = []
         for item in deque(self._queue):
             all_pkgs.extend(item.pkgs)
             process = item.process
@@ -590,7 +590,7 @@ class InstallerQueue(QObject):
         """Return the number of running jobs in the queue."""
         return len(self._queue)
 
-    def set_output_widget(self, output_widget: QTextEdit):
+    def set_output_widget(self, output_widget: QTextEdit) -> None:
         """Set the output widget for text output."""
         if output_widget:
             self._output_widget = output_widget
@@ -605,12 +605,12 @@ class InstallerQueue(QObject):
         process.errorOccurred.connect(self._on_error_occurred)
         return process
 
-    def _log(self, msg: str):
+    def _log(self, msg: str) -> None:
         log.debug(msg)
         if self._output_widget:
             self._output_widget.append(msg)
 
-    def _get_tool(self, tool: InstallerTools):
+    def _get_tool(self, tool: InstallerTools) -> type[AbstractInstallerTool]:
         if tool == InstallerTools.PYPI:
             return self.PYPI_INSTALLER_TOOL_CLASS
         if tool == InstallerTools.CONDA:
@@ -621,15 +621,15 @@ class InstallerQueue(QObject):
         self,
         tool: InstallerTools,
         action: InstallerActions,
-        pkgs: Sequence[str],
+        pkgs: Iterable[str],
         prefix: str | None = None,
-        origins: Sequence[str] = (),
+        origins: Iterable[str] = (),
         **kwargs,
     ) -> AbstractInstallerTool:
         return self._get_tool(tool)(
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             action=action,
-            origins=origins,
+            origins=tuple(origins),
             prefix=prefix or self._prefix,
             **kwargs,
         )
@@ -639,7 +639,7 @@ class InstallerQueue(QObject):
         self._process_queue()
         return item.ident
 
-    def _process_queue(self):
+    def _process_queue(self) -> None:
         if not self._queue:
             self.allFinished.emit(tuple(self._exit_codes))
             self._exit_codes = []
@@ -665,7 +665,7 @@ class InstallerQueue(QObject):
             process.start()
             self._current_process = process
 
-    def _end_process(self, process: QProcess):
+    def _end_process(self, process: QProcess) -> None:
         if os.name == 'nt':
             # TODO: this might be too agressive and won't allow rollbacks!
             # investigate whether we can also do .terminate()
@@ -680,7 +680,7 @@ class InstallerQueue(QObject):
 
     def _on_process_finished(
         self, exit_code: int, exit_status: QProcess.ExitStatus
-    ):
+    ) -> None:
         try:
             current = self._queue[0]
         except IndexError:
@@ -706,7 +706,7 @@ class InstallerQueue(QObject):
                     )
         self._on_process_done(exit_code=exit_code, exit_status=exit_status)
 
-    def _on_error_occurred(self, error: QProcess.ProcessError):
+    def _on_error_occurred(self, error: QProcess.ProcessError) -> None:
         self._on_process_done(error=error)
 
     def _on_process_done(
@@ -714,7 +714,7 @@ class InstallerQueue(QObject):
         exit_code: int | None = None,
         exit_status: QProcess.ExitStatus | None = None,
         error: QProcess.ProcessError | None = None,
-    ):
+    ) -> None:
         item = None
         with contextlib.suppress(IndexError):
             item = self._queue.popleft()
@@ -744,7 +744,7 @@ class InstallerQueue(QObject):
         self._log(msg)
         self._process_queue()
 
-    def _on_stdout_ready(self):
+    def _on_stdout_ready(self) -> None:
         if self._current_process is not None:
             try:
                 text = (
@@ -758,7 +758,7 @@ class InstallerQueue(QObject):
             if text:
                 self._log(text)
 
-    def _on_stderr_ready(self):
+    def _on_stderr_ready(self) -> None:
         if self._current_process is not None:
             text = self._current_process.readAllStandardError().data().decode()
             if text:
