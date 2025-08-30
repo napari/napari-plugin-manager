@@ -197,7 +197,7 @@ class UvInstallerTool(AbstractInstallerTool):
         else:
             return process.returncode == 0
 
-    def arguments(self) -> tuple[str, ...]:
+    def arguments(self) -> list[str]:
         """Compose arguments for the uv pip command."""
         args = ['pip']
 
@@ -229,7 +229,7 @@ class UvInstallerTool(AbstractInstallerTool):
             args.extend(['--prefix', str(self.prefix)])
         args.extend(['--python', self._python_executable()])
 
-        return (*args, *self.pkgs)
+        return [*args, *self.pkgs]
 
     def environment(
         self, env: QProcessEnvironment = None

@@ -65,7 +65,7 @@ class NapariPipInstallerTool(PipInstallerTool):
 
 class NapariUvInstallerTool(UvInstallerTool):
     @staticmethod
-    def constraints() -> Sequence[str]:
+    def constraints() -> list[str]:
         """
         Version constraints to limit unwanted changes in installation.
         """
