@@ -123,7 +123,7 @@ class PluginListItem(BasePluginListItem):
     ) -> bool:
         global DISMISS_WARN_PYPI_INSTALL_DLG
         if (
-            tool == InstallerTools.PIP
+            tool == InstallerTools.PYPI
             and action == InstallerActions.INSTALL
             and self._warn_pypi_install()
             and not DISMISS_WARN_PYPI_INSTALL_DLG

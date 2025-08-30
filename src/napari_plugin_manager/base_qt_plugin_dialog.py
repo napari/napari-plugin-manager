@@ -665,7 +665,7 @@ class BasePluginListItem(QFrame):
             InstallerTools.CONDA
             if self.source_choice_dropdown.currentText() == CONDA
             or is_conda_package(self.name, prefix=self.prefix)
-            else InstallerTools.PIP
+            else InstallerTools.PYPI
         )
 
 
@@ -1488,7 +1488,7 @@ class BaseQtPluginDialog(QDialog):
         self._action_conda.setCheckable(True)
         self._action_conda.triggered.connect(self._update_direct_entry_text)
 
-        self._action_pypi = QAction(self._trans('pip'), self)
+        self._action_pypi = QAction(self._trans('PyPI'), self)
         self._action_pypi.setCheckable(True)
         self._action_pypi.triggered.connect(self._update_direct_entry_text)
 
@@ -1547,11 +1547,11 @@ class BaseQtPluginDialog(QDialog):
         tool = (
             str(InstallerTools.CONDA)
             if self._action_conda.isChecked()
-            else str(InstallerTools.PIP)
+            else str(InstallerTools.PYPI)
         )
         self.direct_entry_edit.setPlaceholderText(
             self._trans(
-                "install with '{tool}' by name/url, or drop file...", tool=tool
+                "install from '{tool}' by name/url, or drop file...", tool=tool
             )
         )
 
@@ -1620,7 +1620,7 @@ class BaseQtPluginDialog(QDialog):
             tool = (
                 InstallerTools.CONDA
                 if self._action_conda.isChecked()
-                else InstallerTools.PIP
+                else InstallerTools.PYPI
             )
             self.installer.install(tool, packages)
 
