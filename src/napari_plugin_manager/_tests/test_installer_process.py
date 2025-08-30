@@ -19,6 +19,7 @@ from napari_plugin_manager.qt_package_installer import (
     NapariCondaInstallerTool,
     NapariInstallerQueue,
     NapariPipInstallerTool,
+    NapariUvInstallerTool,
 )
 
 if TYPE_CHECKING:
@@ -60,21 +61,30 @@ class _NonExistingTool(AbstractInstallerTool):
         return QProcessEnvironment.systemEnvironment()
 
 
+@pytest.mark.parametrize(
+    'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
+)
 def test_pip_installer_tasks(
-    qtbot, tmp_virtualenv: 'Session', monkeypatch, caplog
+    qtbot, tool, tmp_virtualenv: 'Session', monkeypatch, caplog
 ):
     caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
-        NapariPipInstallerTool,
-        'executable',
+        tool,
+        'executable'
+        if tool == NapariPipInstallerTool
+        else '_python_executable',
         lambda *a: tmp_virtualenv.creator.exe,
     )
-    monkeypatch.setattr(
-        NapariPipInstallerTool,
-        'origins',
-        ('https://pypi.org/simple',),
-    )
+    if tool == NapariPipInstallerTool:
+        monkeypatch.setattr(
+            NapariPipInstallerTool,
+            'origins',
+            ('https://pypi.org/simple',),
+        )
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         installer.install(
             tool=InstallerTools.PYPI,
@@ -140,13 +150,23 @@ def test_pip_installer_tasks(
         )
 
 
-def test_pip_installer_invalid_action(tmp_virtualenv: 'Session', monkeypatch):
-    installer = NapariInstallerQueue()
+@pytest.mark.parametrize(
+    'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
+)
+def test_pip_installer_invalid_action(
+    tool, tmp_virtualenv: 'Session', monkeypatch
+):
     monkeypatch.setattr(
-        NapariPipInstallerTool,
-        'executable',
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
+    monkeypatch.setattr(
+        tool,
+        'executable'
+        if tool == NapariPipInstallerTool
+        else '_python_executable',
         lambda *a: tmp_virtualenv.creator.exe,
     )
+    installer = NapariInstallerQueue()
     invalid_action = 'Invalid Action'
     item = installer._build_queue_item(
         tool=InstallerTools.PYPI,
@@ -162,11 +182,21 @@ def test_pip_installer_invalid_action(tmp_virtualenv: 'Session', monkeypatch):
         installer._queue_item(item)
 
 
-def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
+@pytest.mark.parametrize(
+    'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
+)
+def test_installer_failures(
+    tool, qtbot, tmp_virtualenv: 'Session', monkeypatch
+):
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
-        NapariPipInstallerTool,
-        'executable',
+        tool,
+        'executable'
+        if tool == NapariPipInstallerTool
+        else '_python_executable',
         lambda *a: tmp_virtualenv.creator.exe,
     )
 
@@ -206,7 +236,13 @@ def test_installer_failures(qtbot, tmp_virtualenv: 'Session', monkeypatch):
         )
 
 
-def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
+@pytest.mark.parametrize(
+    'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
+)
+def test_cancel_incorrect_job_id(tool, qtbot, monkeypatch):
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         job_id = installer.install(
@@ -306,11 +342,19 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
     assert not installer.hasJobs()
 
 
-def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
+@pytest.mark.parametrize(
+    'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
+)
+def test_installer_error(qtbot, tool, monkeypatch):
+    monkeypatch.setattr(
+        NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
+    )
     installer = NapariInstallerQueue()
     monkeypatch.setattr(
-        NapariPipInstallerTool,
-        'executable',
+        tool,
+        'executable'
+        if tool == NapariPipInstallerTool
+        else '_python_executable',
         lambda *a: 'not-a-real-executable',
     )
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
@@ -358,11 +402,13 @@ def test_constraints_are_in_sync():
 def test_executables():
     assert NapariCondaInstallerTool.executable()
     assert NapariPipInstallerTool.executable()
+    assert NapariUvInstallerTool.executable()
 
 
 def test_available():
     assert str(NapariCondaInstallerTool.available())
     assert NapariPipInstallerTool.available()
+    assert NapariUvInstallerTool.available()
 
 
 def test_unrecognized_tool():
