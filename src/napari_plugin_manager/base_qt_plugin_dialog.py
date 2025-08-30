@@ -39,6 +39,7 @@ from qtpy.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSplitter,
+    QStackedWidget,
     QTextEdit,
     QToolButton,
     QVBoxLayout,
@@ -659,7 +660,7 @@ class BasePluginListItem(QFrame):
             InstallerTools.CONDA
             if self.source_choice_dropdown.currentText() == CONDA
             or is_conda_package(self.name, prefix=self.prefix)
-            else InstallerTools.PIP
+            else InstallerTools.PYPI
         )
 
 
@@ -1429,10 +1430,18 @@ class BaseQtPluginDialog(QDialog):
         mid_layout.addWidget(self.avail_label)
         mid_layout.addStretch()
         lay.addLayout(mid_layout)
+        self.available_widget = QStackedWidget()
         self.available_list = self.PLUGIN_LIST_CLASS(
             uninstalled, self.installer, self.BASE_PACKAGE_NAME
         )
-        lay.addWidget(self.available_list)
+        self.available_message = QLabel(
+            self._trans('Use the search box above to find plugins.')
+        )
+        self.available_message.setObjectName('available_message')
+        self.available_message.setAlignment(Qt.AlignCenter)
+        self.available_widget.addWidget(self.available_list)
+        self.available_widget.addWidget(self.available_message)
+        lay.addWidget(self.available_widget)
 
         self.stdout_text = QTextEdit(self.v_splitter)
         self.stdout_text.setReadOnly(True)
@@ -1468,7 +1477,7 @@ class BaseQtPluginDialog(QDialog):
         self._action_conda.setCheckable(True)
         self._action_conda.triggered.connect(self._update_direct_entry_text)
 
-        self._action_pypi = QAction(self._trans('pip'), self)
+        self._action_pypi = QAction(self._trans('PyPI'), self)
         self._action_pypi.setCheckable(True)
         self._action_pypi.triggered.connect(self._update_direct_entry_text)
 
@@ -1500,17 +1509,15 @@ class BaseQtPluginDialog(QDialog):
         self.close_btn.clicked.connect(self.accept)
         self.close_btn.setObjectName('close_button')
 
-        buttonBox.addWidget(self.show_status_btn)
-        buttonBox.addWidget(self.working_indicator)
         buttonBox.addWidget(self.direct_entry_edit)
         buttonBox.addWidget(self.direct_entry_btn)
         if not visibility_direct_entry:
             buttonBox.addStretch()
         buttonBox.addWidget(self.process_success_indicator)
         buttonBox.addWidget(self.process_error_indicator)
-        buttonBox.addSpacing(20)
+        buttonBox.addWidget(self.show_status_btn)
         buttonBox.addWidget(self.cancel_all_btn)
-        buttonBox.addSpacing(20)
+        buttonBox.addWidget(self.working_indicator)
         buttonBox.addWidget(self.close_btn)
         buttonBox.setContentsMargins(0, 0, 4, 0)
         vlay_1.addLayout(buttonBox)
@@ -1519,7 +1526,7 @@ class BaseQtPluginDialog(QDialog):
         self.show_status_btn.setChecked(False)
         self.show_status_btn.toggled.connect(self.toggle_status)
 
-        self.v_splitter.setStretchFactor(1, 2)
+        self.v_splitter.setStretchFactor(0, 2)
         self.h_splitter.setStretchFactor(0, 2)
 
         self.packages_search.setFocus()
@@ -1529,11 +1536,11 @@ class BaseQtPluginDialog(QDialog):
         tool = (
             str(InstallerTools.CONDA)
             if self._action_conda.isChecked()
-            else str(InstallerTools.PIP)
+            else str(InstallerTools.PYPI)
         )
         self.direct_entry_edit.setPlaceholderText(
             self._trans(
-                "install with '{tool}' by name/url, or drop file...", tool=tool
+                "install from '{tool}' by name/url, or drop file...", tool=tool
             )
         )
 
@@ -1602,7 +1609,7 @@ class BaseQtPluginDialog(QDialog):
             tool = (
                 InstallerTools.CONDA
                 if self._action_conda.isChecked()
-                else InstallerTools.PIP
+                else InstallerTools.PYPI
             )
             self.installer.install(tool, packages)
 
@@ -1773,11 +1780,12 @@ class BaseQtPluginDialog(QDialog):
 
         if len(text.strip()) == 0:
             self.installed_list.filter('')
-            self.available_list.hideAll()
+            self.available_widget.setCurrentWidget(self.available_message)
             self._plugin_queue = None
             self._add_items_timer.stop()
             self._plugins_found = 0
         else:
+            self.available_widget.setCurrentWidget(self.available_list)
             items = [
                 self._plugin_data[idx]
                 for idx in self._search_in_available(text)

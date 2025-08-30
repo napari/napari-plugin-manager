@@ -513,7 +513,7 @@ def test_install_pypi_constructor(
     monkeypatch.setattr(
         qt_plugin_dialog.PluginListItem,
         'get_installer_tool',
-        lambda self: InstallerTools.PIP,
+        lambda self: InstallerTools.PYPI,
     )
     monkeypatch.setattr(
         qt_plugin_dialog.PluginListItem,

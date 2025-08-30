@@ -61,7 +61,7 @@ class InstallerTools(StringEnum):
     "Installer tools selectable by InstallerQueue jobs"
 
     CONDA = auto()
-    PIP = auto()
+    PYPI = auto()
     RATTLER = auto()
 
 
@@ -350,7 +350,7 @@ class InstallerQueue(QObject):
     started = Signal()
 
     # classes to manage pip and conda installations
-    PIP_INSTALLER_TOOL_CLASS = PipInstallerTool
+    PYPI_INSTALLER_TOOL_CLASS = PipInstallerTool
     CONDA_INSTALLER_TOOL_CLASS = CondaInstallerTool
     RATTLER_INSTALLER_TOOL_CLASS = RattlerInstallerTool
     # This should be set to the name of package that handles plugins
@@ -605,8 +605,8 @@ class InstallerQueue(QObject):
             self._output_widget.append(msg)
 
     def _get_tool(self, tool: InstallerTools):
-        if tool == InstallerTools.PIP:
-            return self.PIP_INSTALLER_TOOL_CLASS
+        if tool == InstallerTools.PYPI:
+            return self.PYPI_INSTALLER_TOOL_CLASS
         if tool == InstallerTools.CONDA:
             return self.CONDA_INSTALLER_TOOL_CLASS
         if tool == InstallerTools.RATTLER:
