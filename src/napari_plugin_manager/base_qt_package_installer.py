@@ -207,15 +207,11 @@ class UvInstallerTool(AbstractInstallerTool):
                 args += ['--extra-index-url', origin]
 
         elif self.action == InstallerActions.UPGRADE:
-            args += [
-                'install',
-                '--upgrade',
-                '-c',
-                self._constraints_file(),
-            ]
+            args += ['install', '-c', self._constraints_file()]
             for origin in self.origins:
                 args += ['--extra-index-url', origin]
-
+            for pkg in self.pkgs:
+                args.append(f'--upgrade-package={pkg}')
         elif self.action == InstallerActions.UNINSTALL:
             args += ['uninstall']
 
