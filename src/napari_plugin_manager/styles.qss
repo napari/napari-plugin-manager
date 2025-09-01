@@ -11,6 +11,16 @@ from napari._qt.qt_resources import get_current_stylesheet
 ```
 
 */
+
+QLineEdit {
+  border: 1px solid white;
+  font-size: 16px;
+}
+
+QLineEdit:focus {
+  border: 1px solid {{ current }};
+}
+
 QCollapsible#install_info_button {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
@@ -30,6 +40,9 @@ QElidingLabel#summary_text {
   color: {{ darken(text, 35) }};
 }
 
+QLabel#available_message {
+  background-color: {{ console }};
+}
 
 QLabel#install_choice {
   background-color: {{ current }};
@@ -82,19 +95,19 @@ PluginListItem QCheckBox::indicator:disabled {
   image: url("theme_{{ id }}:/check_50.svg");
 }
 
-QPushButton#install_button {
+QPushButton#install_button, QPushButton#refresh_button {
   background-color: {{ current }}
 }
 
-QPushButton#install_button:hover {
+QPushButton#install_button:hover, QPushButton#refresh_button:hover {
   background-color: {{ lighten(current, 10) }}
 }
 
-QPushButton#install_button:pressed {
+QPushButton#install_button:pressed, QPushButton#refresh_button:pressed {
   background-color: {{ darken(current, 10) }}
 }
 
-QPushButton#install_button:disabled {
+QPushButton#install_button:disabled, QPushButton#refresh_button:disabled {
   background-color: {{ lighten(current, 20) }}
 }
 
@@ -127,10 +140,6 @@ QPushButton#busy_button:pressed {
 }
 
 QPushButton#close_button:disabled {
-  background-color: {{ lighten(secondary, 10) }}
-}
-
-QPushButton#refresh_button:disabled {
   background-color: {{ lighten(secondary, 10) }}
 }
 
@@ -215,6 +224,13 @@ QtPluginDialog QSplitter{
   padding-right: 2;
 }
 
+QtPluginDialog QSplitter::handle {
+  width: 4px;
+  height: 4px;
+  border: none;
+  background-color: {{ background }};
+  image: url("theme_{{ id }}:/horizontal_separator.svg");
+}
 
 QtPluginSorter {
   padding: 20px;
@@ -355,7 +371,7 @@ QToolButton {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
   padding: 3 12px;
-  font: 14px;
+  font-size: 16px;
 }
 
 QToolButton:hover {

@@ -10,7 +10,6 @@ by a `deque` of `*InstallerTool` dataclasses (`NapariPipInstallerTool` and
 import atexit
 import os
 import sys
-from collections.abc import Sequence
 from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -27,7 +26,7 @@ from napari_plugin_manager.base_qt_package_installer import (
 )
 
 
-def _get_python_exe():
+def _get_python_exe() -> str:
     # Note: is_bundled_app() returns False even if using a Briefcase bundle...
     # Workaround: see if sys.executable is set to something something napari on Mac
     if (
@@ -42,11 +41,11 @@ def _get_python_exe():
 
 class NapariPipInstallerTool(PipInstallerTool):
     @classmethod
-    def executable(cls):
+    def executable(cls) -> str:
         return str(_get_python_exe())
 
     @staticmethod
-    def constraints() -> Sequence[str]:
+    def constraints() -> list[str]:
         """
         Version constraints to limit unwanted changes in installation.
         """
@@ -65,7 +64,7 @@ class NapariPipInstallerTool(PipInstallerTool):
 
 class NapariCondaInstallerTool(CondaInstallerTool):
     @staticmethod
-    def constraints() -> Sequence[str]:
+    def constraints() -> list[str]:
         # FIXME
         # dev or rc versions might not be available in public channels
         # but only installed locally - if we try to pin those, mamba
@@ -81,6 +80,6 @@ class NapariCondaInstallerTool(CondaInstallerTool):
 
 
 class NapariInstallerQueue(InstallerQueue):
-    PIP_INSTALLER_TOOL_CLASS = NapariPipInstallerTool
+    PYPI_INSTALLER_TOOL_CLASS = NapariPipInstallerTool
     CONDA_INSTALLER_TOOL_CLASS = NapariCondaInstallerTool
     BASE_PACKAGE_NAME = 'napari'
