@@ -845,7 +845,6 @@ class BaseQPluginList(QListWidget):
         widget = item.widget
         tool = installer_choice or widget.get_installer_tool()
         self._remove_list.append((pkg_name, item))
-        self._warn_dialog = None
         if not item.text().startswith(self._SORT_ORDER_PREFIX):
             item.setText(f'{self._SORT_ORDER_PREFIX}{item.text()}')
 
@@ -862,8 +861,6 @@ class BaseQPluginList(QListWidget):
                 # origins="TODO",
             )
             widget.setProperty('current_job_id', job_id)
-            if self._warn_dialog:
-                self._warn_dialog.exec_()
             self.scrollToTop()
 
         if action_name == InstallerActions.UPGRADE:
@@ -880,8 +877,6 @@ class BaseQPluginList(QListWidget):
                 # origins="TODO",
             )
             widget.setProperty('current_job_id', job_id)
-            if self._warn_dialog:
-                self._warn_dialog.exec_()
             self.scrollToTop()
 
         elif action_name == InstallerActions.UNINSTALL:
@@ -894,8 +889,6 @@ class BaseQPluginList(QListWidget):
                 # upgrade=False,
             )
             widget.setProperty('current_job_id', job_id)
-            if self._warn_dialog:
-                self._warn_dialog.exec_()
             self.scrollToTop()
         elif action_name == InstallerActions.CANCEL:
             widget.set_busy(self._trans('cancelling...'), action_name)
@@ -1048,6 +1041,7 @@ class BaseQtPluginDialog(QDialog):
         self._plugins_found = 0
         self.already_installed = set()
         self.available_set = set()
+        self.modified_set = set()
         self._prefix = prefix
         self._first_open = True
         self._plugin_queue = []  # Store plugin data to be added
@@ -1160,6 +1154,7 @@ class BaseQtPluginDialog(QDialog):
 
                     self.available_list.removeItem(pkg_name)
                     self._add_installed(pkg_name)
+                    self.modified_set.add(pkg_name)
                     self._tag_outdated_plugins()
             else:
                 for pkg_name in pkg_names:
@@ -1172,6 +1167,7 @@ class BaseQtPluginDialog(QDialog):
 
                     self.installed_list.removeItem(pkg_name)
                     self._add_to_available(pkg_name)
+                    self.modified_set.add(pkg_name)
             else:
                 for pkg_name in pkg_names:
                     self.installed_list.refreshItem(pkg_name)
@@ -1185,6 +1181,7 @@ class BaseQtPluginDialog(QDialog):
                     self.installed_list.refreshItem(
                         pkg_name, version=pkg_version
                     )
+                    self.modified_set.add(pkg_name)
                 else:
                     self.installed_list.refreshItem(pkg)
                 self._tag_outdated_plugins()
@@ -1764,17 +1761,17 @@ class BaseQtPluginDialog(QDialog):
 
         plugin_dialog.setModal(True)
         plugin_dialog.show()
-        plugin_dialog._installed_on_show = set(plugin_dialog.already_installed)
 
         if self._first_open:
             self._update_theme(None)
             self._first_open = False
 
     def hideEvent(self, event: QHideEvent) -> None:
-        if (
-            hasattr(self, '_installed_on_show')
-            and self._installed_on_show != self.already_installed
-        ):
+        if len(self.modified_set):
+            # At least one plugin was installed, uninstalled or updated so
+            # clear modified packages (to show warning only once) and
+            # show restart warning
+            self.modified_set = set()
             RestartWarningDialog(self).exec_()
         self.packages_search.clear()
         self.toggle_status(False)
