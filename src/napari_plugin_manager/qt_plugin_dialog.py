@@ -1,4 +1,6 @@
 import sys
+import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 import napari.plugins
@@ -36,6 +38,31 @@ from napari_plugin_manager.npe2api import (
 )
 from napari_plugin_manager.qt_package_installer import NapariInstallerQueue
 from napari_plugin_manager.utils import is_conda_package
+
+try:
+    from napari.utils.task_status import (
+        Status,
+        register_task_status,
+        update_task_status,
+    )
+except ImportError:
+    from napari_plugin_manager.base_qt_plugin_dialog import Status
+
+    def register_task_status(
+        provider: str,
+        task_status: Status,
+        description: str,
+        cancel_callback: Callable | None = None,
+    ) -> uuid.UUID:
+        pass
+
+    def update_task_status(
+        task_status_id: uuid.UUID,
+        status: Status,
+        description: str = '',
+    ) -> bool:
+        pass
+
 
 # Scaling factor for each list widget item when expanding.
 STYLES_PATH = Path(__file__).parent / 'styles.qss'
@@ -266,6 +293,43 @@ class QtPluginDialog(BaseQtPluginDialog):
 
     def _trans(self, text: str, **kwargs) -> str:
         return trans._(text, **kwargs)
+
+    def register_task_status(
+        self,
+        task_status: Status,
+        description: str,
+        cancel_callback: Callable | None = None,
+    ) -> uuid.UUID:
+        return register_task_status(
+            'napari-plugin-manager',
+            task_status,
+            description,
+            cancel_callback=cancel_callback,
+        )
+
+    def update_task_status(
+        self,
+        task_status_id: uuid.UUID,
+        status: Status,
+        description: str = '',
+    ) -> bool:
+        return update_task_status(
+            task_status_id, status, description=description
+        )
+
+    def query_status(self) -> tuple[Status, str]:
+        if self.installer.hasJobs():
+            task_status = Status.BUSY
+            description = trans._n(
+                'The plugin manager is currently busy with {n} task.',
+                'The plugin manager is currently busy with {n} tasks.',
+                n=self.installer.currentJobs(),
+            )
+        else:
+            task_status = Status.COMPLETED
+            description = ''
+
+        return task_status, description
 
 
 if __name__ == '__main__':
