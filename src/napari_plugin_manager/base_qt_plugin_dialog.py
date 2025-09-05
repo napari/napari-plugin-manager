@@ -1759,7 +1759,6 @@ class BaseQtPluginDialog(QDialog):
         if plugin_dialog != self:
             self.close()
 
-        plugin_dialog.setModal(True)
         plugin_dialog.show()
 
         if self._first_open:
