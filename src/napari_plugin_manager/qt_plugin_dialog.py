@@ -40,28 +40,9 @@ from napari_plugin_manager.qt_package_installer import NapariInstallerQueue
 from napari_plugin_manager.utils import is_conda_package
 
 try:
-    from napari.utils.task_status import (
-        Status,
-        register_task_status,
-        update_task_status,
-    )
+    from napari.utils.task_status import Status
 except ImportError:
     from napari_plugin_manager.base_qt_plugin_dialog import Status
-
-    def register_task_status(
-        provider: str,
-        task_status: Status,
-        description: str,
-        cancel_callback: Callable | None = None,
-    ) -> uuid.UUID:
-        pass
-
-    def update_task_status(
-        task_status_id: uuid.UUID,
-        status: Status,
-        description: str = '',
-    ) -> bool:
-        pass
 
 
 # Scaling factor for each list widget item when expanding.
@@ -300,12 +281,15 @@ class QtPluginDialog(BaseQtPluginDialog):
         description: str,
         cancel_callback: Callable | None = None,
     ) -> uuid.UUID:
-        return register_task_status(
-            'napari-plugin-manager',
-            task_status,
-            description,
-            cancel_callback=cancel_callback,
-        )
+        window = getattr(self._parent, '_window', None)
+        if window and hasattr(window, '_register_task_status'):
+            return window._register_task_status(
+                'napari-plugin-manager',
+                task_status,
+                description,
+                cancel_callback=cancel_callback,
+            )
+        return None
 
     def update_task_status(
         self,
@@ -313,9 +297,12 @@ class QtPluginDialog(BaseQtPluginDialog):
         status: Status,
         description: str = '',
     ) -> bool:
-        return update_task_status(
-            task_status_id, status, description=description
-        )
+        window = getattr(self._parent, '_window', None)
+        if window and hasattr(window, '_update_task_status'):
+            return window._update_task_status(
+                task_status_id, status, description=description
+            )
+        return False
 
     def query_status(self) -> tuple[Status, str]:
         if self.installer.hasJobs():
