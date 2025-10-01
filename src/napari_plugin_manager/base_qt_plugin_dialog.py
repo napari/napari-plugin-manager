@@ -435,7 +435,7 @@ class BasePluginListItem(QFrame):
 
         # Action Button
         self.action_button = QPushButton(self)
-        self.action_button.setFixedWidth(70)
+        self.action_button.setFixedWidth(80)
         sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.action_button.setSizePolicy(sizePolicy1)
         self.action_button.clicked.connect(self._action_requested)
@@ -444,7 +444,7 @@ class BasePluginListItem(QFrame):
         self.cancel_btn = QPushButton('Cancel', self)
         self.cancel_btn.setObjectName('remove_button')
         self.cancel_btn.setSizePolicy(sizePolicy)
-        self.cancel_btn.setFixedWidth(70)
+        self.cancel_btn.setFixedWidth(80)
         self.cancel_btn.clicked.connect(self._cancel_requested)
 
         # Collapsible button
@@ -1504,7 +1504,6 @@ class BaseQtPluginDialog(QDialog):
             self.direct_entry_btn.setMenu(self._menu)
 
         self.show_status_btn = QPushButton(self._trans('Show Status'), self)
-        self.show_status_btn.setFixedWidth(100)
 
         self.cancel_all_btn = QPushButton(
             self._trans('cancel all actions'), self
