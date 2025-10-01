@@ -14,7 +14,7 @@ from napari._qt.qt_resources import get_current_stylesheet
 
 QLineEdit {
   border: 1px solid white;
-  font-size: 16px;
+  font-size: {{ increase(font_size, 2) }};
 }
 
 QLineEdit:focus {
@@ -24,12 +24,13 @@ QLineEdit:focus {
 QCollapsible#install_info_button {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
+  font-size: {{ font_size }};
 }
-QWidget#info_widget {
+QWidget#info_widget, QWidget#info_widget > QLabel {
   background-color: {{ darken(foreground, 20) }};
   margin: 0px;
   padding: 0px;
-  font: 11px;
+  font-size: {{ font_size }};
 }
 
 QLabel#author_text {
@@ -69,7 +70,7 @@ QWidget#install_choice_widget {
   color: {{ darken(text, 35) }};
   margin: 0px;
   padding: 0px;
-  font: 11px;
+  font-size: {{ font_size }};
 }
 
 QPluginList {
@@ -371,7 +372,7 @@ QToolButton {
   background-color: {{ darken(foreground, 20) }};
   color: {{ darken(text, 15) }};
   padding: 3 12px;
-  font-size: 16px;
+  font-size: {{ increase(font_size, 2) }};
 }
 
 QToolButton:hover {

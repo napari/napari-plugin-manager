@@ -4,7 +4,10 @@ from pathlib import Path
 import napari.plugins
 import napari.resources
 import npe2
-from napari._qt.qt_resources import QColoredSVGIcon, get_current_stylesheet
+from napari._qt.qt_resources import (
+    QColoredSVGIcon,
+    get_stylesheet,
+)
 from napari._qt.qthreading import create_worker
 from napari._qt.widgets.qt_tooltip import QtToolTipLabel
 from napari.plugins.utils import normalized_name
@@ -173,10 +176,17 @@ class QtPluginDialog(BaseQtPluginDialog):
     BASE_PACKAGE_NAME = 'napari'
 
     def _setup_theme_update(self) -> None:
-        get_settings().appearance.events.theme.connect(self._update_theme)
+        settings = get_settings()
+        settings.appearance.events.theme.connect(self._update_theme)
+        settings.appearance.events.font_size.connect(self._update_theme)
 
     def _update_theme(self, event) -> None:
-        stylesheet = get_current_stylesheet([STYLES_PATH])
+        settings = get_settings()
+        theme = settings.appearance.theme
+        font_variable = {'font_size': f'{settings.appearance.font_size}pt'}
+        stylesheet = get_stylesheet(
+            theme, extra=[STYLES_PATH], extra_variables=font_variable
+        )
         self.setStyleSheet(stylesheet)
 
     def _add_installed(self, pkg_name: str | None = None) -> None:
