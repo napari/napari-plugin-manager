@@ -184,8 +184,12 @@ class UvInstallerTool(AbstractInstallerTool):
     def executable(cls) -> str:
         "Path to the executable that will run the task"
         if sys.platform == 'win32':
-            return os.path.join(sys.prefix, 'Scripts', 'uv.exe')
-        return os.path.join(sys.prefix, 'bin', 'uv')
+            path = os.path.join(sys.prefix, 'Scripts', 'uv.exe')
+        else:
+            path = os.path.join(sys.prefix, 'bin', 'uv')
+        if os.path.isfile(path):
+            return path
+        return 'uv'
 
     @classmethod
     def available(cls) -> bool:
