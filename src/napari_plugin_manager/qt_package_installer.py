@@ -103,6 +103,10 @@ class NapariCondaInstallerTool(CondaInstallerTool):
 
 
 class NapariInstallerQueue(InstallerQueue):
-    PYPI_INSTALLER_TOOL_CLASS = NapariUvInstallerTool
+    PYPI_INSTALLER_TOOL_CLASS = (
+        NapariUvInstallerTool
+        if NapariUvInstallerTool.available()
+        else NapariPipInstallerTool
+    )
     CONDA_INSTALLER_TOOL_CLASS = NapariCondaInstallerTool
     BASE_PACKAGE_NAME = 'napari'

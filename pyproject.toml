@@ -55,7 +55,6 @@ dependencies = [
   "superqt",
   "pip",
   "packaging",
-  "uv",
 ]
 dynamic = [
   "version"
@@ -65,6 +64,9 @@ dynamic = [
 dev = [
   "PyQt6",
   "pre-commit",
+]
+uv = [
+  "uv",
 ]
 
 testing = [
