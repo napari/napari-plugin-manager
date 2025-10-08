@@ -19,6 +19,7 @@ from napari_plugin_manager.qt_package_installer import (
     NapariCondaInstallerTool,
     NapariInstallerQueue,
     NapariPipInstallerTool,
+    NapariRattlerInstallerTool,
 )
 
 if TYPE_CHECKING:
@@ -217,10 +218,17 @@ def test_cancel_incorrect_job_id(qtbot, tmp_virtualenv: 'Session'):
             installer.cancel(job_id + 1)
 
 
-@pytest.mark.skipif(
-    not NapariCondaInstallerTool.available(), reason='Conda is not available.'
+@pytest.mark.parametrize(
+    'tool', [InstallerTools.CONDA, InstallerTools.RATTLER]
 )
-def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
+def test_conda_installer(
+    tool, qtbot, caplog, monkeypatch, tmp_conda_env: Path
+):
+    if (
+        tool == InstallerTools.CONDA
+        and not NapariCondaInstallerTool.available()
+    ):
+        pytest.skip('Conda not available')
     if sys.platform == 'darwin':
         # check  handled for `PYTHONEXECUTABLE` env definition on macOS
         monkeypatch.setenv('PYTHONEXECUTABLE', sys.executable)
@@ -232,7 +240,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['typing-extensions'],
             prefix=tmp_conda_env,
         )
@@ -242,7 +250,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.uninstall(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['typing-extensions'],
             prefix=tmp_conda_env,
         )
@@ -253,12 +261,12 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
     # Check canceling all works
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['typing-extensions'],
             prefix=tmp_conda_env,
         )
         installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
@@ -272,12 +280,12 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
     # Check canceling current job works (1st in queue)
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         job_id_1 = installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['typing-extensions'],
             prefix=tmp_conda_env,
         )
         job_id_2 = installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
@@ -290,12 +298,12 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
     # Check canceling queued job works (somewhere besides 1st position in queue)
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         job_id_1 = installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['typing-extensions'],
             prefix=tmp_conda_env,
         )
         job_id_2 = installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
@@ -320,20 +328,26 @@ def test_installer_error(qtbot, tmp_virtualenv: 'Session', monkeypatch):
         )
 
 
-@pytest.mark.skipif(
-    not NapariCondaInstallerTool.available(), reason='Conda is not available.'
+@pytest.mark.parametrize(
+    'tool', [InstallerTools.CONDA, InstallerTools.RATTLER]
 )
-def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
+def test_conda_installer_wait_for_finished(tool, qtbot, tmp_conda_env: Path):
+    if (
+        tool == InstallerTools.CONDA
+        and not NapariCondaInstallerTool.available()
+    ):
+        pytest.skip('Conda not available')
+
     installer = NapariInstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['requests'],
             prefix=tmp_conda_env,
         )
         installer.install(
-            tool=InstallerTools.CONDA,
+            tool=tool,
             pkgs=['packaging'],
             prefix=tmp_conda_env,
         )
@@ -358,10 +372,12 @@ def test_constraints_are_in_sync():
 def test_executables():
     assert NapariCondaInstallerTool.executable()
     assert NapariPipInstallerTool.executable()
+    assert NapariRattlerInstallerTool.executable()
 
 
 def test_available():
     assert str(NapariCondaInstallerTool.available())
+    assert NapariPipInstallerTool.available()
     assert NapariPipInstallerTool.available()
 
 
