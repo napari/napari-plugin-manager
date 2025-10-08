@@ -20,7 +20,7 @@ from enum import auto
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
-from subprocess import call
+from subprocess import run
 from tempfile import gettempdir
 from typing import TypedDict
 
@@ -122,7 +122,10 @@ class PipInstallerTool(AbstractInstallerTool):
     @classmethod
     def available(cls) -> bool:
         """Check if pip is available."""
-        return call([cls.executable(), '-m', 'pip', '--version']) == 0
+        process = run(
+            [cls.executable(), '-m', 'pip', '--version'], capture_output=True
+        )
+        return process.returncode == 0
 
     def arguments(self) -> list[str]:
         """Compose arguments for the pip command."""
@@ -149,7 +152,7 @@ class PipInstallerTool(AbstractInstallerTool):
         else:
             raise ValueError(f"Action '{self.action}' not supported!")
 
-        if log.getEffectiveLevel() < 30:  # DEBUG and INFOlevel
+        if log.getEffectiveLevel() < 30:  # DEBUG and INFO level
             args.append('-vvv')
 
         if self.prefix is not None:
@@ -168,6 +171,79 @@ class PipInstallerTool(AbstractInstallerTool):
     @classmethod
     @lru_cache(maxsize=0)
     def _constraints_file(cls) -> str:
+        raise NotImplementedError
+
+
+class UvInstallerTool(AbstractInstallerTool):
+    """Uv installer tool for the plugin manager.
+
+    This class is used to install and uninstall packages using uv.
+    """
+
+    @classmethod
+    def executable(cls) -> str:
+        "Path to the executable that will run the task"
+        if sys.platform == 'win32':
+            path = os.path.join(sys.prefix, 'Scripts', 'uv.exe')
+        else:
+            path = os.path.join(sys.prefix, 'bin', 'uv')
+        if os.path.isfile(path):
+            return path
+        return 'uv'
+
+    @classmethod
+    def available(cls) -> bool:
+        """Check if uv is available."""
+        try:
+            process = run([cls.executable(), '--version'], capture_output=True)
+        except FileNotFoundError:  # pragma: no cover
+            return False
+        else:
+            return process.returncode == 0
+
+    def arguments(self) -> list[str]:
+        """Compose arguments for the uv pip command."""
+        args = ['pip']
+
+        if self.action == InstallerActions.INSTALL:
+            args += ['install', '-c', self._constraints_file()]
+            for origin in self.origins:
+                args += ['--extra-index-url', origin]
+
+        elif self.action == InstallerActions.UPGRADE:
+            args += ['install', '-c', self._constraints_file()]
+            for origin in self.origins:
+                args += ['--extra-index-url', origin]
+            for pkg in self.pkgs:
+                args.append(f'--upgrade-package={pkg}')
+        elif self.action == InstallerActions.UNINSTALL:
+            args += ['uninstall']
+
+        else:
+            raise ValueError(f"Action '{self.action}' not supported!")
+
+        if log.getEffectiveLevel() < 30:  # DEBUG and INFO level
+            args.append('-vvv')
+
+        if self.prefix is not None:
+            args.extend(['--prefix', str(self.prefix)])
+        args.extend(['--python', self._python_executable()])
+
+        return [*args, *self.pkgs]
+
+    def environment(
+        self, env: QProcessEnvironment = None
+    ) -> QProcessEnvironment:
+        if env is None:
+            env = QProcessEnvironment.systemEnvironment()
+        return env
+
+    @classmethod
+    @lru_cache(maxsize=0)
+    def _constraints_file(cls) -> str:
+        raise NotImplementedError
+
+    def _python_executable(self) -> str:
         raise NotImplementedError
 
 
@@ -199,11 +275,12 @@ class CondaInstallerTool(AbstractInstallerTool):
     @classmethod
     def available(cls) -> bool:
         """Check if the executable is available by checking if it can output its version."""
-        executable = cls.executable()
         try:
-            return call([executable, '--version']) == 0
+            process = run([cls.executable(), '--version'], capture_output=True)
         except FileNotFoundError:  # pragma: no cover
             return False
+        else:
+            return process.returncode == 0
 
     def arguments(self) -> list[str]:
         """Compose arguments for the conda command."""

@@ -23,6 +23,7 @@ from napari_plugin_manager.base_qt_package_installer import (
     CondaInstallerTool,
     InstallerQueue,
     PipInstallerTool,
+    UvInstallerTool,
 )
 
 
@@ -62,6 +63,28 @@ class NapariPipInstallerTool(PipInstallerTool):
         return f.name
 
 
+class NapariUvInstallerTool(UvInstallerTool):
+    @staticmethod
+    def constraints() -> list[str]:
+        """
+        Version constraints to limit unwanted changes in installation.
+        """
+        return [f'napari=={_napari_version}']
+
+    @classmethod
+    @lru_cache(maxsize=0)
+    def _constraints_file(cls) -> str:
+        with NamedTemporaryFile(
+            'w', suffix='-napari-constraints.txt', delete=False
+        ) as f:
+            f.write('\n'.join(cls.constraints()))
+        atexit.register(os.unlink, f.name)
+        return f.name
+
+    def _python_executable(self) -> str:
+        return str(_get_python_exe())
+
+
 class NapariCondaInstallerTool(CondaInstallerTool):
     @staticmethod
     def constraints() -> list[str]:
@@ -80,6 +103,10 @@ class NapariCondaInstallerTool(CondaInstallerTool):
 
 
 class NapariInstallerQueue(InstallerQueue):
-    PYPI_INSTALLER_TOOL_CLASS = NapariPipInstallerTool
+    PYPI_INSTALLER_TOOL_CLASS = (
+        NapariUvInstallerTool
+        if NapariUvInstallerTool.available()
+        else NapariPipInstallerTool
+    )
     CONDA_INSTALLER_TOOL_CLASS = NapariCondaInstallerTool
     BASE_PACKAGE_NAME = 'napari'

@@ -65,6 +65,9 @@ dev = [
   "PyQt6",
   "pre-commit",
 ]
+uv = [
+  "uv",
+]
 
 testing = [
   "coverage",
