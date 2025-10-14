@@ -349,13 +349,7 @@ def test_installer_error(qtbot, tool, monkeypatch):
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
     )
     installer = NapariInstallerQueue()
-    monkeypatch.setattr(
-        tool,
-        'executable'
-        if tool == NapariPipInstallerTool
-        else '_python_executable',
-        lambda *a: 'not-a-real-executable',
-    )
+    monkeypatch.setattr(tool, 'executable', lambda *a: 'not-a-real-executable')
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
             tool=InstallerTools.PYPI,
