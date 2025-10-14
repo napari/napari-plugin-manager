@@ -61,24 +61,36 @@ class _NonExistingTool(AbstractInstallerTool):
         return QProcessEnvironment.systemEnvironment()
 
 
+@pytest.fixture
+def patch_tool_executable(request):
+    mp = request.getfixturevalue('monkeypatch')
+    venv = request.getfixturevalue('tmp_virtualenv')
+    tool = request.getfixturevalue('tool')
+    mp.setattr(
+        tool,
+        'executable'
+        if tool == NapariPipInstallerTool
+        else '_python_executable',
+        lambda *a: venv.creator.exe,
+    )
+
+
 @pytest.mark.parametrize(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
 def test_pip_installer_tasks(
-    qtbot, tool, tmp_virtualenv: 'Session', monkeypatch, caplog
+    qtbot,
+    tool,
+    tmp_virtualenv: 'Session',
+    monkeypatch,
+    caplog,
+    patch_tool_executable,
 ):
     caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
     )
     installer = NapariInstallerQueue()
-    monkeypatch.setattr(
-        tool,
-        'executable'
-        if tool == NapariPipInstallerTool
-        else '_python_executable',
-        lambda *a: tmp_virtualenv.creator.exe,
-    )
     monkeypatch.setattr(
         tool,
         'origins',
@@ -153,17 +165,10 @@ def test_pip_installer_tasks(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
 def test_pip_installer_invalid_action(
-    tool, tmp_virtualenv: 'Session', monkeypatch
+    tool, tmp_virtualenv: 'Session', monkeypatch, patch_tool_executable
 ):
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
-    )
-    monkeypatch.setattr(
-        tool,
-        'executable'
-        if tool == NapariPipInstallerTool
-        else '_python_executable',
-        lambda *a: tmp_virtualenv.creator.exe,
     )
     installer = NapariInstallerQueue()
     invalid_action = 'Invalid Action'
@@ -185,19 +190,12 @@ def test_pip_installer_invalid_action(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
 def test_installer_failures(
-    tool, qtbot, tmp_virtualenv: 'Session', monkeypatch
+    tool, qtbot, tmp_virtualenv: 'Session', monkeypatch, patch_tool_executable
 ):
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
     )
     installer = NapariInstallerQueue()
-    monkeypatch.setattr(
-        tool,
-        'executable'
-        if tool == NapariPipInstallerTool
-        else '_python_executable',
-        lambda *a: tmp_virtualenv.creator.exe,
-    )
 
     # CHECK 1) Errors should trigger finished and allFinished too
     with qtbot.waitSignal(installer.allFinished, timeout=10_000):
