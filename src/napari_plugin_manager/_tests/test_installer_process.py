@@ -79,12 +79,11 @@ def test_pip_installer_tasks(
         else '_python_executable',
         lambda *a: tmp_virtualenv.creator.exe,
     )
-    if tool == NapariPipInstallerTool:
-        monkeypatch.setattr(
-            NapariPipInstallerTool,
-            'origins',
-            ('https://pypi.org/simple',),
-        )
+    monkeypatch.setattr(
+        tool,
+        'origins',
+        ('https://pypi.org/simple',),
+    )
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):
         installer.install(
             tool=InstallerTools.PYPI,
