@@ -172,6 +172,10 @@ def plugin_dialog(
         _iter_napari_pypi_plugin_info,
     )
 
+    monkeypatch.setattr(
+        base_qt_plugin_dialog, 'RestartWarningDialog', MagicMock()
+    )
+
     # This is patching `napari.utils.misc.running_as_constructor_app` function
     # to mock a normal napari install.
     monkeypatch.setattr(
@@ -335,26 +339,16 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
 
-def test_plugin_install_restart_warning(plugin_dialog, monkeypatch):
+def test_plugin_restart_warning(plugin_dialog, monkeypatch):
     dialog_mock = MagicMock()
     monkeypatch.setattr(
         base_qt_plugin_dialog, 'RestartWarningDialog', dialog_mock
     )
     plugin_dialog.exec_()
-    plugin_dialog.already_installed.add('brand-new-plugin')
+    plugin_dialog.modified_set.add('added-removed-updated-plugin')
     plugin_dialog.hide()
     dialog_mock.assert_called_once()
-
-
-def test_plugin_uninstall_restart_warning(plugin_dialog, monkeypatch):
-    dialog_mock = MagicMock()
-    monkeypatch.setattr(
-        base_qt_plugin_dialog, 'RestartWarningDialog', dialog_mock
-    )
-    plugin_dialog.exec_()
-    plugin_dialog.already_installed.remove('my-plugin')
-    plugin_dialog.hide()
-    dialog_mock.assert_called_once()
+    assert len(plugin_dialog.modified_set) == 0
 
 
 def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
