@@ -65,8 +65,12 @@ dev = [
   "PyQt6",
   "pre-commit",
 ]
+uv = [
+  "uv",
+]
 
 testing = [
+  "napari-plugin-manager[uv]",
   "coverage",
   "flaky",
   "pytest",
