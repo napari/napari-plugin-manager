@@ -70,6 +70,7 @@ uv = [
 ]
 
 testing = [
+  "napari-plugin-manager[uv]",
   "coverage",
   "flaky",
   "pytest",
