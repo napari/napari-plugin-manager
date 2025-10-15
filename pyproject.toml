@@ -1,8 +1,7 @@
 [build-system]
 requires = [
-  "setuptools >= 42",
-  "wheel",
-  "setuptools_scm[toml]>=3.4"
+  "setuptools >= 77",
+  "setuptools_scm[toml]"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -22,14 +21,16 @@ readme = "README.md"
 authors = [
   {name = "napari team", email = "napari-steering-council@googlegroups.com"}
 ]
-license = {file = "LICENSE"}
+license = "BSD-3-Clause"
+license-files = [
+    "LICENSE",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: X11 Applications :: Qt",
     "Framework :: napari",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: C",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
