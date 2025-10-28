@@ -50,7 +50,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "napari",  # FUTURE: Fully decouple from napari
+  # "napari",  # FUTURE: Fully decouple from napari # bug in uv create problem with constraints files https://github.com/astral-sh/uv/issues/16372
   "npe2",
   "qtpy",
   "superqt",
