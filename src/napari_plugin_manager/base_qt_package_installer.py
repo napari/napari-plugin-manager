@@ -9,6 +9,7 @@ that contain the executable path, arguments and environment modifications.
 Available actions for each tool are `install`, `uninstall`
 and `cancel`.
 """
+from __future__ import annotations
 
 import contextlib
 import os
