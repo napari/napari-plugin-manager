@@ -216,16 +216,15 @@ def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
         )
     plugin_dialog.search('e')
     qtbot.wait(500)
-    item = plugin_dialog.available_list.item(0)
-    widget = plugin_dialog.available_list.itemWidget(item)
-    if widget:
-        assert not widget.action_button.isEnabled()
-        assert widget.warning_tooltip.isVisible()
-
-    item = plugin_dialog.available_list.item(1)
-    widget = plugin_dialog.available_list.itemWidget(item)
-    assert widget.action_button.isEnabled()
-    assert not widget.warning_tooltip.isVisible()
+    for i in range(len(plugin_dialog.available_list)):
+        item = plugin_dialog.available_list.item(i)
+        widget = plugin_dialog.available_list.itemWidget(item)
+        if widget and widget.name == 'packaging':
+            assert not widget.action_button.isEnabled()
+            assert widget.warning_tooltip.isVisible()
+        else:
+            assert widget.action_button.isEnabled()
+            assert not widget.warning_tooltip.isVisible()
 
 
 def test_filter_available_plugins(plugin_dialog, qtbot):
