@@ -254,7 +254,7 @@ def test_filter_installed_plugins(plugin_dialog, qtbot):
     """
     plugin_dialog.search('')
     qtbot.wait(500)
-    assert plugin_dialog.installed_list.count_visible() == 2
+    assert plugin_dialog.installed_list.count_visible() == 1
 
     plugin_dialog.search('no-match@123')
     qtbot.wait(500)
@@ -289,7 +289,7 @@ def test_version_dropdown(plugin_dialog, qtbot):
 
 
 def test_plugin_list_count_items(plugin_dialog):
-    assert plugin_dialog.installed_list.count_visible() == 2
+    assert plugin_dialog.installed_list.count_visible() == 1
 
 
 def test_plugin_list_handle_action(plugin_dialog, qtbot):
@@ -354,15 +354,6 @@ def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
     with qtbot.waitSignal(widget.enabled_checkbox.stateChanged, timeout=500):
         widget.enabled_checkbox.setChecked(False)
     assert plugins.plugins['my-plugin'] is False
-
-    # checks npe1 lines
-    item = plugin_dialog.installed_list.item(1)
-    widget = plugin_dialog.installed_list.itemWidget(item)
-
-    assert old_plugins.enabled[0] is True
-    with qtbot.waitSignal(widget.enabled_checkbox.stateChanged, timeout=500):
-        widget.enabled_checkbox.setChecked(False)
-    assert old_plugins.enabled[0] is False
 
 
 def test_add_items_outdated_and_update(plugin_dialog, qtbot):
@@ -548,7 +539,7 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert process_finished_data['action'] == InstallerActions.CANCEL
     assert process_finished_data['pkgs'][0].startswith('requests')
     assert plugin_dialog.available_list.count() == 1
-    assert plugin_dialog.installed_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 1
 
 
 def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
@@ -575,7 +566,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     qtbot.wait(500)
 
     assert plugin_dialog.available_list.count() == 2
-    assert plugin_dialog.installed_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 1
 
 
 def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
