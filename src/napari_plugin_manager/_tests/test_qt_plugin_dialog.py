@@ -17,13 +17,6 @@ from qtpy.QtWidgets import (
     QMessageBox,
 )
 
-if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
-    pytest.skip(
-        'Known PySide2 x Python incompatibility: '
-        '... object cannot be interpreted as an integer',
-        allow_module_level=True,
-    )
-
 from napari_plugin_manager import base_qt_plugin_dialog, qt_plugin_dialog
 from napari_plugin_manager.base_qt_package_installer import (
     InstallerActions,
@@ -465,11 +458,6 @@ def test_drop_event(plugin_dialog, tmp_path):
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
 
 
-@pytest.mark.skipif(
-    'napari_latest' in os.getenv('TOX_ENV_NAME', '')
-    and 'PySide2' in os.getenv('TOX_ENV_NAME', ''),
-    reason='PySide2 flaky with latest released napari',
-)
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if '[constructor]' in request.node.name:
         pytest.skip(
