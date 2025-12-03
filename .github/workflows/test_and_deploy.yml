@@ -106,9 +106,6 @@ jobs:
           NAPARI: ${{ matrix.napari }}
           TOOL: ${{ matrix.tool }}
           FORCE_COLOR: 1
-          # Only supported pyside2 and pyside6 are not supported on py312, py313
-          # no Qt backends supported by conda-forge on py313
-          TOX_SKIP_ENV: ".*py31[23].*PySide2|.*py313.*conda"
 
 
       - name: Upload coverage data
