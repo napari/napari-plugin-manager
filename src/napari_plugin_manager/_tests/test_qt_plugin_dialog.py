@@ -208,7 +208,7 @@ def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
         )
     plugin_dialog.search('e')
     qtbot.wait(500)
-    for i in range(len(plugin_dialog.available_list)):
+    for i in range(plugin_dialog.available_list.count()):
         item = plugin_dialog.available_list.item(i)
         widget = plugin_dialog.available_list.itemWidget(item)
         if widget and widget.name == 'packaging':
