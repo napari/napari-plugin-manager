@@ -10,6 +10,8 @@ Available actions for each tool are `install`, `uninstall`
 and `cancel`.
 """
 
+from __future__ import annotations
+
 import contextlib
 import os
 import sys
@@ -407,7 +409,7 @@ class InstallerQueue(QObject):
         item = self._build_queue_item(
             tool=tool,
             action=InstallerActions.INSTALL,
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             prefix=prefix,
             origins=origins,
             process=self._create_process(),
@@ -448,7 +450,7 @@ class InstallerQueue(QObject):
         item = self._build_queue_item(
             tool=tool,
             action=InstallerActions.UPGRADE,
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             prefix=prefix,
             origins=origins,
             process=self._create_process(),
@@ -485,7 +487,7 @@ class InstallerQueue(QObject):
         item = self._build_queue_item(
             tool=tool,
             action=InstallerActions.UNINSTALL,
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             prefix=prefix,
             process=self._create_process(),
             **kwargs,
@@ -563,7 +565,7 @@ class InstallerQueue(QObject):
                 'exit_code': 1,
                 'exit_status': 0,
                 'action': InstallerActions.CANCEL_ALL,
-                'pkgs': all_pkgs,
+                'pkgs': tuple(all_pkgs),
             }
         )
         self._process_queue()

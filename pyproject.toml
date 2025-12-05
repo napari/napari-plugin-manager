@@ -75,7 +75,7 @@ testing = [
   "coverage",
   "flaky",
   "pytest",
-  "pytest-qt<4.5",  # FUTURE: Unpin once pyside2 is dropped
+  "pytest-qt",
   "virtualenv"
 ]
 
