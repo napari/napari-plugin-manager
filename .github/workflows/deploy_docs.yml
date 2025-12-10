@@ -32,7 +32,11 @@ jobs:
       with:
         python-version: "3.10"
 
-    - uses: tlambert03/setup-qt-libs@19e4ef2d781d81f5f067182e228b54ec90d23b76 # v1.8
+    - name: Setup headless display
+      uses: pyvista/setup-headless-display-action@7d84ae825e6d9297a8e99bdbbae20d1b919a0b19 # v4.2
+      with:
+        qt: true
+        wm: herbstluftwm
 
     - name: Install Dependencies
       run: |
@@ -41,9 +45,7 @@ jobs:
         python -m pip install -e ".[docs]"
 
     - name: Build Docs
-      uses: aganders3/headless-gui@f85dd6316993505dfc5f21839d520ae440c84816 # v2.2
-      with:
-        run: make docs
+      run: make docs
 
     - name: Check file tree contents
       run: tree
