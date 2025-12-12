@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+        platform: [ubuntu-latest, windows-latest, macos-15-intel, macos-latest]
         python-version: ["3.10", "3.11", "3.12"]
         napari: ["latest", "repo"]
         tool: ["pip", "conda"]
@@ -47,7 +47,7 @@ jobs:
           tool: conda
         - platform: windows-latest
           napari: repo
-        - platform: macos-13
+        - platform: macos-15-intel
           napari: repo
         - platform: macos-latest
           napari: repo
