@@ -638,3 +638,26 @@ def test_import_plugins(plugin_dialog, tmp_path, qtbot):
     path.write_text('requests\npackaging\n')
     with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
         plugin_dialog.import_plugins(str(path))
+
+
+def test_query_status(plugin_dialog, monkeypatch):
+    status, description = plugin_dialog.query_status()
+    assert status == qt_plugin_dialog.Status.COMPLETED
+    assert not description
+
+    monkeypatch.setattr(
+        plugin_dialog.installer,
+        '_queue',
+        ['mock'],
+    )
+    status, description = plugin_dialog.query_status()
+    assert status == qt_plugin_dialog.Status.BUSY
+    assert description
+
+    monkeypatch.setattr(
+        plugin_dialog.installer,
+        '_queue',
+        ['mock', 'other-mock'],
+    )
+    assert status == qt_plugin_dialog.Status.BUSY
+    assert description
