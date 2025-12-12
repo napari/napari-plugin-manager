@@ -190,7 +190,9 @@ class QtPluginDialog(BaseQtPluginDialog):
         self.setStyleSheet(stylesheet)
 
     def _add_installed(self, pkg_name: str | None = None) -> None:
-        use_npe2_adaptor = get_settings().plugins.use_npe2_adaptor
+        use_npe2_adaptor = getattr(
+            get_settings().plugins, 'use_npe2_adaptor', True
+        )
         pm2 = npe2.PluginManager.instance()
         pm2.discover(include_npe1=use_npe2_adaptor)
         for manifest in pm2.iter_manifests():
@@ -205,6 +207,7 @@ class QtPluginDialog(BaseQtPluginDialog):
                     distname, enabled, distname, plugin_api_version=npev
                 )
 
+        # for old napari versions that still have the setting
         if not use_npe2_adaptor:
             napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
             for (
@@ -242,9 +245,6 @@ class QtPluginDialog(BaseQtPluginDialog):
                 break
 
     def _fetch_available_plugins(self, clear_cache: bool = False) -> None:
-        settings = get_settings()
-        use_npe2_adaptor = settings.plugins.use_npe2_adaptor
-
         if clear_cache:
             cache_clear()
 
@@ -256,6 +256,9 @@ class QtPluginDialog(BaseQtPluginDialog):
         self.worker.finished.connect(self.search)
         self.worker.start()
 
+        use_npe2_adaptor = getattr(
+            get_settings().plugins, 'use_npe2_adaptor', True
+        )
         pm2 = npe2.PluginManager.instance()
         pm2.discover(include_npe1=use_npe2_adaptor)
 
