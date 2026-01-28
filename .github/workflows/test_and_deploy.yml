@@ -30,8 +30,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-15-intel, macos-latest]
-        python-version: ["3.10", "3.11", "3.12"]
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10", "3.12"]
         napari: ["latest", "repo"]
         tool: ["pip", "conda"]
         include:
@@ -40,6 +40,15 @@ jobs:
             napari: repo
             tool: pip
             python-version: "3.13"
+          # only run macos intel on py3.12
+          - platform: macos-15-intel
+            napari: repo
+            tool: pip
+            python-version: "3.12"
+          - platform: macos-15-intel
+            napari: repo
+            tool: conda
+            python-version: "3.12"
         exclude:
         # skip repo install on conda
         - platform: ubuntu-latest
