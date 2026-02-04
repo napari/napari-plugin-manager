@@ -1471,13 +1471,10 @@ class BaseQtPluginDialog(QDialog):
         self.working_indicator.setMovie(mov)
         mov.start()
 
-        visibility_direct_entry = not self._on_bundle()
         self.direct_entry_edit = QLineEdit(self)
         self.direct_entry_edit.installEventFilter(self)
         self.direct_entry_edit.returnPressed.connect(self._install_packages)
-        self.direct_entry_edit.setVisible(visibility_direct_entry)
         self.direct_entry_btn = QToolButton(self)
-        self.direct_entry_btn.setVisible(visibility_direct_entry)
         self.direct_entry_btn.clicked.connect(self._install_packages)
         self.direct_entry_btn.setText(self._trans('Install'))
 
@@ -1518,8 +1515,6 @@ class BaseQtPluginDialog(QDialog):
 
         buttonBox.addWidget(self.direct_entry_edit)
         buttonBox.addWidget(self.direct_entry_btn)
-        if not visibility_direct_entry:
-            buttonBox.addStretch()
         buttonBox.addWidget(self.process_success_indicator)
         buttonBox.addWidget(self.process_error_indicator)
         buttonBox.addWidget(self.show_status_btn)
