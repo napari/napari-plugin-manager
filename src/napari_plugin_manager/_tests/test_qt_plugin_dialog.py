@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, call, patch
 import napari.plugins
 import npe2
 import pytest
-import qtpy
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
 from qtpy.QtCore import QMimeData, QPointF, Qt, QTimer, QUrl
@@ -16,13 +15,6 @@ from qtpy.QtWidgets import (
     QApplication,
     QMessageBox,
 )
-
-if qtpy.API_NAME == 'PySide2' and sys.version_info[:2] > (3, 10):
-    pytest.skip(
-        'Known PySide2 x Python incompatibility: '
-        '... object cannot be interpreted as an integer',
-        allow_module_level=True,
-    )
 
 from napari_plugin_manager import base_qt_plugin_dialog, qt_plugin_dialog
 from napari_plugin_manager.base_qt_package_installer import (
@@ -105,10 +97,6 @@ def plugin_dialog(
     old_plugins,
 ):
     """Fixture that provides a plugin dialog for a normal napari install."""
-    from napari.settings import get_settings
-
-    original_setting = get_settings().plugins.use_npe2_adaptor
-    get_settings().plugins.use_npe2_adaptor = False
 
     class PluginManagerMock:
         def instance(self):
@@ -127,7 +115,7 @@ def plugin_dialog(
         def is_disabled(self, name):
             return False
 
-        def discover(self, include_npe1=False):
+        def discover(self, include_npe1=True):
             return ['plugin']
 
         def enable(self, plugin):
@@ -207,7 +195,6 @@ def plugin_dialog(
     if widget.worker is not None:
         widget.worker.quit()
     assert not widget._add_items_timer.isActive()
-    get_settings().plugins.use_npe2_adaptor = original_setting
 
 
 def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
@@ -221,16 +208,15 @@ def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
         )
     plugin_dialog.search('e')
     qtbot.wait(500)
-    item = plugin_dialog.available_list.item(0)
-    widget = plugin_dialog.available_list.itemWidget(item)
-    if widget:
-        assert not widget.action_button.isEnabled()
-        assert widget.warning_tooltip.isVisible()
-
-    item = plugin_dialog.available_list.item(1)
-    widget = plugin_dialog.available_list.itemWidget(item)
-    assert widget.action_button.isEnabled()
-    assert not widget.warning_tooltip.isVisible()
+    for i in range(plugin_dialog.available_list.count()):
+        item = plugin_dialog.available_list.item(i)
+        widget = plugin_dialog.available_list.itemWidget(item)
+        if widget and widget.name == 'packaging':
+            assert not widget.action_button.isEnabled()
+            assert widget.warning_tooltip.isVisible()
+        else:
+            assert widget.action_button.isEnabled()
+            assert not widget.warning_tooltip.isVisible()
 
 
 def test_filter_available_plugins(plugin_dialog, qtbot):
@@ -260,7 +246,7 @@ def test_filter_installed_plugins(plugin_dialog, qtbot):
     """
     plugin_dialog.search('')
     qtbot.wait(500)
-    assert plugin_dialog.installed_list.count_visible() == 2
+    assert plugin_dialog.installed_list.count_visible() == 1
 
     plugin_dialog.search('no-match@123')
     qtbot.wait(500)
@@ -295,7 +281,7 @@ def test_version_dropdown(plugin_dialog, qtbot):
 
 
 def test_plugin_list_count_items(plugin_dialog):
-    assert plugin_dialog.installed_list.count_visible() == 2
+    assert plugin_dialog.installed_list.count_visible() == 1
 
 
 def test_plugin_list_handle_action(plugin_dialog, qtbot):
@@ -360,15 +346,6 @@ def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
     with qtbot.waitSignal(widget.enabled_checkbox.stateChanged, timeout=500):
         widget.enabled_checkbox.setChecked(False)
     assert plugins.plugins['my-plugin'] is False
-
-    # checks npe1 lines
-    item = plugin_dialog.installed_list.item(1)
-    widget = plugin_dialog.installed_list.itemWidget(item)
-
-    assert old_plugins.enabled[0] is True
-    with qtbot.waitSignal(widget.enabled_checkbox.stateChanged, timeout=500):
-        widget.enabled_checkbox.setChecked(False)
-    assert old_plugins.enabled[0] is False
 
 
 def test_add_items_outdated_and_update(plugin_dialog, qtbot):
@@ -465,11 +442,6 @@ def test_drop_event(plugin_dialog, tmp_path):
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
 
 
-@pytest.mark.skipif(
-    'napari_latest' in os.getenv('TOX_ENV_NAME', '')
-    and 'PySide2' in os.getenv('TOX_ENV_NAME', ''),
-    reason='PySide2 flaky with latest released napari',
-)
 def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     if '[constructor]' in request.node.name:
         pytest.skip(
@@ -554,7 +526,7 @@ def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert process_finished_data['action'] == InstallerActions.CANCEL
     assert process_finished_data['pkgs'][0].startswith('requests')
     assert plugin_dialog.available_list.count() == 1
-    assert plugin_dialog.installed_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 1
 
 
 def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
@@ -581,7 +553,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     qtbot.wait(500)
 
     assert plugin_dialog.available_list.count() == 2
-    assert plugin_dialog.installed_list.count() == 2
+    assert plugin_dialog.installed_list.count() == 1
 
 
 def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):

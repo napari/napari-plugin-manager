@@ -1,8 +1,7 @@
 [build-system]
 requires = [
-  "setuptools >= 42",
-  "wheel",
-  "setuptools_scm[toml]>=3.4"
+  "setuptools >= 77",
+  "setuptools_scm[toml]"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -22,14 +21,16 @@ readme = "README.md"
 authors = [
   {name = "napari team", email = "napari-steering-council@googlegroups.com"}
 ]
-license = {file = "LICENSE"}
+license = "BSD-3-Clause"
+license-files = [
+    "LICENSE",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: X11 Applications :: Qt",
     "Framework :: napari",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: C",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
@@ -49,7 +50,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-  "napari",  # FUTURE: Fully decouple from napari
+  # "napari",  # FUTURE: Fully decouple from napari # bug in uv create problem with constraints files https://github.com/astral-sh/uv/issues/16372
   "npe2",
   "qtpy",
   "superqt",
@@ -74,7 +75,7 @@ testing = [
   "coverage",
   "flaky",
   "pytest",
-  "pytest-qt<4.5",  # FUTURE: Unpin once pyside2 is dropped
+  "pytest-qt",
   "virtualenv"
 ]
 
@@ -92,7 +93,7 @@ docs = [
 homepage = "https://github.com/napari/napari-plugin-manager"
 
 [tool.black]
-target-version = ['py310', 'py311', 'py312', 'py313']
+target-version = ['py310', 'py312', 'py313']
 skip-string-normalization = true
 line-length = 79
 

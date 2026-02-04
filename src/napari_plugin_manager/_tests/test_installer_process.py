@@ -147,7 +147,8 @@ def test_pip_installer_tasks(
         )
     process_finished_data = blocker.args[0]
     assert process_finished_data['action'] == InstallerActions.INSTALL
-    assert process_finished_data['pkgs'] == ('pydantic',)
+    assert tuple(process_finished_data['pkgs']) == ('pydantic',)
+    # It look like Pydantic6 converts tuples to lists
 
     # Test upgrade
     with qtbot.waitSignal(installer.allFinished, timeout=30_000):
@@ -260,7 +261,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
     caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
     conda_meta = tmp_conda_env / 'conda-meta'
     glob_pat = 'typing-extensions-*.json'
-    glob_pat_2 = 'packaging-*.json'
+    glob_pat_2 = 'cowpy-*.json'
     installer = NapariInstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
@@ -292,7 +293,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         )
         installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['packaging'],
+            pkgs=['cowpy'],
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
@@ -311,7 +312,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         )
         job_id_2 = installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['packaging'],
+            pkgs=['cowpy'],
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
@@ -329,7 +330,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         )
         job_id_2 = installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['packaging'],
+            pkgs=['cowpy'],
             prefix=tmp_conda_env,
         )
         assert installer.currentJobs() == 2
@@ -369,7 +370,7 @@ def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
         )
         installer.install(
             tool=InstallerTools.CONDA,
-            pkgs=['packaging'],
+            pkgs=['cowpy'],
             prefix=tmp_conda_env,
         )
         installer.waitForFinished(30_000)
