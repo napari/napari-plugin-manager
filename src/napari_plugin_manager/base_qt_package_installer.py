@@ -555,7 +555,7 @@ class InstallerQueue(QObject):
                 process.finished.disconnect(self._on_process_finished)
                 process.errorOccurred.disconnect(self._on_error_occurred)
 
-            self._end_process(process)
+            self._end_process(process, wait_for_finished=True)
 
         self._queue.clear()
         self._current_process = None
@@ -666,13 +666,16 @@ class InstallerQueue(QObject):
             process.start()
             self._current_process = process
 
-    def _end_process(self, process: QProcess) -> None:
+    def _end_process(self, process: QProcess, wait_for_finished=False) -> None:
         if os.name == 'nt':
             # TODO: this might be too agressive and won't allow rollbacks!
             # investigate whether we can also do .terminate()
             process.kill()
         else:
             process.terminate()
+
+        if wait_for_finished:
+            process.waitForFinished()
 
         if self._output_widget:
             self._output_widget.append(
@@ -740,6 +743,10 @@ class InstallerQueue(QObject):
             )
 
         if item is not None:
+            if not isinstance(exit_code, int):
+                exit_code = 0
+                if error:
+                    exit_code = 1
             self.processFinished.emit(
                 {
                     'exit_code': exit_code,
