@@ -298,7 +298,7 @@ class CondaInstallerTool(AbstractInstallerTool):
 
         # Always override the solver config to make sure that user config
         # does not break our installation
-        args.append("--solver=libmamba")
+        args.append('--solver=libmamba')
         return [*args, *self.pkgs]
 
     def environment(
