@@ -27,6 +27,7 @@ from qtpy.QtGui import (
     QKeySequence,
     QMovie,
     QShortcut,
+    QShowEvent,
 )
 from qtpy.QtWidgets import (
     QCheckBox,
@@ -1073,13 +1074,6 @@ class BaseQtPluginDialog(QDialog):
         self.installer.allFinished.connect(self._on_installer_all_finished)
         self.setAcceptDrops(True)
 
-        if (
-            parent is not None and parent._plugin_dialog is self
-        ) or parent is None:
-            self.refresh()
-            self._setup_shortcuts()
-            self._setup_theme_update()
-
     # region - Private methods
     # ------------------------------------------------------------------------
     def _enable_refresh_button(self) -> None:
@@ -1760,6 +1754,15 @@ class BaseQtPluginDialog(QDialog):
             self._update_theme(None)
             self._first_open = False
 
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        if (
+            self.parent() is not None and self.parent()._plugin_dialog is self
+        ) or self.parent() is None:
+            self.refresh()
+            self._setup_shortcuts()
+            self._setup_theme_update()
+
     def hideEvent(self, event: QHideEvent) -> None:
         if len(self.modified_set):
             # At least one plugin was installed, uninstalled or updated so
@@ -1769,6 +1772,10 @@ class BaseQtPluginDialog(QDialog):
             RestartWarningDialog(self).exec_()
         self.packages_search.clear()
         self.toggle_status(False)
+        if self.worker is not None and self.worker.is_running:
+            self.worker.terminate()
+            self.worker.wait()
+            self.worker = None
         super().hideEvent(event)
 
     # endregion - Qt overrides
