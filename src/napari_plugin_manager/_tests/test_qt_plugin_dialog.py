@@ -169,9 +169,10 @@ def plugin_dialog(
     monkeypatch.setattr(
         qt_plugin_dialog, 'running_as_constructor_app', lambda: request.param
     )
-    monkeypatch.setattr(
-        napari.plugins, 'plugin_manager', OldPluginManagerMock()
-    )
+    if hasattr(napari.plugins, 'plugin_manager'):
+        monkeypatch.setattr(
+            napari.plugins, 'plugin_manager', OldPluginManagerMock()
+        )
 
     monkeypatch.setattr(importlib.metadata, 'metadata', mock_metadata)
 
