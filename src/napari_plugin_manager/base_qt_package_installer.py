@@ -296,6 +296,9 @@ class CondaInstallerTool(AbstractInstallerTool):
         for channel in (*self.origins, *self._default_channels()):
             args.extend(['-c', channel])
 
+        # Always override the solver config to make sure that user config
+        # does not break our installation
+        args.append('--solver=libmamba')
         return [*args, *self.pkgs]
 
     def environment(
