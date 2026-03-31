@@ -26,7 +26,6 @@ from subprocess import run
 from tempfile import gettempdir
 from typing import TypedDict
 
-from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
 from napari.utils.misc import StringEnum
 from napari.utils.translations import trans
@@ -297,6 +296,9 @@ class CondaInstallerTool(AbstractInstallerTool):
         for channel in (*self.origins, *self._default_channels()):
             args.extend(['-c', channel])
 
+        # Always override the solver config to make sure that user config
+        # does not break our installation
+        args.append('--solver=libmamba')
         return [*args, *self.pkgs]
 
     def environment(
@@ -694,7 +696,15 @@ class InstallerQueue(QObject):
             and exit_code == 0
         ):
             pm2 = PluginManager.instance()
-            npe1_plugins = set(plugin_manager.iter_available())
+            # new versions of napari after 0.7.0 won't have the plugin_manager
+            # this try/except block is to maintain compatibility
+            # between new napari-plugin-manager versions and old napari versions
+            try:
+                from napari.plugins import plugin_manager
+
+                npe1_plugins = set(plugin_manager.iter_available())
+            except ImportError:
+                npe1_plugins = set()
             for pkg in current.pkgs:
                 if pkg in pm2:
                     pm2.unregister(pkg)

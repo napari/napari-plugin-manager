@@ -104,12 +104,20 @@ class PluginListItem(BasePluginListItem):
         if plugin_name in pm2:
             pm2.enable(plugin_name) if state else pm2.disable(plugin_name)
             return
+        # new versions of napari after 0.7.0 won't have the plugin_manager
+        # this try/except block is to maintain compatibility
+        # between new napari-plugin-manager versions and old napari versions
+        try:
+            from napari.plugins import plugin_manager
 
+            npe1_plugins = set(plugin_manager.iter_available())
+        except ImportError:
+            npe1_plugins = set()
         for (
             npe1_name,
             _,
             distname,
-        ) in napari.plugins.plugin_manager.iter_available():
+        ) in npe1_plugins:
             if distname and (normalized_name(distname) == plugin_name):
                 napari.plugins.plugin_manager.set_blocked(
                     npe1_name, not enabled
