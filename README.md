@@ -104,14 +104,27 @@ a restart to be properly configured.
 
 ![Screenshot of the napari-plugin-manager showing the process of installing a plugin](https://raw.githubusercontent.com/napari/napari-plugin-manager/main/images/install.png)
 
-### Installing a plugin via direct entry
+### Installing via direct entry
 
-You can also install a napari plugin or any other package via the direct entry option. The following steps
-correspond to the options and buttons located at the **bottom of the dialog**.
+You can also use the direct entry option to install a napari plugin or any
+other package that `pip` or `conda` can resolve in the current environment.
+The plugin manager uses the same environment as the running napari application,
+so packages installed this way are added alongside your existing napari setup.
+This is useful when a plugin or gallery example needs extra dependencies.
+
+For example, you can use the direct entry field to install:
+
+- a regular package name such as `scikit-image`
+- extras such as `napari[gallery]`
+- a version-pinned requirement such as `xarray==2025.1.0`
+- a URL or local archive supported by your selected installer
+
+The following steps correspond to the options and buttons located at the
+**bottom of the dialog**.
 
 1. You can type either the name of the package, a url to the resource or drag and drop a compressed file
    of a previously downloaded package.
-2. Select the tool (`conda` or `pip`) by clicking on the arrow dorpdown of the `Install` button.
+2. Select the tool (`conda` or `pip`) by clicking on the arrow dropdown of the `Install` button.
 3. Start the installation process by clicking on the `Install` button.
 
 You can cancel the process at any time by clicking the `Cancel all` button.
