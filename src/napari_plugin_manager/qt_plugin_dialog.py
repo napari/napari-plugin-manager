@@ -82,11 +82,7 @@ class PluginListItem(BasePluginListItem):
             return
 
         opacity = 0.4 if plugin_api_version == 'shim' else 1
-        text = (
-            'npe1 (adapted)'
-            if plugin_api_version == 'shim'
-            else 'npe2'
-        )
+        text = 'npe1 (adapted)' if plugin_api_version == 'shim' else 'npe2'
         icon = QColoredSVGIcon.from_resources('logo_silhouette').colored(
             color='#33F0FF', opacity=opacity
         )
@@ -136,17 +132,15 @@ class PluginListItem(BasePluginListItem):
             and not DISMISS_WARN_PYPI_INSTALL_DLG
         ):
             warn_msgbox = QMessageBox(self)
-            warn_msgbox.setWindowTitle(
-                'PyPI installation on bundle/conda'
-            )
+            warn_msgbox.setWindowTitle('PyPI installation on bundle/conda')
             warn_msgbox.setText(
-                    'Installing from PyPI does not take into account existing installed packages, '
-                    'so it can break existing installations. '
-                    'If this happens the only solution is to reinstall the bundle/create a new conda environment.\n\n'
-                    'Are you sure you want to install from PyPI?'
+                'Installing from PyPI does not take into account existing installed packages, '
+                'so it can break existing installations. '
+                'If this happens the only solution is to reinstall the bundle/create a new conda environment.\n\n'
+                'Are you sure you want to install from PyPI?'
             )
             warn_checkbox = QCheckBox(
-                    "Don't show this message again in the current session"
+                "Don't show this message again in the current session"
             )
             warn_msgbox.setCheckBox(warn_checkbox)
             warn_msgbox.setIcon(QMessageBox.Icon.Warning)

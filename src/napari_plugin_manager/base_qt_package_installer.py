@@ -28,7 +28,6 @@ from typing import TypedDict
 
 from napari.plugins.npe2api import _user_agent
 from napari.utils.misc import StringEnum
-from napari.utils.translations import trans
 from npe2 import PluginManager
 from qtpy.QtCore import QObject, QProcess, QProcessEnvironment, Signal
 from qtpy.QtWidgets import QTextEdit
@@ -674,9 +673,7 @@ class InstallerQueue(QObject):
             process.terminate()
 
         if self._output_widget:
-            self._output_widget.append(
-                '\nTask was cancelled by the user.'
-            )
+            self._output_widget.append('\nTask was cancelled by the user.')
 
     def _on_process_finished(
         self, exit_code: int, exit_status: QProcess.ExitStatus
