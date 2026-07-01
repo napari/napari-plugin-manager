@@ -302,7 +302,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
             InstallerActions.UPGRADE,
         )
         mock.assert_called_with(
-            trans._('updating...'), InstallerActions.UPGRADE
+            'updating...', InstallerActions.UPGRADE
         )
 
     plugin_dialog.search('requests')
@@ -317,7 +317,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 version='3',
             )
             mock.assert_called_once_with(
-                trans._('installing...'), InstallerActions.INSTALL
+                'installing...', InstallerActions.INSTALL
             )
 
             plugin_dialog.available_list.handle_action(

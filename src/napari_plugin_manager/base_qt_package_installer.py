@@ -659,11 +659,7 @@ class InstallerQueue(QObject):
             process.started.connect(self.started)
 
             self._log(
-                trans._(
-                    "Starting '{program}' with args {args}",
-                    program=process.program(),
-                    args=process.arguments(),
-                )
+                f"Starting '{process.program()}' with args {process.arguments()}"
             )
 
             process.start()
@@ -679,7 +675,7 @@ class InstallerQueue(QObject):
 
         if self._output_widget:
             self._output_widget.append(
-                trans._('\nTask was cancelled by the user.')
+                '\nTask was cancelled by the user.'
             )
 
     def _on_process_finished(
@@ -732,15 +728,9 @@ class InstallerQueue(QObject):
             item = self._queue.popleft()
 
         if error:
-            msg = trans._(
-                'Task finished with errors! Error: {error}.', error=error
-            )
+            msg = f'Task finished with errors! Error: {error}.'
         else:
-            msg = trans._(
-                'Task finished with exit code {exit_code} with status {exit_status}.',
-                exit_code=exit_code,
-                exit_status=exit_status,
-            )
+            msg = f'Task finished with exit code {exit_code} with status {exit_status}.'
 
         if item is not None:
             self.processFinished.emit(
