@@ -4,8 +4,10 @@ import sys
 from collections.abc import Generator
 from unittest.mock import MagicMock, call, patch
 
+import napari
 import napari.plugins
 import npe2
+import packaging.version
 import pytest
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
@@ -169,8 +171,15 @@ def plugin_dialog(
     monkeypatch.setattr(
         qt_plugin_dialog, 'running_as_constructor_app', lambda: request.param
     )
+
+    napari_leq_066 = packaging.version.parse(
+        napari.__version__
+    ) <= packaging.version.parse('0.6.6')
     monkeypatch.setattr(
-        napari.plugins, 'plugin_manager', OldPluginManagerMock()
+        napari.plugins,
+        'plugin_manager',
+        OldPluginManagerMock(),
+        raising=napari_leq_066,
     )
 
     monkeypatch.setattr(importlib.metadata, 'metadata', mock_metadata)
