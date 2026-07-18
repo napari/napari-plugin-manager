@@ -30,8 +30,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.12"]
+        platform: [ubuntu-latest, windows-latest, macos-15]
+        python-version: ["3.11", "3.12"]
         napari: ["latest", "repo", '0.6.6']
         tool: ["pip", "conda"]
         include:
@@ -58,7 +58,7 @@ jobs:
           napari: repo
         - platform: macos-15-intel
           napari: repo
-        - platform: macos-latest
+        - platform: macos-15
           napari: repo
 
     steps:
@@ -72,7 +72,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }} - conda
         if: matrix.tool == 'conda'
-        uses: conda-incubator/setup-miniconda@fc2d68f6413eb2d87b895e92f8584b5b94a10167 # v3.3.0
+        uses: conda-incubator/setup-miniconda@8ee1f361103df19b6f8c8655fd3967a8ecb162d5 # v4.0.1
         with:
           miniforge-version: latest
           channels: conda-forge
@@ -80,7 +80,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Setup headless display
-        uses: pyvista/setup-headless-display-action@7d84ae825e6d9297a8e99bdbbae20d1b919a0b19 # v4.2
+        uses: pyvista/setup-headless-display-action@5bc8de3bc71fcda7a96439571287a554901541a0 # v4.3
         with:
           qt: true
           wm: herbstluftwm
@@ -118,7 +118,7 @@ jobs:
 
 
       - name: Upload coverage data
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: coverage reports ${{ matrix.platform }} py ${{ matrix.python-version }} ${{ matrix.tool }} ${{ matrix.napari }}
           include-hidden-files: true
@@ -158,4 +158,4 @@ jobs:
           git tag
           python -m build
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
