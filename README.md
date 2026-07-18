@@ -106,8 +106,8 @@ a restart to be properly configured.
 
 ### Installing via direct entry
 
-You can also use the direct entry option to install a napari plugin or any
-other package that `pip` or `conda` can resolve in the current environment.
+You can also use the direct entry option to install a napari plugin or *any
+other package* that `pip` or `conda` can resolve in the current environment.
 The plugin manager uses the same environment as the running napari application,
 so packages installed this way are added alongside your existing napari setup.
 This is useful when a plugin or gallery example needs extra dependencies.
