@@ -28,7 +28,6 @@ from typing import TypedDict
 
 from napari.plugins.npe2api import _user_agent
 from napari.utils.misc import StringEnum
-from napari.utils.translations import trans
 from npe2 import PluginManager
 from qtpy.QtCore import QObject, QProcess, QProcessEnvironment, Signal
 from qtpy.QtWidgets import QTextEdit
