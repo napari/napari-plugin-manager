@@ -906,9 +906,7 @@ class BaseQPluginList(QListWidget):
             item.latest_version = latest
             widg = self.itemWidget(item)
             widg.update_btn.setVisible(True)
-            widg.update_btn.setText(
-                f'update (v{latest})'
-            )
+            widg.update_btn.setText(f'update (v{latest})')
 
     def tag_unavailable(self, metadata: PackageMetadataProtocol) -> None:
         """
@@ -1055,9 +1053,7 @@ class BaseQtPluginDialog(QDialog):
             self._parent.close(quit_app=True, confirm_need=True)
 
     def _setup_shortcuts(self) -> None:
-        self._refresh_styles_action = QAction(
-            'Refresh Styles', self
-        )
+        self._refresh_styles_action = QAction('Refresh Styles', self)
         self._refresh_styles_action.setShortcut('Ctrl+R')
         self._refresh_styles_action.triggered.connect(self._update_theme)
         self.addAction(self._refresh_styles_action)
@@ -1173,9 +1169,7 @@ class BaseQtPluginDialog(QDialog):
                     'Plugin Manager: process completed with errors\n'
                 )
             else:
-                self._show_info(
-                    'Plugin Manager: process completed\n'
-                )
+                self._show_info('Plugin Manager: process completed\n')
 
         self.search()
 
@@ -1327,8 +1321,8 @@ class BaseQtPluginDialog(QDialog):
             'Type here to start searching for plugins...'
         )
         self.packages_search.setToolTip(
-                'The search text will filter currently installed plugins '
-                f'while also being used to search for plugins on the {self.BASE_PACKAGE_NAME} hub',
+            'The search text will filter currently installed plugins '
+            f'while also being used to search for plugins on the {self.BASE_PACKAGE_NAME} hub',
         )
         self.packages_search.setMaximumWidth(350)
         self.packages_search.setClearButtonEnabled(True)
@@ -1341,9 +1335,7 @@ class BaseQtPluginDialog(QDialog):
 
         self.export_button = QPushButton('Export', self)
         self.export_button.setObjectName('export_button')
-        self.export_button.setToolTip(
-            'Export installed plugins list'
-        )
+        self.export_button.setToolTip('Export installed plugins list')
         self.export_button.clicked.connect(self._export_plugins)
 
         self.refresh_button = QPushButton('Refresh', self)
@@ -1441,9 +1433,7 @@ class BaseQtPluginDialog(QDialog):
 
         self.show_status_btn = QPushButton('Show Status', self)
 
-        self.cancel_all_btn = QPushButton(
-            'cancel all actions', self
-        )
+        self.cancel_all_btn = QPushButton('cancel all actions', self)
         self.cancel_all_btn.setObjectName('remove_button')
         self.cancel_all_btn.setVisible(False)
         self.cancel_all_btn.clicked.connect(self.installer.cancel_all)
