@@ -28,7 +28,6 @@ from typing import TypedDict
 
 from napari.plugins.npe2api import _user_agent
 from napari.utils.misc import StringEnum
-from napari.utils.translations import trans
 from npe2 import PluginManager
 from qtpy.QtCore import QObject, QProcess, QProcessEnvironment, Signal
 from qtpy.QtWidgets import QTextEdit
@@ -659,11 +658,7 @@ class InstallerQueue(QObject):
             process.started.connect(self.started)
 
             self._log(
-                trans._(
-                    "Starting '{program}' with args {args}",
-                    program=process.program(),
-                    args=process.arguments(),
-                )
+                f"Starting '{process.program()}' with args {process.arguments()}"
             )
 
             process.start()
@@ -678,9 +673,7 @@ class InstallerQueue(QObject):
             process.terminate()
 
         if self._output_widget:
-            self._output_widget.append(
-                trans._('\nTask was cancelled by the user.')
-            )
+            self._output_widget.append('\nTask was cancelled by the user.')
 
     def _on_process_finished(
         self, exit_code: int, exit_status: QProcess.ExitStatus
@@ -732,15 +725,9 @@ class InstallerQueue(QObject):
             item = self._queue.popleft()
 
         if error:
-            msg = trans._(
-                'Task finished with errors! Error: {error}.', error=error
-            )
+            msg = f'Task finished with errors! Error: {error}.'
         else:
-            msg = trans._(
-                'Task finished with exit code {exit_code} with status {exit_status}.',
-                exit_code=exit_code,
-                exit_status=exit_status,
-            )
+            msg = f'Task finished with exit code {exit_code} with status {exit_status}.'
 
         if item is not None:
             self.processFinished.emit(

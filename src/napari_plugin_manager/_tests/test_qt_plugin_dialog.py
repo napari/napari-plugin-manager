@@ -10,7 +10,6 @@ import npe2
 import packaging.version
 import pytest
 from napari.plugins._tests.test_npe2 import mock_pm  # noqa
-from napari.utils.translations import trans
 from qtpy.QtCore import QMimeData, QPointF, Qt, QTimer, QUrl
 from qtpy.QtGui import QDropEvent
 from qtpy.QtWidgets import (
@@ -301,9 +300,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
             'my-test-old-plugin-1',
             InstallerActions.UPGRADE,
         )
-        mock.assert_called_with(
-            trans._('updating...'), InstallerActions.UPGRADE
-        )
+        mock.assert_called_with('updating...', InstallerActions.UPGRADE)
 
     plugin_dialog.search('requests')
     qtbot.wait(500)
@@ -317,7 +314,7 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
                 version='3',
             )
             mock.assert_called_once_with(
-                trans._('installing...'), InstallerActions.INSTALL
+                'installing...', InstallerActions.INSTALL
             )
 
             plugin_dialog.available_list.handle_action(

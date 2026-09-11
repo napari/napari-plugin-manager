@@ -53,27 +53,6 @@ If you wish to tell the linter to ignore a specific line use the `# noqa`
 comment along with the specific error code (e.g. `import sys  # noqa: E402`) but
 please do not ignore errors lightly.
 
-## Translations
-
-Starting with version 0.4.7, napari codebase include internationalization
-(i18n) and now offers the possibility of installing language packs, which
-provide localization (l10n) enabling the user interface to be displayed in
-different languages.
-
-To learn more about the current languages that are in the process of
-translation, visit the [language packs repository](https://github.com/napari/napari-language-packs).
-
-To make your code translatable (localizable), please use the `trans` helper
-provided by the napari utilities.
-
-```python
-from napari.utils.translations import trans
-
-some_string = trans._("Localizable string")
-```
-
-To learn more, please see the [translations guide](https://napari.org/guides/stable/translations.html).
-
 ## Making changes
 
 Create a new feature branch:
