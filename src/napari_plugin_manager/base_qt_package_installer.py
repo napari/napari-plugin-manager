@@ -673,9 +673,7 @@ class InstallerQueue(QObject):
             process.terminate()
 
         if self._output_widget:
-            self._output_widget.append(
-                '\nTask was cancelled by the user.'
-            )
+            self._output_widget.append('\nTask was cancelled by the user.')
 
     def _on_process_finished(
         self, exit_code: int, exit_status: QProcess.ExitStatus
