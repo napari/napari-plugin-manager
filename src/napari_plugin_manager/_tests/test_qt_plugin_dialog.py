@@ -93,7 +93,7 @@ def plugin_dialog(
     request,
     qtbot,
     monkeypatch,
-    npe2pm_wp,  # noqa
+    npe2pm_wp,
     plugins,
     old_plugins,
 ):
