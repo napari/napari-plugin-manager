@@ -2,6 +2,7 @@ import importlib.metadata
 import os
 import sys
 from collections.abc import Generator
+from importlib.metadata import version
 from unittest.mock import MagicMock, call, patch
 
 import napari
@@ -9,8 +10,8 @@ import napari.plugins
 import npe2
 import packaging.version
 import pytest
-from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
+from packaging.version import parse as parse_version
 from qtpy.QtCore import QMimeData, QPointF, Qt, QTimer, QUrl
 from qtpy.QtGui import QDropEvent
 from qtpy.QtWidgets import (
@@ -23,6 +24,13 @@ from napari_plugin_manager.base_qt_package_installer import (
     InstallerActions,
     InstallerTools,
 )
+
+if parse_version(version('npe2')) <= parse_version('0.9.0'):
+
+    @pytest.fixture
+    def npe2pm_wp(mock_pm):
+        return mock_pm
+
 
 N_MOCKED_PLUGINS = 2
 
@@ -94,7 +102,7 @@ def plugin_dialog(
     request,
     qtbot,
     monkeypatch,
-    mock_pm,  # noqa
+    npe2pm_wp,
     plugins,
     old_plugins,
 ):
@@ -112,7 +120,7 @@ def plugin_dialog(
             yield from self.plugins
 
         def iter_manifests(self):
-            yield from [mock_pm.get_manifest('my-plugin')]
+            yield from [npe2pm_wp.get_manifest('my-plugin')]
 
         def is_disabled(self, name):
             return False
