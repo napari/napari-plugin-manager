@@ -9,7 +9,6 @@ import napari.plugins
 import npe2
 import packaging.version
 import pytest
-from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 from napari.utils.translations import trans
 from qtpy.QtCore import QMimeData, QPointF, Qt, QTimer, QUrl
 from qtpy.QtGui import QDropEvent
@@ -94,7 +93,7 @@ def plugin_dialog(
     request,
     qtbot,
     monkeypatch,
-    mock_pm,  # noqa
+    npe2pm_wp,  # noqa
     plugins,
     old_plugins,
 ):
@@ -112,7 +111,7 @@ def plugin_dialog(
             yield from self.plugins
 
         def iter_manifests(self):
-            yield from [mock_pm.get_manifest('my-plugin')]
+            yield from [npe2pm_wp.get_manifest('my-plugin')]
 
         def is_disabled(self, name):
             return False
