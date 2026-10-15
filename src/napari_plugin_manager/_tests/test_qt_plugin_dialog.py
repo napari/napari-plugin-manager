@@ -29,7 +29,7 @@ if parse_version(version('npe2')) <= parse_version('0.9.0'):
     from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 
     @pytest.fixture
-    def npe2pm_w_plugin(mock_pm):
+    def npe2pm_w_plugin(mock_pm):  # noqa
         return mock_pm
 
 
@@ -121,7 +121,7 @@ def plugin_dialog(
             yield from self.plugins
 
         def iter_manifests(self):
-            yield from [npe2pm_wp.get_manifest('my-plugin')]
+            yield from [npe2pm_w_plugin.get_manifest('my-plugin')]
 
         def is_disabled(self, name):
             return False
