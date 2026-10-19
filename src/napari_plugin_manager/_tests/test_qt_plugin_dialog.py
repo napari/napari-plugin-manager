@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import importlib.metadata
 import os
 import sys
 from collections.abc import Generator
 from importlib.metadata import version
 from unittest.mock import MagicMock, call, patch
+
+from typing import TYPE_CHECKING
 
 import napari
 import napari.plugins
@@ -24,6 +28,11 @@ from napari_plugin_manager.base_qt_package_installer import (
     InstallerActions,
     InstallerTools,
 )
+
+if TYPE_CHECKING:
+    from virtualenv.run.session import Session
+    from pytestqt.qtbot import QtBot
+
 
 if parse_version(version('npe2')) <= parse_version('0.9.0'):
     from napari.plugins._tests.test_npe2 import mock_pm  # noqa
@@ -460,13 +469,13 @@ def test_drop_event(plugin_dialog, tmp_path):
     assert plugin_dialog.direct_entry_edit.text() == str(path_1)
 
 
-def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
+def test_installs(qtbot: QtBot, tmp_virtualenv: Session, plugin_dialog: qt_plugin_dialog.QtPluginDialog, request):
     if '[constructor]' in request.node.name:
         pytest.skip(
             reason='This test is only relevant for non-constructor-based installs'
         )
 
-    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    plugin_dialog.set_prefix(str(tmp_virtualenv.creator.dest))
     plugin_dialog.search('requests')
     qtbot.wait(500)
     item = plugin_dialog.available_list.item(0)
@@ -487,7 +496,7 @@ def test_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
     [QMessageBox.StandardButton.Cancel, QMessageBox.StandardButton.Ok],
 )
 def test_install_pypi_constructor(
-    qtbot, tmp_virtualenv, plugin_dialog, request, message_return, monkeypatch
+    qtbot: QtBot, tmp_virtualenv: Session, plugin_dialog: qt_plugin_dialog.QtPluginDialog, request, message_return, monkeypatch
 ):
     if 'no-constructor' in request.node.name:
         pytest.skip(
@@ -505,7 +514,7 @@ def test_install_pypi_constructor(
         lambda self: 'PyPI',
     )
 
-    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    plugin_dialog.set_prefix(str(tmp_virtualenv.creator.dest))
     plugin_dialog.search('requests')
     qtbot.wait(500)
     item = plugin_dialog.available_list.item(0)
@@ -523,13 +532,14 @@ def test_install_pypi_constructor(
         assert mock.called
 
 
-def test_cancel(qtbot, tmp_virtualenv, plugin_dialog, request):
+
+def test_cancel(qtbot: QtBot, tmp_virtualenv: Session, plugin_dialog: qt_plugin_dialog.QtPluginDialog, request):
     if '[constructor]' in request.node.name:
         pytest.skip(
             reason='This test is only relevant for non-constructor-based installs'
         )
 
-    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    plugin_dialog.set_prefix(str(tmp_virtualenv.creator.dest))
     plugin_dialog.search('requests')
     qtbot.wait(500)
     item = plugin_dialog.available_list.item(0)
@@ -553,7 +563,7 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
             reason='This test is only relevant for non-constructor-based installs'
         )
 
-    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    plugin_dialog.set_prefix(str(tmp_virtualenv.creator.dest))
     plugin_dialog.search('requests')
     qtbot.wait(500)
     item_1 = plugin_dialog.available_list.item(0)
@@ -574,13 +584,14 @@ def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
     assert plugin_dialog.installed_list.count() == 1
 
 
-def test_direct_entry_installs(qtbot, tmp_virtualenv, plugin_dialog, request):
+
+def test_direct_entry_installs(qtbot: QtBot, tmp_virtualenv: Session, plugin_dialog: qt_plugin_dialog.QtPluginDialog, request):
     if '[constructor]' in request.node.name:
         pytest.skip(
             reason='The tested functionality is not available in constructor-based installs'
         )
 
-    plugin_dialog.set_prefix(str(tmp_virtualenv))
+    plugin_dialog.set_prefix(str(tmp_virtualenv.creator.dest))
     with qtbot.waitSignal(
         plugin_dialog.installer.processFinished, timeout=60_000
     ) as blocker:
