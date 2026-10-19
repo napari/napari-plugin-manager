@@ -208,6 +208,7 @@ combine-as-imports = true
 # These follow standard library warnings filters syntax.  See more here:
 # https://docs.python.org/3/library/warnings.html#describing-warning-filters
 addopts = "--maxfail=5 --durations=10 -rXxs"
+testpaths = ["napari_plugin_manager"]
 
 # NOTE: only put things that will never change in here.
 # napari deprecation and future warnings should NOT go in here.
