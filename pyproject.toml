@@ -65,6 +65,7 @@ dynamic = [
 dev = [
   "PyQt6",
   "pre-commit",
+  "napari",
 ]
 uv = [
   "uv",
