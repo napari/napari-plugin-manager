@@ -31,7 +31,13 @@ if TYPE_CHECKING:
 def tmp_virtualenv(tmp_path) -> 'Session':
     virtualenv = pytest.importorskip('virtualenv')
 
-    cmd = ['--no-setuptools', '--no-wheel', '--activators', "", str(tmp_path/'venv')]
+    cmd = [
+        '--no-setuptools',
+        '--no-wheel',
+        '--activators',
+        '',
+        str(tmp_path / 'venv'),
+    ]
     return virtualenv.cli_run(cmd)
 
 
