@@ -5,6 +5,7 @@ import os
 import sys
 from collections.abc import Generator
 from importlib.metadata import version
+from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, call, patch
 
@@ -37,7 +38,7 @@ if parse_version(version('npe2')) <= parse_version('0.9.0'):
     from napari.plugins._tests.test_npe2 import mock_pm  # noqa
 
     @pytest.fixture
-    def npe2pm_w_plugin(mock_pm):  # noqa
+    def npe2pm_w_plugin(mock_pm: npe2.PluginManager) -> npe2.PluginManager:  # noqa
         return mock_pm
 
 
@@ -97,24 +98,24 @@ class OldPluginsMock:
 
 
 @pytest.fixture
-def old_plugins(qtbot):
+def old_plugins(qtbot: QtBot) -> OldPluginsMock:
     return OldPluginsMock()
 
 
 @pytest.fixture
-def plugins(qtbot):
+def plugins(qtbot: QtBot) -> PluginsMock:
     return PluginsMock()
 
 
 @pytest.fixture(params=[True, False], ids=['constructor', 'no-constructor'])
 def plugin_dialog(
-    request,
-    qtbot,
-    monkeypatch,
-    npe2pm_w_plugin,
-    plugins,
-    old_plugins,
-):
+    request: pytest.FixtureRequest,
+    qtbot: QtBot,
+    monkeypatch: pytest.MonkeyPatch,
+    npe2pm_w_plugin: npe2.PluginManager,
+    plugins: PluginsMock,
+    old_plugins: OldPluginsMock,
+) -> Generator[qt_plugin_dialog.QtPluginDialog, None, None]:
     """Fixture that provides a plugin dialog for a normal napari install."""
 
     class PluginManagerMock:
@@ -223,7 +224,11 @@ def plugin_dialog(
     assert not widget._add_items_timer.isActive()
 
 
-def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
+def test_filter_not_available_plugins(
+    request: pytest.FixtureRequest,
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     """
     Check that the plugins listed under available plugins are
     enabled and disabled accordingly.
@@ -245,7 +250,10 @@ def test_filter_not_available_plugins(request, plugin_dialog, qtbot):
             assert not widget.warning_tooltip.isVisible()
 
 
-def test_filter_available_plugins(plugin_dialog, qtbot):
+def test_filter_available_plugins(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     """
     Test the dialog is correctly filtering plugins in the available plugins
     list (the bottom one).
@@ -265,7 +273,10 @@ def test_filter_available_plugins(plugin_dialog, qtbot):
     assert plugin_dialog.available_list.count_visible() == 1
 
 
-def test_filter_installed_plugins(plugin_dialog, qtbot):
+def test_filter_installed_plugins(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     """
     Test the dialog is correctly filtering plugins in the installed plugins
     list (the top one).
@@ -279,7 +290,10 @@ def test_filter_installed_plugins(plugin_dialog, qtbot):
     assert plugin_dialog.installed_list.count_visible() == 0
 
 
-def test_visible_widgets(request, plugin_dialog):
+def test_visible_widgets(
+    request: pytest.FixtureRequest,
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+) -> None:
     """
     Test that the direct entry button and textbox are visible
     """
@@ -291,7 +305,10 @@ def test_visible_widgets(request, plugin_dialog):
     assert plugin_dialog.direct_entry_btn.isVisible()
 
 
-def test_version_dropdown(plugin_dialog, qtbot):
+def test_version_dropdown(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     """
     Test that when the source drop down is changed, it displays the other versions properly.
     """
@@ -306,11 +323,16 @@ def test_version_dropdown(plugin_dialog, qtbot):
         assert widget.version_choice_dropdown.currentText() == '2.32.1'
 
 
-def test_plugin_list_count_items(plugin_dialog):
+def test_plugin_list_count_items(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+) -> None:
     assert plugin_dialog.installed_list.count_visible() == 1
 
 
-def test_plugin_list_handle_action(plugin_dialog, qtbot):
+def test_plugin_list_handle_action(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     item = plugin_dialog.installed_list.item(0)
     with patch.object(qt_plugin_dialog.PluginListItem, 'set_busy') as mock:
         plugin_dialog.installed_list.handle_action(
@@ -351,7 +373,10 @@ def test_plugin_list_handle_action(plugin_dialog, qtbot):
     qtbot.waitUntil(lambda: not plugin_dialog.worker.is_running)
 
 
-def test_plugin_restart_warning(plugin_dialog, monkeypatch):
+def test_plugin_restart_warning(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     dialog_mock = MagicMock()
     monkeypatch.setattr(
         base_qt_plugin_dialog, 'RestartWarningDialog', dialog_mock
@@ -363,7 +388,12 @@ def test_plugin_restart_warning(plugin_dialog, monkeypatch):
     assert len(plugin_dialog.modified_set) == 0
 
 
-def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
+def test_on_enabled_checkbox(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+    plugins: PluginsMock,
+    old_plugins: OldPluginsMock,
+) -> None:
     # checks npe2 lines
     item = plugin_dialog.installed_list.item(0)
     widget = plugin_dialog.installed_list.itemWidget(item)
@@ -374,7 +404,10 @@ def test_on_enabled_checkbox(plugin_dialog, qtbot, plugins, old_plugins):
     assert plugins.plugins['my-plugin'] is False
 
 
-def test_add_items_outdated_and_update(plugin_dialog, qtbot):
+def test_add_items_outdated_and_update(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     """
     Test that a plugin is tagged as outdated (a newer version is available), the update button becomes visible.
 
@@ -422,7 +455,10 @@ def test_add_items_outdated_and_update(plugin_dialog, qtbot):
     assert widget.version.toolTip() == updated_version
 
 
-def test_refresh(qtbot, plugin_dialog):
+def test_refresh(
+    qtbot: QtBot,
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+) -> None:
     with qtbot.waitSignal(plugin_dialog.finished, timeout=500):
         plugin_dialog.refresh(clear_cache=False)
 
@@ -433,18 +469,20 @@ def test_refresh(qtbot, plugin_dialog):
         plugin_dialog._refresh_and_clear_cache()
 
 
-def test_toggle_status(plugin_dialog):
+def test_toggle_status(plugin_dialog: qt_plugin_dialog.QtPluginDialog) -> None:
     plugin_dialog.toggle_status(True)
     assert plugin_dialog.stdout_text.isVisible()
     plugin_dialog.toggle_status(False)
     assert not plugin_dialog.stdout_text.isVisible()
 
 
-def test_exec(plugin_dialog):
+def test_exec(plugin_dialog: qt_plugin_dialog.QtPluginDialog) -> None:
     plugin_dialog.exec_()
 
 
-def test_search_in_available(plugin_dialog):
+def test_search_in_available(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+) -> None:
     idxs = plugin_dialog._search_in_available('test')
     if idxs:
         assert idxs == [0, 1, 2, 3]
@@ -453,7 +491,10 @@ def test_search_in_available(plugin_dialog):
     assert idxs == []
 
 
-def test_drop_event(plugin_dialog, tmp_path):
+def test_drop_event(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    tmp_path: Path,
+) -> None:
     path_1 = tmp_path / 'example-1.txt'
     path_2 = tmp_path / 'example-2.txt'
     url_prefix = 'file:///' if os.name == 'nt' else 'file://'
@@ -472,8 +513,8 @@ def test_installs(
     qtbot: QtBot,
     tmp_virtualenv: Session,
     plugin_dialog: qt_plugin_dialog.QtPluginDialog,
-    request,
-):
+    request: pytest.FixtureRequest,
+) -> None:
     if '[constructor]' in request.node.name:
         pytest.skip(
             reason='This test is only relevant for non-constructor-based installs'
@@ -503,10 +544,10 @@ def test_install_pypi_constructor(
     qtbot: QtBot,
     tmp_virtualenv: Session,
     plugin_dialog: qt_plugin_dialog.QtPluginDialog,
-    request,
-    message_return,
-    monkeypatch,
-):
+    request: pytest.FixtureRequest,
+    message_return: QMessageBox.StandardButton,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     if 'no-constructor' in request.node.name:
         pytest.skip(
             reason='This test is to test pip in constructor-based installs'
@@ -545,8 +586,8 @@ def test_cancel(
     qtbot: QtBot,
     tmp_virtualenv: Session,
     plugin_dialog: qt_plugin_dialog.QtPluginDialog,
-    request,
-):
+    request: pytest.FixtureRequest,
+) -> None:
     if '[constructor]' in request.node.name:
         pytest.skip(
             reason='This test is only relevant for non-constructor-based installs'
@@ -570,7 +611,12 @@ def test_cancel(
     assert plugin_dialog.installed_list.count() == 1
 
 
-def test_cancel_all(qtbot, tmp_virtualenv, plugin_dialog, request):
+def test_cancel_all(
+    qtbot: QtBot,
+    tmp_virtualenv: Session,
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    request: pytest.FixtureRequest,
+) -> None:
     if '[constructor]' in request.node.name:
         pytest.skip(
             reason='This test is only relevant for non-constructor-based installs'
@@ -601,8 +647,8 @@ def test_direct_entry_installs(
     qtbot: QtBot,
     tmp_virtualenv: Session,
     plugin_dialog: qt_plugin_dialog.QtPluginDialog,
-    request,
-):
+    request: pytest.FixtureRequest,
+) -> None:
     if '[constructor]' in request.node.name:
         pytest.skip(
             reason='The tested functionality is not available in constructor-based installs'
@@ -624,7 +670,10 @@ def test_direct_entry_installs(
 @pytest.mark.skipif(
     sys.platform.startswith('linux'), reason='Test fails on linux randomly'
 )
-def test_shortcut_close(plugin_dialog, qtbot):
+def test_shortcut_close(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     qtbot.keyClicks(
         plugin_dialog, 'W', modifier=Qt.KeyboardModifier.ControlModifier
     )
@@ -635,7 +684,10 @@ def test_shortcut_close(plugin_dialog, qtbot):
 @pytest.mark.skipif(
     sys.platform.startswith('linux'), reason='Test fails on linux randomly'
 )
-def test_shortcut_quit(plugin_dialog, qtbot):
+def test_shortcut_quit(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    qtbot: QtBot,
+) -> None:
     qtbot.keyClicks(
         plugin_dialog, 'Q', modifier=Qt.KeyboardModifier.ControlModifier
     )
@@ -646,7 +698,9 @@ def test_shortcut_quit(plugin_dialog, qtbot):
 @pytest.mark.skipif(
     not sys.platform.startswith('linux'), reason='Test works only on linux'
 )
-def test_export_plugins_button(plugin_dialog):
+def test_export_plugins_button(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+) -> None:
     def _timer():
         dialog = QApplication.activeModalWidget()
         dialog.reject()
@@ -658,7 +712,10 @@ def test_export_plugins_button(plugin_dialog):
     plugin_dialog.export_button.click()
 
 
-def test_export_plugins(plugin_dialog, tmp_path):
+def test_export_plugins(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    tmp_path: Path,
+) -> None:
     plugins_file = 'plugins.txt'
     plugin_dialog.export_plugins(str(tmp_path / plugins_file))
     assert (tmp_path / plugins_file).exists()
@@ -667,7 +724,9 @@ def test_export_plugins(plugin_dialog, tmp_path):
 @pytest.mark.skipif(
     not sys.platform.startswith('linux'), reason='Test works only on linux'
 )
-def test_import_plugins_button(plugin_dialog):
+def test_import_plugins_button(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+) -> None:
     def _timer():
         dialog = QApplication.activeModalWidget()
         dialog.reject()
@@ -679,7 +738,11 @@ def test_import_plugins_button(plugin_dialog):
     plugin_dialog.import_button.click()
 
 
-def test_import_plugins(plugin_dialog, tmp_path, qtbot):
+def test_import_plugins(
+    plugin_dialog: qt_plugin_dialog.QtPluginDialog,
+    tmp_path: Path,
+    qtbot: QtBot,
+) -> None:
     path = tmp_path / 'plugins.txt'
     path.write_text('requests\npackaging\n')
     with qtbot.waitSignal(plugin_dialog.installer.allFinished, timeout=60_000):
