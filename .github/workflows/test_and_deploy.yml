@@ -30,16 +30,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, windows-latest, macos-15]
-        python-version: ["3.11", "3.12"]
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.14"]
         napari: ["latest", "repo", '0.6.6']
         tool: ["pip", "conda"]
         include:
-          # add 3.13 on ubuntu
+          # add 3.12 and 3.13 on ubuntu
           - platform: ubuntu-latest
             napari: repo
             tool: pip
             python-version: "3.13"
+          - platform: ubuntu-latest
+            napari: "0.9.2"
+            tool: pip
+            python-version: "3.12"
           # only run macos intel on py3.12
           - platform: macos-15-intel
             napari: repo
@@ -58,7 +62,7 @@ jobs:
           napari: repo
         - platform: macos-15-intel
           napari: repo
-        - platform: macos-15
+        - platform: macos-latest
           napari: repo
 
     steps:
