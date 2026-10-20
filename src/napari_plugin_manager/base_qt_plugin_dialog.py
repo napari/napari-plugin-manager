@@ -1364,7 +1364,7 @@ class BaseQtPluginDialog(QDialog):
         uninstalled = QWidget(self.v_splitter)
         lay = QVBoxLayout(uninstalled)
         lay.setContentsMargins(0, 2, 0, 2)
-        self.avail_label = QLabel('Available Plugins')
+        self.avail_label = QLabel('Community Plugins')
         mid_layout = QHBoxLayout()
         mid_layout.addWidget(self.avail_label)
         mid_layout.addStretch()
