@@ -84,7 +84,7 @@ def patch_tool_executable(request: pytest.FixtureRequest) -> None:
 @pytest.mark.usefixtures('patch_tool_executable')
 def test_pip_installer_tasks(
     qtbot: QtBot,
-    tool: type[NapariPipInstallerTool] | type[NapariUvInstallerTool],
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
     tmp_virtualenv: Session,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
@@ -170,7 +170,7 @@ def test_pip_installer_tasks(
 )
 @pytest.mark.usefixtures('patch_tool_executable')
 def test_pip_installer_invalid_action(
-    tool: type[NapariPipInstallerTool] | type[NapariUvInstallerTool],
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
     tmp_virtualenv: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -198,7 +198,7 @@ def test_pip_installer_invalid_action(
 )
 @pytest.mark.usefixtures('patch_tool_executable')
 def test_installer_failures(
-    tool: type[NapariPipInstallerTool] | type[NapariUvInstallerTool],
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
     qtbot: QtBot,
     tmp_virtualenv: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -248,7 +248,7 @@ def test_installer_failures(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
 def test_cancel_incorrect_job_id(
-    tool: type[NapariPipInstallerTool] | type[NapariUvInstallerTool],
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
     qtbot: QtBot,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -364,7 +364,7 @@ def test_conda_installer(
 )
 def test_installer_error(
     qtbot: QtBot,
-    tool: type[NapariPipInstallerTool] | type[NapariUvInstallerTool],
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
