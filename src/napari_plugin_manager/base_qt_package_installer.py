@@ -10,22 +10,22 @@ Available actions for each tool are `install`, `uninstall`
 and `cancel`.
 """
 
+from __future__ import annotations
+
 import contextlib
-import logging
 import os
 import sys
 from collections import deque
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import auto
 from functools import lru_cache
 from logging import getLogger
 from pathlib import Path
-from subprocess import call
+from subprocess import run
 from tempfile import gettempdir
-from typing import Optional, TypedDict
+from typing import TypedDict
 
-from napari.plugins import plugin_manager
 from napari.plugins.npe2api import _user_agent
 from napari.utils.misc import StringEnum
 from napari.utils.translations import trans
@@ -62,7 +62,7 @@ class InstallerTools(StringEnum):
     "Installer tools selectable by InstallerQueue jobs"
 
     CONDA = auto()
-    PIP = auto()
+    PYPI = auto()
 
 
 @dataclass(frozen=True)
@@ -76,19 +76,19 @@ class AbstractInstallerTool:
     process: QProcess = None
 
     @property
-    def ident(self):
+    def ident(self) -> JobId:
         return hash(
             (self.action, *self.pkgs, *self.origins, self.prefix, self.process)
         )
 
     # abstract method
     @classmethod
-    def executable(cls):
+    def executable(cls) -> str:
         "Path to the executable that will run the task"
         raise NotImplementedError
 
     # abstract method
-    def arguments(self):
+    def arguments(self) -> list[str]:
         "Arguments supplied to the executable"
         raise NotImplementedError
 
@@ -100,7 +100,7 @@ class AbstractInstallerTool:
         raise NotImplementedError
 
     @staticmethod
-    def constraints() -> Sequence[str]:
+    def constraints() -> list[str]:
         """
         Version constraints to limit unwanted changes in installation.
         """
@@ -121,11 +121,14 @@ class PipInstallerTool(AbstractInstallerTool):
     """
 
     @classmethod
-    def available(cls):
+    def available(cls) -> bool:
         """Check if pip is available."""
-        return call([cls.executable(), "-m", "pip", "--version"]) == 0
+        process = run(
+            [cls.executable(), '-m', 'pip', '--version'], capture_output=True
+        )
+        return process.returncode == 0
 
-    def arguments(self) -> tuple[str, ...]:
+    def arguments(self) -> list[str]:
         """Compose arguments for the pip command."""
         args = ['-m', 'pip']
 
@@ -150,25 +153,98 @@ class PipInstallerTool(AbstractInstallerTool):
         else:
             raise ValueError(f"Action '{self.action}' not supported!")
 
-        if log.getEffectiveLevel() < 30:  # DEBUG and INFOlevel
+        if log.getEffectiveLevel() < 30:  # DEBUG and INFO level
             args.append('-vvv')
 
         if self.prefix is not None:
             args.extend(['--prefix', str(self.prefix)])
 
-        return (*args, *self.pkgs)
+        return [*args, *self.pkgs]
 
     def environment(
         self, env: QProcessEnvironment = None
     ) -> QProcessEnvironment:
         if env is None:
             env = QProcessEnvironment.systemEnvironment()
-        env.insert("PIP_USER_AGENT_USER_DATA", _user_agent())
+        env.insert('PIP_USER_AGENT_USER_DATA', _user_agent())
         return env
 
     @classmethod
     @lru_cache(maxsize=0)
     def _constraints_file(cls) -> str:
+        raise NotImplementedError
+
+
+class UvInstallerTool(AbstractInstallerTool):
+    """Uv installer tool for the plugin manager.
+
+    This class is used to install and uninstall packages using uv.
+    """
+
+    @classmethod
+    def executable(cls) -> str:
+        "Path to the executable that will run the task"
+        if sys.platform == 'win32':
+            path = os.path.join(sys.prefix, 'Scripts', 'uv.exe')
+        else:
+            path = os.path.join(sys.prefix, 'bin', 'uv')
+        if os.path.isfile(path):
+            return path
+        return 'uv'
+
+    @classmethod
+    def available(cls) -> bool:
+        """Check if uv is available."""
+        try:
+            process = run([cls.executable(), '--version'], capture_output=True)
+        except FileNotFoundError:  # pragma: no cover
+            return False
+        else:
+            return process.returncode == 0
+
+    def arguments(self) -> list[str]:
+        """Compose arguments for the uv pip command."""
+        args = ['pip']
+
+        if self.action == InstallerActions.INSTALL:
+            args += ['install', '-c', self._constraints_file()]
+            for origin in self.origins:
+                args += ['--extra-index-url', origin]
+
+        elif self.action == InstallerActions.UPGRADE:
+            args += ['install', '-c', self._constraints_file()]
+            for origin in self.origins:
+                args += ['--extra-index-url', origin]
+            for pkg in self.pkgs:
+                args.append(f'--upgrade-package={pkg}')
+        elif self.action == InstallerActions.UNINSTALL:
+            args += ['uninstall']
+
+        else:
+            raise ValueError(f"Action '{self.action}' not supported!")
+
+        if log.getEffectiveLevel() < 30:  # DEBUG and INFO level
+            args.append('-vvv')
+
+        if self.prefix is not None:
+            args.extend(['--prefix', str(self.prefix)])
+        args.extend(['--python', self._python_executable()])
+
+        return [*args, *self.pkgs]
+
+    def environment(
+        self, env: QProcessEnvironment = None
+    ) -> QProcessEnvironment:
+        if env is None:
+            env = QProcessEnvironment.systemEnvironment()
+        return env
+
+    @classmethod
+    @lru_cache(maxsize=0)
+    def _constraints_file(cls) -> str:
+        raise NotImplementedError
+
+    def _python_executable(self) -> str:
         raise NotImplementedError
 
 
@@ -179,12 +255,12 @@ class CondaInstallerTool(AbstractInstallerTool):
     """
 
     @classmethod
-    def executable(cls):
+    def executable(cls) -> str:
         """Find a path to the executable.
 
         This method assumes that if no environment variable is set that conda is available in the PATH.
         """
-        bat = ".bat" if os.name == "nt" else ""
+        bat = '.bat' if os.name == 'nt' else ''
         for path in (
             Path(os.environ.get('MAMBA_EXE', '')),
             Path(os.environ.get('CONDA_EXE', '')),
@@ -198,15 +274,16 @@ class CondaInstallerTool(AbstractInstallerTool):
         return f'conda{bat}'
 
     @classmethod
-    def available(cls):
+    def available(cls) -> bool:
         """Check if the executable is available by checking if it can output its version."""
-        executable = cls.executable()
         try:
-            return call([executable, "--version"]) == 0
+            process = run([cls.executable(), '--version'], capture_output=True)
         except FileNotFoundError:  # pragma: no cover
             return False
+        else:
+            return process.returncode == 0
 
-    def arguments(self) -> tuple[str, ...]:
+    def arguments(self) -> list[str]:
         """Compose arguments for the conda command."""
         prefix = self.prefix or self._default_prefix()
 
@@ -217,9 +294,12 @@ class CondaInstallerTool(AbstractInstallerTool):
 
         args.append('--override-channels')
         for channel in (*self.origins, *self._default_channels()):
-            args.extend(["-c", channel])
+            args.extend(['-c', channel])
 
-        return (*args, *self.pkgs)
+        # Always override the solver config to make sure that user config
+        # does not break our installation
+        args.append('--solver=libmamba')
+        return [*args, *self.pkgs]
 
     def environment(
         self, env: QProcessEnvironment = None
@@ -229,18 +309,18 @@ class CondaInstallerTool(AbstractInstallerTool):
         self._add_constraints_to_env(env)
         if 10 <= log.getEffectiveLevel() < 30:  # DEBUG level
             env.insert('CONDA_VERBOSITY', '3')
-        if os.name == "nt":
-            if not env.contains("TEMP"):
+        if os.name == 'nt':
+            if not env.contains('TEMP'):
                 temp = gettempdir()
-                env.insert("TMP", temp)
-                env.insert("TEMP", temp)
-            if not env.contains("USERPROFILE"):
-                env.insert("HOME", os.path.expanduser("~"))
-                env.insert("USERPROFILE", os.path.expanduser("~"))
+                env.insert('TMP', temp)
+                env.insert('TEMP', temp)
+            if not env.contains('USERPROFILE'):
+                env.insert('HOME', os.path.expanduser('~'))
+                env.insert('USERPROFILE', os.path.expanduser('~'))
         if sys.platform == 'darwin' and env.contains('PYTHONEXECUTABLE'):
             # Fix for macOS when napari launched from terminal
             # related to https://github.com/napari/napari/pull/5531
-            env.remove("PYTHONEXECUTABLE")
+            env.remove('PYTHONEXECUTABLE')
         return env
 
     def _add_constraints_to_env(
@@ -251,18 +331,18 @@ class CondaInstallerTool(AbstractInstallerTool):
         constraints = self.constraints()
         if env.contains(PINNED):
             constraints.append(env.value(PINNED))
-        env.insert(PINNED, "&".join(constraints))
+        env.insert(PINNED, '&'.join(constraints))
         return env
 
-    def _default_channels(self):
+    def _default_channels(self) -> list[str]:
         """Default channels for conda installations."""
-        return ('conda-forge',)
+        return ['conda-forge']
 
-    def _default_prefix(self):
+    def _default_prefix(self) -> str:
         """Default prefix for conda installations."""
-        if (Path(sys.prefix) / "conda-meta").is_dir():
+        if (Path(sys.prefix) / 'conda-meta').is_dir():
             return sys.prefix
-        raise ValueError("Prefix has not been specified!")
+        raise ValueError('Prefix has not been specified!')
 
 
 class InstallerQueue(QObject):
@@ -281,7 +361,7 @@ class InstallerQueue(QObject):
     started = Signal()
 
     # classes to manage pip and conda installations
-    PIP_INSTALLER_TOOL_CLASS = PipInstallerTool
+    PYPI_INSTALLER_TOOL_CLASS = PipInstallerTool
     CONDA_INSTALLER_TOOL_CLASS = CondaInstallerTool
     # This should be set to the name of package that handles plugins
     # e.g `napari` for napari
@@ -295,7 +375,7 @@ class InstallerQueue(QObject):
         self._current_process: QProcess = None
         self._prefix = prefix
         self._output_widget = None
-        self._exit_codes = []
+        self._exit_codes: list[int] = []
 
     # -------------------------- Public API ------------------------------
     def install(
@@ -331,7 +411,7 @@ class InstallerQueue(QObject):
         item = self._build_queue_item(
             tool=tool,
             action=InstallerActions.INSTALL,
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             prefix=prefix,
             origins=origins,
             process=self._create_process(),
@@ -372,7 +452,7 @@ class InstallerQueue(QObject):
         item = self._build_queue_item(
             tool=tool,
             action=InstallerActions.UPGRADE,
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             prefix=prefix,
             origins=origins,
             process=self._create_process(),
@@ -409,14 +489,14 @@ class InstallerQueue(QObject):
         item = self._build_queue_item(
             tool=tool,
             action=InstallerActions.UNINSTALL,
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             prefix=prefix,
             process=self._create_process(),
             **kwargs,
         )
         return self._queue_item(item)
 
-    def cancel(self, job_id: JobId):
+    def cancel(self, job_id: JobId) -> None:
         """Cancel a job.
 
         Cancel the process, if it is running, referenced by `job_id`.
@@ -458,18 +538,18 @@ class InstallerQueue(QObject):
                 self._process_queue()
                 return
 
-        msg = f"No job with id {job_id}. Current queue:\n - "
-        msg += "\n - ".join(
+        msg = f'No job with id {job_id}. Current queue:\n - '
+        msg += '\n - '.join(
             [
-                f"{item.ident} -> {item.executable()} {item.arguments()}"
+                f'{item.ident} -> {item.executable()} {item.arguments()}'
                 for item in self._queue
             ]
         )
         raise ValueError(msg)
 
-    def cancel_all(self):
+    def cancel_all(self) -> None:
         """Terminate all processes in the queue and emit the `processFinished` signal."""
-        all_pkgs = []
+        all_pkgs: list[str] = []
         for item in deque(self._queue):
             all_pkgs.extend(item.pkgs)
             process = item.process
@@ -487,7 +567,7 @@ class InstallerQueue(QObject):
                 'exit_code': 1,
                 'exit_status': 0,
                 'action': InstallerActions.CANCEL_ALL,
-                'pkgs': all_pkgs,
+                'pkgs': tuple(all_pkgs),
             }
         )
         self._process_queue()
@@ -514,7 +594,7 @@ class InstallerQueue(QObject):
         """Return the number of running jobs in the queue."""
         return len(self._queue)
 
-    def set_output_widget(self, output_widget: QTextEdit):
+    def set_output_widget(self, output_widget: QTextEdit) -> None:
         """Set the output widget for text output."""
         if output_widget:
             self._output_widget = output_widget
@@ -529,31 +609,31 @@ class InstallerQueue(QObject):
         process.errorOccurred.connect(self._on_error_occurred)
         return process
 
-    def _log(self, msg: str):
+    def _log(self, msg: str) -> None:
         log.debug(msg)
         if self._output_widget:
             self._output_widget.append(msg)
 
-    def _get_tool(self, tool: InstallerTools):
-        if tool == InstallerTools.PIP:
-            return self.PIP_INSTALLER_TOOL_CLASS
+    def _get_tool(self, tool: InstallerTools) -> type[AbstractInstallerTool]:
+        if tool == InstallerTools.PYPI:
+            return self.PYPI_INSTALLER_TOOL_CLASS
         if tool == InstallerTools.CONDA:
             return self.CONDA_INSTALLER_TOOL_CLASS
-        raise ValueError(f"InstallerTool {tool} not recognized!")
+        raise ValueError(f'InstallerTool {tool} not recognized!')
 
     def _build_queue_item(
         self,
         tool: InstallerTools,
         action: InstallerActions,
-        pkgs: Sequence[str],
+        pkgs: Iterable[str],
         prefix: str | None = None,
-        origins: Sequence[str] = (),
+        origins: Iterable[str] = (),
         **kwargs,
     ) -> AbstractInstallerTool:
         return self._get_tool(tool)(
-            pkgs=pkgs,
+            pkgs=tuple(pkgs),
             action=action,
-            origins=origins,
+            origins=tuple(origins),
             prefix=prefix or self._prefix,
             **kwargs,
         )
@@ -563,7 +643,7 @@ class InstallerQueue(QObject):
         self._process_queue()
         return item.ident
 
-    def _process_queue(self):
+    def _process_queue(self) -> None:
         if not self._queue:
             self.allFinished.emit(tuple(self._exit_codes))
             self._exit_codes = []
@@ -589,7 +669,7 @@ class InstallerQueue(QObject):
             process.start()
             self._current_process = process
 
-    def _end_process(self, process: QProcess):
+    def _end_process(self, process: QProcess) -> None:
         if os.name == 'nt':
             # TODO: this might be too agressive and won't allow rollbacks!
             # investigate whether we can also do .terminate()
@@ -599,12 +679,12 @@ class InstallerQueue(QObject):
 
         if self._output_widget:
             self._output_widget.append(
-                trans._("\nTask was cancelled by the user.")
+                trans._('\nTask was cancelled by the user.')
             )
 
     def _on_process_finished(
         self, exit_code: int, exit_status: QProcess.ExitStatus
-    ):
+    ) -> None:
         try:
             current = self._queue[0]
         except IndexError:
@@ -616,7 +696,15 @@ class InstallerQueue(QObject):
             and exit_code == 0
         ):
             pm2 = PluginManager.instance()
-            npe1_plugins = set(plugin_manager.iter_available())
+            # new versions of napari after 0.7.0 won't have the plugin_manager
+            # this try/except block is to maintain compatibility
+            # between new napari-plugin-manager versions and old napari versions
+            try:
+                from napari.plugins import plugin_manager
+
+                npe1_plugins = set(plugin_manager.iter_available())
+            except ImportError:
+                npe1_plugins = set()
             for pkg in current.pkgs:
                 if pkg in pm2:
                     pm2.unregister(pkg)
@@ -630,26 +718,26 @@ class InstallerQueue(QObject):
                     )
         self._on_process_done(exit_code=exit_code, exit_status=exit_status)
 
-    def _on_error_occurred(self, error: QProcess.ProcessError):
+    def _on_error_occurred(self, error: QProcess.ProcessError) -> None:
         self._on_process_done(error=error)
 
     def _on_process_done(
         self,
         exit_code: int | None = None,
-        exit_status: Optional[QProcess.ExitStatus] = None,  # noqa
-        error: Optional[QProcess.ProcessError] = None,  # noqa
-    ):
+        exit_status: QProcess.ExitStatus | None = None,
+        error: QProcess.ProcessError | None = None,
+    ) -> None:
         item = None
         with contextlib.suppress(IndexError):
             item = self._queue.popleft()
 
         if error:
             msg = trans._(
-                "Task finished with errors! Error: {error}.", error=error
+                'Task finished with errors! Error: {error}.', error=error
             )
         else:
             msg = trans._(
-                "Task finished with exit code {exit_code} with status {exit_status}.",
+                'Task finished with exit code {exit_code} with status {exit_status}.',
                 exit_code=exit_code,
                 exit_status=exit_status,
             )
@@ -668,7 +756,7 @@ class InstallerQueue(QObject):
         self._log(msg)
         self._process_queue()
 
-    def _on_stdout_ready(self):
+    def _on_stdout_ready(self) -> None:
         if self._current_process is not None:
             try:
                 text = (
@@ -677,12 +765,12 @@ class InstallerQueue(QObject):
                     .decode()
                 )
             except UnicodeDecodeError:
-                logging.exception("Could not decode stdout")
+                log.exception('Could not decode stdout')
                 return
             if text:
                 self._log(text)
 
-    def _on_stderr_ready(self):
+    def _on_stderr_ready(self) -> None:
         if self._current_process is not None:
             text = self._current_process.readAllStandardError().data().decode()
             if text:

@@ -23,6 +23,10 @@ from napari_plugin_manager.utils import get_homepage_url
 
 PyPIname = str
 
+BASE_API_URL = 'https://api.napari.org/api'
+EXTENDED_SUMMARY_URL = f'{BASE_API_URL}/extended_summary'
+CONDA_URL = f'{BASE_API_URL}/conda'
+
 
 @lru_cache
 def _user_agent() -> str:
@@ -51,7 +55,7 @@ def _user_agent() -> str:
 
 
 class _ShortSummaryDict(TypedDict):
-    """Objects returned at https://npe2api.vercel.app/api/extended_summary ."""
+    """Objects returned from API extended_summary endpoint."""
 
     name: NotRequired[PyPIname]
     version: str
@@ -70,16 +74,18 @@ class SummaryDict(_ShortSummaryDict):
 @lru_cache
 def plugin_summaries() -> list[SummaryDict]:
     """Return PackageMetadata object for all known napari plugins."""
-    url = 'https://npe2api.vercel.app/api/extended_summary'
-    with urlopen(Request(url, headers={'User-Agent': _user_agent()})) as resp:
+    with urlopen(
+        Request(EXTENDED_SUMMARY_URL, headers={'User-Agent': _user_agent()})
+    ) as resp:
         return json.load(resp)
 
 
 @lru_cache
 def conda_map() -> dict[PyPIname, str | None]:
     """Return map of PyPI package name to conda_channel/package_name ()."""
-    url = 'https://npe2api.vercel.app/api/conda'
-    with urlopen(Request(url, headers={'User-Agent': _user_agent()})) as resp:
+    with urlopen(
+        Request(CONDA_URL, headers={'User-Agent': _user_agent()})
+    ) as resp:
         return json.load(resp)
 
 
@@ -104,7 +110,7 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
         info_copy.pop('display_name', None)
         pypi_versions = info_copy.pop('pypi_versions')
         conda_versions = info_copy.pop('conda_versions')
-        info_ = cast(_ShortSummaryDict, info_copy)
+        info_ = cast('_ShortSummaryDict', info_copy)
         home_page = get_homepage_url(info_copy)
         # this URL is used for the widget, so we have to replace the home_page
         # link here as well as returning it in extra_info
@@ -122,12 +128,12 @@ def iter_napari_plugin_info() -> Iterator[tuple[PackageMetadata, bool, dict]]:
             'conda_versions': conda_versions,
         }
         info_['name'] = normalized_name(info_['name'])
-        meta = PackageMetadata(**info_)  # type:ignore[call-arg]
+        meta = PackageMetadata(**info_)
 
         yield meta, (info_['name'] in conda_set), extra_info
 
 
-def cache_clear():
+def cache_clear() -> None:
     """Clear the cache for all cached functions in this module."""
     plugin_summaries.cache_clear()
     conda_map.cache_clear()

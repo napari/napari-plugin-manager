@@ -4,7 +4,10 @@ from pathlib import Path
 import napari.plugins
 import napari.resources
 import npe2
-from napari._qt.qt_resources import QColoredSVGIcon, get_current_stylesheet
+from napari._qt.qt_resources import (
+    QColoredSVGIcon,
+    get_stylesheet,
+)
 from napari._qt.qthreading import create_worker
 from napari._qt.widgets.qt_tooltip import QtToolTipLabel
 from napari.plugins.utils import normalized_name
@@ -50,35 +53,35 @@ class PluginListItem(BasePluginListItem):
     """An entry in the plugin dialog.  This will include the package name, summary,
     author, source, version, and buttons to update, install/uninstall, etc."""
 
-    BASE_PACKAGE_NAME = 'napari'
+    BASE_PACKAGE_NAME: str = 'napari'
 
-    def _warning_icon(self):
+    def _warning_icon(self) -> QColoredSVGIcon:
         # TODO: This color should come from the theme but the theme needs
         # to provide the right color. Default warning should be orange, not
         # red. Code example:
         # theme_name = get_settings().appearance.theme
         # napari.utils.theme.get_theme(theme_name, as_dict=False).warning.as_hex()
-        return QColoredSVGIcon.from_resources("warning").colored(
-            color="#E3B617"
+        return QColoredSVGIcon.from_resources('warning').colored(
+            color='#E3B617'
         )
 
-    def _collapsed_icon(self):
+    def _collapsed_icon(self) -> QColoredSVGIcon:
         return QColoredSVGIcon.from_resources('right_arrow').colored(
             color='white'
         )
 
-    def _expanded_icon(self):
+    def _expanded_icon(self) -> QColoredSVGIcon:
         return QColoredSVGIcon.from_resources('down_arrow').colored(
             color='white'
         )
 
-    def _warning_tooltip(self):
+    def _warning_tooltip(self) -> QtToolTipLabel:
         return QtToolTipLabel(self)
 
-    def _trans(self, text, **kwargs):
+    def _trans(self, text, **kwargs) -> str:
         return trans._(text, **kwargs)
 
-    def _handle_plugin_api_version(self, plugin_api_version):
+    def _handle_plugin_api_version(self, plugin_api_version: str) -> None:
         if plugin_api_version in (None, 1):
             return
 
@@ -93,7 +96,7 @@ class PluginListItem(BasePluginListItem):
         )
         self.set_status(icon.pixmap(20, 20), text)
 
-    def _on_enabled_checkbox(self, state: int):
+    def _on_enabled_checkbox(self, state: int) -> None:
         """Called with `state` when checkbox is clicked."""
         enabled = bool(state)
         plugin_name = self.plugin_name.text()
@@ -101,27 +104,37 @@ class PluginListItem(BasePluginListItem):
         if plugin_name in pm2:
             pm2.enable(plugin_name) if state else pm2.disable(plugin_name)
             return
+        # new versions of napari after 0.7.0 won't have the plugin_manager
+        # this try/except block is to maintain compatibility
+        # between new napari-plugin-manager versions and old napari versions
+        try:
+            from napari.plugins import plugin_manager
 
+            npe1_plugins = set(plugin_manager.iter_available())
+        except ImportError:
+            npe1_plugins = set()
         for (
             npe1_name,
             _,
             distname,
-        ) in napari.plugins.plugin_manager.iter_available():
+        ) in npe1_plugins:
             if distname and (normalized_name(distname) == plugin_name):
                 napari.plugins.plugin_manager.set_blocked(
                     npe1_name, not enabled
                 )
                 return
 
-    def _warn_pypi_install(self):
+    def _warn_pypi_install(self) -> bool:
         return running_as_constructor_app() or is_conda_package(
             'napari'
         )  # or True
 
-    def _action_validation(self, tool, action):
+    def _action_validation(
+        self, tool: InstallerTools, action: InstallerActions
+    ) -> bool:
         global DISMISS_WARN_PYPI_INSTALL_DLG
         if (
-            tool == InstallerTools.PIP
+            tool == InstallerTools.PYPI
             and action == InstallerActions.INSTALL
             and self._warn_pypi_install()
             and not DISMISS_WARN_PYPI_INSTALL_DLG
@@ -157,30 +170,37 @@ class PluginListItem(BasePluginListItem):
 
 
 class QPluginList(BaseQPluginList):
-
     PLUGIN_LIST_ITEM_CLASS = PluginListItem
 
-    def _trans(self, text, **kwargs):
+    def _trans(self, text: str, **kwargs) -> str:
         return trans._(text, **kwargs)
 
 
 class QtPluginDialog(BaseQtPluginDialog):
-
     PACKAGE_METADATA_CLASS = npe2.PackageMetadata
     PROJECT_INFO_VERSION_CLASS = ProjectInfoVersions
     PLUGIN_LIST_CLASS = QPluginList
     INSTALLER_QUEUE_CLASS = NapariInstallerQueue
     BASE_PACKAGE_NAME = 'napari'
 
-    def _setup_theme_update(self):
-        get_settings().appearance.events.theme.connect(self._update_theme)
+    def _setup_theme_update(self) -> None:
+        settings = get_settings()
+        settings.appearance.events.theme.connect(self._update_theme)
+        settings.appearance.events.font_size.connect(self._update_theme)
 
-    def _update_theme(self, event):
-        stylesheet = get_current_stylesheet([STYLES_PATH])
+    def _update_theme(self, event) -> None:
+        settings = get_settings()
+        theme = settings.appearance.theme
+        font_variable = {'font_size': f'{settings.appearance.font_size}pt'}
+        stylesheet = get_stylesheet(
+            theme, extra=[STYLES_PATH], extra_variables=font_variable
+        )
         self.setStyleSheet(stylesheet)
 
-    def _add_installed(self, pkg_name=None):
-        use_npe2_adaptor = get_settings().plugins.use_npe2_adaptor
+    def _add_installed(self, pkg_name: str | None = None) -> None:
+        use_npe2_adaptor = getattr(
+            get_settings().plugins, 'use_npe2_adaptor', True
+        )
         pm2 = npe2.PluginManager.instance()
         pm2.discover(include_npe1=use_npe2_adaptor)
         for manifest in pm2.iter_manifests():
@@ -195,6 +215,7 @@ class QtPluginDialog(BaseQtPluginDialog):
                     distname, enabled, distname, plugin_api_version=npev
                 )
 
+        # for old napari versions that still have the setting
         if not use_npe2_adaptor:
             napari.plugins.plugin_manager.discover()  # since they might not be loaded yet
             for (
@@ -231,10 +252,7 @@ class QtPluginDialog(BaseQtPluginDialog):
                 self.installed_list.setCurrentItem(item)
                 break
 
-    def _fetch_available_plugins(self, clear_cache: bool = False):
-        settings = get_settings()
-        use_npe2_adaptor = settings.plugins.use_npe2_adaptor
-
+    def _fetch_available_plugins(self, clear_cache: bool = False) -> None:
         if clear_cache:
             cache_clear()
 
@@ -246,29 +264,32 @@ class QtPluginDialog(BaseQtPluginDialog):
         self.worker.finished.connect(self.search)
         self.worker.start()
 
+        use_npe2_adaptor = getattr(
+            get_settings().plugins, 'use_npe2_adaptor', True
+        )
         pm2 = npe2.PluginManager.instance()
         pm2.discover(include_npe1=use_npe2_adaptor)
 
-    def _loading_gif(self):
-        load_gif = str(Path(napari.resources.__file__).parent / "loading.gif")
+    def _loading_gif(self) -> QMovie:
+        load_gif = str(Path(napari.resources.__file__).parent / 'loading.gif')
         mov = QMovie(load_gif)
         mov.setScaledSize(QSize(18, 18))
         return mov
 
-    def _on_bundle(self):
+    def _on_bundle(self) -> bool:
         return running_as_constructor_app()
 
-    def _show_info(self, info):
+    def _show_info(self, info: str) -> None:
         show_info(info)
 
-    def _show_warning(self, warning):
+    def _show_warning(self, warning: str) -> None:
         show_warning(warning)
 
-    def _trans(self, text, **kwargs):
+    def _trans(self, text: str, **kwargs) -> str:
         return trans._(text, **kwargs)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     from qtpy.QtWidgets import QApplication
 
     app = QApplication([])
