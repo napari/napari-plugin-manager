@@ -91,6 +91,23 @@ PluginListItem#unavailable {
   border-radius: 3px;
 }
 
+PluginListItem QCollapsible QToolButton {
+  background-color: {{ foreground }};
+  border-radius: 2px;
+  padding: 4px;
+  border: 0px;
+  font-size: {{ increase(font_size, 1) }};
+}
+
+PluginListItem QCollapsible QToolButton:hover {
+  background-color: {{ primary }};
+}
+
+PluginListItem QCollapsible QToolButton:pressed {
+  background-color: {{ highlight }};
+}
+
+
 PluginListItem QCheckBox::indicator:disabled {
   background-color: {{ opacity(foreground, 127) }};
   image: url("theme_{{ id }}:/check_50.svg");
