@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 import sys
@@ -23,6 +25,7 @@ from napari_plugin_manager.qt_package_installer import (
 )
 
 if TYPE_CHECKING:
+    from pytestqt.qtbot import QtBot
     from virtualenv.run import Session
 
 
@@ -62,7 +65,7 @@ class _NonExistingTool(AbstractInstallerTool):
 
 
 @pytest.fixture
-def patch_tool_executable(request):
+def patch_tool_executable(request: pytest.FixtureRequest) -> None:
     mp = request.getfixturevalue('monkeypatch')
     venv = request.getfixturevalue('tmp_virtualenv')
     tool = request.getfixturevalue('tool')
@@ -78,14 +81,14 @@ def patch_tool_executable(request):
 @pytest.mark.parametrize(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
+@pytest.mark.usefixtures('patch_tool_executable')
 def test_pip_installer_tasks(
-    qtbot,
-    tool,
-    tmp_virtualenv: 'Session',
-    monkeypatch,
-    caplog,
-    patch_tool_executable,
-):
+    qtbot: QtBot,
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
+    tmp_virtualenv: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.DEBUG, logger=bqpi.__name__)
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
@@ -165,9 +168,12 @@ def test_pip_installer_tasks(
 @pytest.mark.parametrize(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
+@pytest.mark.usefixtures('patch_tool_executable')
 def test_pip_installer_invalid_action(
-    tool, tmp_virtualenv: 'Session', monkeypatch, patch_tool_executable
-):
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
+    tmp_virtualenv: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
     )
@@ -190,9 +196,13 @@ def test_pip_installer_invalid_action(
 @pytest.mark.parametrize(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
+@pytest.mark.usefixtures('patch_tool_executable')
 def test_installer_failures(
-    tool, qtbot, tmp_virtualenv: 'Session', monkeypatch, patch_tool_executable
-):
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
+    qtbot: QtBot,
+    tmp_virtualenv: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
     )
@@ -237,7 +247,11 @@ def test_installer_failures(
 @pytest.mark.parametrize(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
-def test_cancel_incorrect_job_id(tool, qtbot, monkeypatch):
+def test_cancel_incorrect_job_id(
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
+    qtbot: QtBot,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
     )
@@ -254,7 +268,12 @@ def test_cancel_incorrect_job_id(tool, qtbot, monkeypatch):
 @pytest.mark.skipif(
     not NapariCondaInstallerTool.available(), reason='Conda is not available.'
 )
-def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
+def test_conda_installer(
+    qtbot: QtBot,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_conda_env: Path,
+) -> None:
     if sys.platform == 'darwin':
         # check  handled for `PYTHONEXECUTABLE` env definition on macOS
         monkeypatch.setenv('PYTHONEXECUTABLE', sys.executable)
@@ -268,7 +287,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['typing-extensions'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
 
     assert not installer.hasJobs()
@@ -278,7 +297,7 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         installer.uninstall(
             tool=InstallerTools.CONDA,
             pkgs=['typing-extensions'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
 
     assert not installer.hasJobs()
@@ -289,12 +308,12 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['typing-extensions'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['cowpy'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         assert installer.currentJobs() == 2
         installer.cancel_all()
@@ -308,12 +327,12 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         job_id_1 = installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['typing-extensions'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         job_id_2 = installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['cowpy'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         assert installer.currentJobs() == 2
         installer.cancel(job_id_1)
@@ -326,12 +345,12 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
         job_id_1 = installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['typing-extensions'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         job_id_2 = installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['cowpy'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         assert installer.currentJobs() == 2
         installer.cancel(job_id_2)
@@ -343,7 +362,11 @@ def test_conda_installer(qtbot, caplog, monkeypatch, tmp_conda_env: Path):
 @pytest.mark.parametrize(
     'tool', [NapariPipInstallerTool, NapariUvInstallerTool]
 )
-def test_installer_error(qtbot, tool, monkeypatch):
+def test_installer_error(
+    qtbot: QtBot,
+    tool: type[NapariPipInstallerTool | NapariUvInstallerTool],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         NapariInstallerQueue, 'PYPI_INSTALLER_TOOL_CLASS', tool
     )
@@ -359,19 +382,21 @@ def test_installer_error(qtbot, tool, monkeypatch):
 @pytest.mark.skipif(
     not NapariCondaInstallerTool.available(), reason='Conda is not available.'
 )
-def test_conda_installer_wait_for_finished(qtbot, tmp_conda_env: Path):
+def test_conda_installer_wait_for_finished(
+    qtbot: QtBot, tmp_conda_env: Path
+) -> None:
     installer = NapariInstallerQueue()
 
     with qtbot.waitSignal(installer.allFinished, timeout=600_000):
         installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['requests'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         installer.install(
             tool=InstallerTools.CONDA,
             pkgs=['cowpy'],
-            prefix=tmp_conda_env,
+            prefix=str(tmp_conda_env),
         )
         installer.waitForFinished(30_000)
 

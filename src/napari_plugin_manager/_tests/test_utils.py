@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -17,7 +18,7 @@ from napari_plugin_manager.utils import get_homepage_url, is_conda_package
         ('some', False),
     ],
 )
-def test_is_conda_package(pkg_name, expected, tmp_path):
+def test_is_conda_package(pkg_name: str, expected: bool, tmp_path: Path):
     mocked_conda_meta = tmp_path / 'conda-meta'
     mocked_conda_meta.mkdir()
     mocked_package = mocked_conda_meta / 'some-package-0.1.1-0.json'

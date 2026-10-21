@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from typing import (
+    NotRequired,
     TypedDict,
     cast,
 )
@@ -17,7 +18,6 @@ from urllib.request import Request, urlopen
 from napari.plugins.utils import normalized_name
 from napari.utils.notifications import show_warning
 from npe2 import PackageMetadata
-from typing_extensions import NotRequired
 
 from napari_plugin_manager.utils import get_homepage_url
 
