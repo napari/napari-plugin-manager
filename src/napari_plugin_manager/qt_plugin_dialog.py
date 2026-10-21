@@ -16,7 +16,6 @@ from napari.utils.misc import (
     running_as_constructor_app,
 )
 from napari.utils.notifications import show_info, show_warning
-from napari.utils.translations import trans
 from qtpy.QtCore import QSize
 from qtpy.QtGui import (
     QMovie,
@@ -78,19 +77,12 @@ class PluginListItem(BasePluginListItem):
     def _warning_tooltip(self) -> QtToolTipLabel:
         return QtToolTipLabel(self)
 
-    def _trans(self, text, **kwargs) -> str:
-        return trans._(text, **kwargs)
-
     def _handle_plugin_api_version(self, plugin_api_version: str) -> None:
         if plugin_api_version in (None, 1):
             return
 
         opacity = 0.4 if plugin_api_version == 'shim' else 1
-        text = (
-            self._trans('npe1 (adapted)')
-            if plugin_api_version == 'shim'
-            else 'npe2'
-        )
+        text = 'npe1 (adapted)' if plugin_api_version == 'shim' else 'npe2'
         icon = QColoredSVGIcon.from_resources('logo_silhouette').colored(
             color='#33F0FF', opacity=opacity
         )
@@ -140,21 +132,15 @@ class PluginListItem(BasePluginListItem):
             and not DISMISS_WARN_PYPI_INSTALL_DLG
         ):
             warn_msgbox = QMessageBox(self)
-            warn_msgbox.setWindowTitle(
-                self._trans('PyPI installation on bundle/conda')
-            )
+            warn_msgbox.setWindowTitle('PyPI installation on bundle/conda')
             warn_msgbox.setText(
-                self._trans(
-                    'Installing from PyPI does not take into account existing installed packages, '
-                    'so it can break existing installations. '
-                    'If this happens the only solution is to reinstall the bundle/create a new conda environment.\n\n'
-                    'Are you sure you want to install from PyPI?'
-                )
+                'Installing from PyPI does not take into account existing installed packages, '
+                'so it can break existing installations. '
+                'If this happens the only solution is to reinstall the bundle/create a new conda environment.\n\n'
+                'Are you sure you want to install from PyPI?'
             )
             warn_checkbox = QCheckBox(
-                self._trans(
-                    "Don't show this message again in the current session"
-                )
+                "Don't show this message again in the current session"
             )
             warn_msgbox.setCheckBox(warn_checkbox)
             warn_msgbox.setIcon(QMessageBox.Icon.Warning)
@@ -171,9 +157,6 @@ class PluginListItem(BasePluginListItem):
 
 class QPluginList(BaseQPluginList):
     PLUGIN_LIST_ITEM_CLASS = PluginListItem
-
-    def _trans(self, text: str, **kwargs) -> str:
-        return trans._(text, **kwargs)
 
 
 class QtPluginDialog(BaseQtPluginDialog):
@@ -284,9 +267,6 @@ class QtPluginDialog(BaseQtPluginDialog):
 
     def _show_warning(self, warning: str) -> None:
         show_warning(warning)
-
-    def _trans(self, text: str, **kwargs) -> str:
-        return trans._(text, **kwargs)
 
 
 if __name__ == '__main__':
