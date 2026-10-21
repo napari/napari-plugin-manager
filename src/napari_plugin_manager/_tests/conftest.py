@@ -23,6 +23,15 @@ def _block_message_box(monkeypatch, request):
         monkeypatch.setattr(QDialog, 'exec_', raise_on_call)
 
 
+@pytest.fixture(autouse=True)
+def _disable_generator_worker(monkeypatch, request):
+    if 'enable_generator_worker' not in request.keywords:
+        # Replace GeneratorWorker.start with GeneratorWorker.run to make it synchronous
+        from napari._qt.qthreading import GeneratorWorker
+
+        monkeypatch.setattr(GeneratorWorker, 'start', GeneratorWorker.run)
+
+
 if TYPE_CHECKING:
     from virtualenv.run import Session
 
