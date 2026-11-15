@@ -25,7 +25,7 @@ PyPIname = str
 
 BASE_API_URL = 'https://api.napari.org/api'
 EXTENDED_SUMMARY_URL = f'{BASE_API_URL}/extended_summary'
-CONDA_URL = f'{BASE_API_URL}/conda'
+CONDA_URL = f'{BASE_API_URL}/conda-map'
 
 
 @lru_cache
