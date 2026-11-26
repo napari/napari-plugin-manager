@@ -18,6 +18,7 @@ from napari._version import (
     version as _napari_version,
     version_tuple as _napari_version_tuple,
 )
+from napari.utils.misc import running_as_constructor_app
 
 from napari_plugin_manager.base_qt_package_installer import (
     CondaInstallerTool,
@@ -100,6 +101,13 @@ class NapariCondaInstallerTool(CondaInstallerTool):
         version = '.'.join([str(x) for x in _napari_version_tuple[:pin_level]])
 
         return [f'napari={version}']
+
+    @classmethod
+    def solver(cls) -> str | None:
+        # The bundle's _conda.exe (conda-standalone) still reads the user's
+        # .condarc, which may name a solver it doesn't ship (e.g. rattler).
+        # Outside the bundle the user's own conda/mamba handles their config.
+        return 'libmamba' if running_as_constructor_app() else None
 
 
 class NapariInstallerQueue(InstallerQueue):
