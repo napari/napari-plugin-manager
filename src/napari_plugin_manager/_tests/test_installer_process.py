@@ -12,6 +12,7 @@ import pytest
 from qtpy.QtCore import QProcessEnvironment
 
 import napari_plugin_manager.base_qt_package_installer as bqpi
+from napari_plugin_manager import qt_package_installer
 from napari_plugin_manager.base_qt_package_installer import (
     AbstractInstallerTool,
     InstallerActions,
@@ -420,6 +421,20 @@ def test_executables():
     assert NapariCondaInstallerTool.executable()
     assert NapariPipInstallerTool.executable()
     assert NapariUvInstallerTool.executable()
+
+
+@pytest.mark.parametrize('on_bundle', [True, False])
+def test_conda_solver_only_forced_on_bundle(
+    monkeypatch: pytest.MonkeyPatch, on_bundle: bool
+):
+    monkeypatch.setattr(
+        qt_package_installer, 'running_as_constructor_app', lambda: on_bundle
+    )
+    tool = NapariCondaInstallerTool(
+        InstallerActions.INSTALL, ['requests'], prefix='prefix'
+    )
+    has_solver = '--solver=libmamba' in tool.arguments()
+    assert has_solver is on_bundle
 
 
 def test_available():

@@ -295,10 +295,17 @@ class CondaInstallerTool(AbstractInstallerTool):
         for channel in (*self.origins, *self._default_channels()):
             args.extend(['-c', channel])
 
-        # Always override the solver config to make sure that user config
-        # does not break our installation
-        args.append('--solver=libmamba')
+        if solver := self.solver():
+            args.append(f'--solver={solver}')
         return [*args, *self.pkgs]
+
+    @classmethod
+    def solver(cls) -> str | None:
+        """Solver to force with ``--solver``, or None to respect user config.
+
+        Only ``conda`` accepts ``--solver``; mamba 2 and micromamba reject it.
+        """
+        return None
 
     def environment(
         self, env: QProcessEnvironment = None
